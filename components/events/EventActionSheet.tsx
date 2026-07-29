@@ -1,0 +1,238 @@
+"use client";
+
+import {
+  useEffect,
+  useId,
+  useRef,
+  type ReactNode,
+} from "react";
+import { X } from "lucide-react";
+
+type EventActionSheetProps = {
+  open: boolean;
+  title: string;
+  description?: string | null;
+  children: ReactNode;
+  footer?: ReactNode;
+  onClose: () => void;
+};
+
+const FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  '[tabindex]:not([tabindex="-1"])',
+].join(",");
+
+export default function EventActionSheet({
+  open,
+  title,
+  description,
+  children,
+  footer,
+  onClose,
+}: EventActionSheetProps) {
+  const titleId = useId();
+  const descriptionId = useId();
+  const sheetRef =
+    useRef<HTMLDivElement>(null);
+  const onCloseRef =
+    useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current =
+      onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const previouslyFocused =
+      document.activeElement instanceof
+      HTMLElement
+        ? document.activeElement
+        : null;
+
+    const previousOverflow =
+      document.body.style.overflow;
+
+    document.body.style.overflow =
+      "hidden";
+
+    const focusTimer =
+      window.requestAnimationFrame(
+        () => {
+          const focusable =
+            sheetRef.current?.querySelectorAll<HTMLElement>(
+              FOCUSABLE_SELECTOR,
+            );
+
+          focusable?.[0]?.focus();
+        },
+      );
+
+    function handleKeyDown(
+      event: KeyboardEvent,
+    ) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+
+      if (
+        event.key !== "Tab" ||
+        !sheetRef.current
+      ) {
+        return;
+      }
+
+      const focusable =
+        Array.from(
+          sheetRef.current.querySelectorAll<HTMLElement>(
+            FOCUSABLE_SELECTOR,
+          ),
+        ).filter(
+          (element) =>
+            !element.hasAttribute(
+              "disabled",
+            ) &&
+            element.getAttribute(
+              "aria-hidden",
+            ) !== "true",
+        );
+
+      if (focusable.length === 0) {
+        event.preventDefault();
+        sheetRef.current.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last =
+        focusable[
+          focusable.length - 1
+        ];
+
+      if (
+        event.shiftKey &&
+        document.activeElement ===
+          first
+      ) {
+        event.preventDefault();
+        last.focus();
+      } else if (
+        !event.shiftKey &&
+        document.activeElement === last
+      ) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener(
+      "keydown",
+      handleKeyDown,
+    );
+
+    return () => {
+      window.cancelAnimationFrame(
+        focusTimer,
+      );
+
+      document.body.style.overflow =
+        previousOverflow;
+
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown,
+      );
+
+      previouslyFocused?.focus();
+    };
+  }, [open]);
+
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[10050] flex items-end justify-center bg-black/35 backdrop-blur-[2px] sm:items-center sm:p-5"
+      onMouseDown={(event) => {
+        if (
+          event.target ===
+          event.currentTarget
+        ) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        ref={sheetRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={
+          description
+            ? descriptionId
+            : undefined
+        }
+        tabIndex={-1}
+        className="flex max-h-[min(88dvh,760px)] w-full flex-col overflow-hidden rounded-t-[1.75rem] bg-[#F7F4FA] shadow-[0_-18px_70px_rgba(31,23,43,0.22)] outline-none sm:max-w-lg sm:rounded-[1.75rem] sm:shadow-[0_28px_90px_rgba(31,23,43,0.28)]"
+        onMouseDown={(event) => {
+          event.stopPropagation();
+        }}
+      >
+        <div className="relative border-b border-[#6E5AA7]/10 bg-[#FEFCFF]/88 px-5 pb-4 pt-5 backdrop-blur-2xl">
+          <div className="absolute left-1/2 top-2 h-1 w-9 -translate-x-1/2 rounded-full bg-[#6E5AA7]/25 sm:hidden" />
+
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h2
+                id={titleId}
+                className="text-[19px] font-semibold tracking-[-0.02em] text-zinc-950"
+              >
+                {title}
+              </h2>
+
+              {description ? (
+                <p
+                  id={descriptionId}
+                  className="mt-1 text-sm leading-5 text-zinc-500"
+                >
+                  {description}
+                </p>
+              ) : null}
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={`Close ${title}`}
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#EEE9FF] text-[#5B478A] outline-none transition hover:bg-[#E5DEFF] active:scale-[0.96] focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20"
+            >
+              <X className="h-[18px] w-[18px]" />
+            </button>
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5">
+          {children}
+        </div>
+
+        {footer ? (
+          <div className="border-t border-[#6E5AA7]/10 bg-[#FEFCFF]/88 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur-2xl sm:px-5 sm:pb-4">
+            {footer}
+          </div>
+        ) : (
+          <div className="h-[env(safe-area-inset-bottom)] bg-[#FEFCFF]/88 sm:hidden" />
+        )}
+      </div>
+    </div>
+  );
+}
