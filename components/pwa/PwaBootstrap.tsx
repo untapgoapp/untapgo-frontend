@@ -282,6 +282,8 @@ export default function PwaBootstrap() {
 
         const notification = new Notification(title, {
           body,
+          icon: "/icons/icon-192.png",
+          badge: "/icons/badge-96.png",
           data: { href },
         });
 
