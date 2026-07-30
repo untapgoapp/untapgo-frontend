@@ -3,11 +3,15 @@
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/useUser";
 import { supabase } from "@/lib/supabase";
+import {
+  unregisterPushBeforeSignOut,
+} from "@/services/push";
 
 export function Navbar() {
   const { user } = useUser();
 
   async function logout() {
+    await unregisterPushBeforeSignOut();
     await supabase.auth.signOut();
     localStorage.removeItem("supabase_token");
   }

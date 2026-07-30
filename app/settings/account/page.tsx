@@ -22,6 +22,9 @@ import {
 import {
   supabase,
 } from "@/lib/supabase/client";
+import {
+  unregisterPushBeforeSignOut,
+} from "@/services/push";
 
 export default function AccountSettingsPage() {
   const router = useRouter();
@@ -70,6 +73,8 @@ export default function AccountSettingsPage() {
     setError(null);
 
     try {
+      await unregisterPushBeforeSignOut();
+
       const {
         error: signOutError,
       } = await supabase.auth.signOut();

@@ -35,6 +35,9 @@ import {
   getPublicProfile,
   type PublicProfile,
 } from "@/services/profiles";
+import {
+  unregisterPushBeforeSignOut,
+} from "@/services/push";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -115,6 +118,8 @@ export default function ProfilePage() {
     setError(null);
 
     try {
+      await unregisterPushBeforeSignOut();
+
       const {
         error: signOutError,
       } = await supabase.auth.signOut();

@@ -57,6 +57,10 @@ export default function EventMobileActionBar({
   onJoin,
   onCancelRequest,
 }: EventMobileActionBarProps) {
+  if (requested && !isHost) {
+    return null;
+  }
+
   return (
     <nav
       aria-label="Event actions"

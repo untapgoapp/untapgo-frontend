@@ -23,6 +23,12 @@ type SavePushTokenResponse = {
   device_id: string;
 };
 
+type PushTokenListResponse = {
+  items?: Array<{
+    device_id?: string | null;
+  }>;
+};
+
 function emitPushStateChanged(): void {
   if (typeof window === "undefined") {
     return;
@@ -93,6 +99,47 @@ export function getPushBrowserState(): PushBrowserState {
     : "ready";
 }
 
+export async function getVerifiedPushBrowserState(): Promise<
+  PushBrowserState
+> {
+  const state = getPushBrowserState();
+
+  if (state !== "enabled") {
+    return state;
+  }
+
+  const registration =
+    await navigator.serviceWorker.getRegistration(
+      "/",
+    );
+
+  if (!registration?.active) {
+    return "ready";
+  }
+
+  const subscription =
+    await registration.pushManager.getSubscription();
+
+  if (!subscription) {
+    return "ready";
+  }
+
+  const result =
+    await api.get<PushTokenListResponse>(
+      "/me/push-token",
+    );
+
+  const deviceId =
+    getPushDeviceId();
+
+  return (result.items ?? []).some(
+    (item) =>
+      item.device_id === deviceId,
+  )
+    ? "enabled"
+    : "ready";
+}
+
 export async function registerFirebaseMessagingWorker(): Promise<
   ServiceWorkerRegistration
 > {
@@ -102,13 +149,20 @@ export async function registerFirebaseMessagingWorker(): Promise<
     );
   }
 
-  return navigator.serviceWorker.register(
-    "/firebase-messaging-sw.js",
-    {
-      scope: "/",
-      updateViaCache: "none",
-    },
-  );
+  const registration =
+    await navigator.serviceWorker.register(
+      "/firebase-messaging-sw.js",
+      {
+        scope: "/",
+        updateViaCache: "none",
+      },
+    );
+
+  if (registration.active) {
+    return registration;
+  }
+
+  return navigator.serviceWorker.ready;
 }
 
 async function saveCurrentToken(
@@ -177,6 +231,22 @@ export async function syncPushSubscription(): Promise<boolean> {
   window.localStorage.setItem(PUSH_ENABLED_KEY, "true");
   emitPushStateChanged();
 
+  if (
+    process.env.NODE_ENV ===
+    "development"
+  ) {
+    console.debug(
+      "UntapGo push diagnostic",
+      {
+        tokenObtained: true,
+        tokenSuffix:
+          token.slice(-6),
+        backendRegistration:
+          "succeeded",
+      },
+    );
+  }
+
   return true;
 }
 
@@ -234,4 +304,15 @@ export async function clearLocalPushAfterSignOut(): Promise<void> {
 
   window.localStorage.removeItem(PUSH_ENABLED_KEY);
   emitPushStateChanged();
+}
+
+export async function unregisterPushBeforeSignOut(): Promise<void> {
+  if (
+    typeof window === "undefined" ||
+    !isPushEnabledOnThisDevice()
+  ) {
+    return;
+  }
+
+  await disablePushNotifications();
 }

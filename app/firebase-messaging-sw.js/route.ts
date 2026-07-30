@@ -37,6 +37,42 @@ export async function GET() {
   }
 
   const source = `
+function untapgoSafeHref(data) {
+  const explicit = typeof data?.href === "string" ? data.href.trim() : "";
+  if (explicit.startsWith("/") && !explicit.startsWith("//")) return explicit;
+  const eventId = typeof data?.event_id === "string" ? data.event_id.trim() : "";
+  return eventId ? "/events/" + encodeURIComponent(eventId) : "/notifications";
+}
+
+self.addEventListener("install", function () {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", function (event) {
+  event.waitUntil(clients.claim());
+});
+
+self.addEventListener("notificationclick", function (event) {
+  event.stopImmediatePropagation();
+  event.notification.close();
+  const message = event.notification.data?.FCM_MSG;
+  const href = untapgoSafeHref(message?.data || event.notification.data);
+  const target = new URL(href, self.location.origin).href;
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (windows) {
+      for (const client of windows) {
+        if (new URL(client.url).origin === self.location.origin) {
+          return client.focus().then(function (focused) {
+            return "navigate" in focused ? focused.navigate(target) : focused;
+          });
+        }
+      }
+      return clients.openWindow(target);
+    })
+  );
+});
+
 importScripts("https://www.gstatic.com/firebasejs/${FIREBASE_COMPAT_VERSION}/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/${FIREBASE_COMPAT_VERSION}/firebase-messaging-compat.js");
 

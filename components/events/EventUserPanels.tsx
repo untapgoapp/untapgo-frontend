@@ -22,6 +22,11 @@ import EventTableRoster from "@/components/events/EventTableRoster";
 import EventYourSeat from "@/components/events/EventYourSeat";
 import { supabase } from "@/lib/supabase/client";
 import {
+  getEventMembershipState,
+  isConfirmedMembership,
+  isPendingMembership,
+} from "@/lib/event-membership";
+import {
   cancelEvent,
   getPrivateEvent,
   joinEvent,
@@ -445,37 +450,28 @@ export default function EventUserPanels({
       ) === currentUserId,
   );
 
-  const membershipStatus =
-    normalize(event.my_status);
+  const membershipState =
+    getEventMembershipState({
+      status: event.my_status,
+      isHost: false,
+      legacyIsJoined:
+        event.is_joined,
+      legacyIsPlaying:
+        event.my_is_playing,
+    });
 
   const isPlaying =
-    event.my_is_playing ===
-      true ||
-    event.is_joined === true ||
-    [
-      "joined",
-      "accepted",
-      "playing",
-    ].includes(
-      membershipStatus,
+    isConfirmedMembership(
+      membershipState,
     );
 
   const requested =
-    membershipStatus ===
-      "pending" ||
-    membershipStatus ===
-      "requested" ||
-    membershipStatus.includes(
-      "pend",
-    ) ||
-    membershipStatus.includes(
-      "request",
+    isPendingMembership(
+      membershipState,
     );
 
   const joinedForActions =
-    Boolean(event.is_joined) ||
-    membershipStatus ===
-      "joined";
+    isPlaying;
 
   const eventStatus =
     normalize(event.status);

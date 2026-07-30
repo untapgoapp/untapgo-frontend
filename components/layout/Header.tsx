@@ -292,6 +292,39 @@ export default function Header({
   ]);
 
   useEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
+
+    const previousOverflow =
+      document.body.style.overflow;
+
+    function handleKeyDown(
+      event: KeyboardEvent,
+    ) {
+      if (event.key === "Escape") {
+        closeMenus();
+      }
+    }
+
+    document.body.style.overflow =
+      "hidden";
+    window.addEventListener(
+      "keydown",
+      handleKeyDown,
+    );
+
+    return () => {
+      document.body.style.overflow =
+        previousOverflow;
+      window.removeEventListener(
+        "keydown",
+        handleKeyDown,
+      );
+    };
+  }, [menuOpen, closeMenus]);
+
+  useEffect(() => {
     void loadUser();
 
     const {
@@ -554,7 +587,15 @@ export default function Header({
                   link.href
                 }
                 className={
-                  styles.mobileItem
+                  `${styles.mobileItem} ${
+                    isActive(
+                      pathname,
+                      currentSearch,
+                      link.href,
+                    )
+                      ? styles.mobileItemActive
+                      : ""
+                  }`
                 }
                 onClick={() => {
                   handleNavClick(
@@ -581,73 +622,15 @@ export default function Header({
                 Notifications
               </Link>
 
-              <Link
-                href="/events/mine"
-                className={
-                  styles.mobileItem
-                }
-                onClick={
-                  closeMenus
-                }
-              >
-                My events
-              </Link>
-
-              <Link
-                href="/profile/decks"
-                className={
-                  styles.mobileItem
-                }
-                onClick={
-                  closeMenus
-                }
-              >
-                My decks
-              </Link>
-
-              <Link
-                href="/profile"
-                className={
-                  styles.mobileItem
-                }
-                onClick={
-                  closeMenus
-                }
-              >
-                Profile
-              </Link>
             </>
           ) : null}
 
-          <div
-            className={
-              styles.mobileActions
-            }
-          >
-            {userId ? (
-              <>
-                {isLanding ? (
-                  <Link
-                    href="/create"
-                    className={styles.mobileGhost}
-                    onClick={closeMenus}
-                  >
-                    Create event
-                  </Link>
-                ) : null}
-                <Link
-                  href="/profile"
-                  className={
-                    styles.mobileSolid
-                  }
-                  onClick={
-                    closeMenus
-                  }
-                >
-                  Profile
-                </Link>
-              </>
-            ) : (
+          {!userId ? (
+            <div
+              className={
+                styles.mobileActions
+              }
+            >
               <>
                 <Link
                   href="/login"
@@ -673,8 +656,8 @@ export default function Header({
                   {isLanding ? "Create event" : "Sign up"}
                 </Link>
               </>
-            )}
-          </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </header>

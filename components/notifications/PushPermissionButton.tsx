@@ -15,6 +15,7 @@ import {
   disablePushNotifications,
   enablePushNotifications,
   getPushBrowserState,
+  getVerifiedPushBrowserState,
   PUSH_STATE_CHANGED_EVENT,
   type PushBrowserState,
 } from "@/services/push";
@@ -48,9 +49,23 @@ export default function PushPermissionButton({
 
   useEffect(() => {
     function refresh() {
-      setState(
-        getPushBrowserState(),
-      );
+      const immediate =
+        getPushBrowserState();
+
+      if (
+        immediate !== "enabled"
+      ) {
+        setState(immediate);
+        return;
+      }
+
+      setState("loading");
+
+      void getVerifiedPushBrowserState()
+        .then(setState)
+        .catch(() => {
+          setState("error");
+        });
     }
 
     refresh();
@@ -59,10 +74,18 @@ export default function PushPermissionButton({
       PUSH_STATE_CHANGED_EVENT,
       refresh,
     );
+    window.addEventListener(
+      "focus",
+      refresh,
+    );
 
     return () => {
       window.removeEventListener(
         PUSH_STATE_CHANGED_EVENT,
+        refresh,
+      );
+      window.removeEventListener(
+        "focus",
         refresh,
       );
     };

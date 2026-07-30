@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 
 import {
   getFirebaseMessagingClient,
@@ -107,6 +110,15 @@ function isTransientNetworkError(
 }
 
 export default function PwaBootstrap() {
+  const [
+    foregroundNotice,
+    setForegroundNotice,
+  ] = useState<{
+    title: string;
+    body: string;
+    href: string;
+  } | null>(null);
+
   useEffect(() => {
     let disposed = false;
     let retryTimer: number | null = null;
@@ -240,7 +252,27 @@ export default function PwaBootstrap() {
       }
 
       try {
-        await registerFirebaseMessagingWorker();
+        const registration =
+          await registerFirebaseMessagingWorker();
+
+        if (
+          process.env.NODE_ENV ===
+          "development"
+        ) {
+          console.debug(
+            "UntapGo push diagnostic",
+            {
+              permission:
+                Notification.permission,
+              serviceWorkerActive:
+                Boolean(
+                  registration.active,
+                ),
+              scope:
+                registration.scope,
+            },
+          );
+        }
       } catch (error) {
         console.warn(
           "UntapGo service worker registration failed",
@@ -264,10 +296,6 @@ export default function PwaBootstrap() {
           new CustomEvent(NOTIFICATIONS_CHANGED_EVENT),
         );
 
-        if (Notification.permission !== "granted") {
-          return;
-        }
-
         const title =
           payload.notification?.title ||
           payload.data?.title ||
@@ -280,18 +308,11 @@ export default function PwaBootstrap() {
 
         const href = getSafeHref(payload.data);
 
-        const notification = new Notification(title, {
+        setForegroundNotice({
+          title,
           body,
-          icon: "/icons/icon-192.png",
-          badge: "/icons/badge-96.png",
-          data: { href },
+          href,
         });
-
-        notification.onclick = () => {
-          window.focus();
-          window.location.assign(href);
-          notification.close();
-        };
       });
     }
 
@@ -342,5 +363,42 @@ export default function PwaBootstrap() {
     };
   }, []);
 
-  return null;
+  if (!foregroundNotice) {
+    return null;
+  }
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-[10000] w-[min(92vw,24rem)] -translate-x-1/2 rounded-2xl border border-[#6E5AA7]/15 bg-white p-4 shadow-[0_18px_50px_rgba(45,34,66,0.18)]"
+    >
+      <button
+        type="button"
+        className="block w-full text-left outline-none focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20"
+        onClick={() => {
+          window.location.assign(
+            foregroundNotice.href,
+          );
+        }}
+      >
+        <strong className="block text-sm text-zinc-950">
+          {foregroundNotice.title}
+        </strong>
+        <span className="mt-1 block text-sm leading-5 text-zinc-600">
+          {foregroundNotice.body}
+        </span>
+      </button>
+
+      <button
+        type="button"
+        className="mt-2 min-h-11 text-sm font-semibold text-[#6E5AA7]"
+        onClick={() => {
+          setForegroundNotice(null);
+        }}
+      >
+        Dismiss
+      </button>
+    </div>
+  );
 }

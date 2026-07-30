@@ -730,6 +730,12 @@ export default function EventYourSeat({
                 <ChevronRight className="h-4 w-4 shrink-0 text-zinc-400" />
               </button>
             </>
+          ) : requested ? (
+            <SeatValueRow
+              label="Deck"
+              value="Available after the host confirms your seat."
+              separated
+            />
           ) : null}
 
           <SeatValueRow
@@ -759,6 +765,12 @@ export default function EventYourSeat({
 
             <ChevronRight className="h-4 w-4" />
           </button>
+        ) : null}
+
+        {requested ? (
+          <p className="mt-3 px-3 text-sm leading-6 text-zinc-500">
+            Waiting for the host to respond.
+          </p>
         ) : null}
 
         {canCancelRequest ? (
