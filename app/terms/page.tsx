@@ -28,7 +28,7 @@ export default function TermsPage() {
     </LegalSection>
     <LegalSection id="accounts" title="3. Accounts">
       <p>Provide an email address you control and accurate profile information. Use one personal account unless UntapGo has agreed to another arrangement. Do not impersonate anyone, share credentials, sell an account or let another person use your account to evade a restriction.</p>
-      <p>You are responsible for reasonable account security and activity carried out through your credentials. Tell <strong>{"{{LEGAL_CONTACT_EMAIL}}"}</strong> promptly if you suspect unauthorised access. UntapGo currently supports email-and-password authentication through Supabase. Although third-party authentication may be added later, the inspected frontend does not currently implement Google sign-in.</p>
+      <p>You are responsible for reasonable account security and activity carried out through your credentials. Tell <strong>{"{{LEGAL_CONTACT_EMAIL}}"}</strong> promptly if you suspect unauthorised access. UntapGo supports email-and-password authentication and Google identity authentication through Supabase. Google sign-in does not give UntapGo your Google password or access to Drive, Gmail, Calendar or contacts. Supabase handles provider identities and any eligible identity linking under the project’s authentication configuration.</p>
       <p>You may request permanent account deletion from Account settings. Deletion signs you out after the backend accepts the request. Some information may need to remain for safety, legal obligations, dispute handling or backups, as described in the Privacy Policy; the exact backend deletion effects require confirmation.</p>
     </LegalSection>
     <LegalSection id="service" title="4. What UntapGo does">
@@ -89,7 +89,7 @@ export default function TermsPage() {
       <p>Blocking limits product interactions and profile visibility, but cannot erase information already seen or copied, control conduct outside UntapGo, or guarantee two users never see the same public event or attend the same venue. Do not rely on blocking alone where there is a real-world safety risk.</p>
     </LegalSection>
     <LegalSection id="third-parties" title="13. Third-party services">
-      <p>UntapGo relies on Supabase for authentication and storage, Mapbox for place search and maps, Firebase Cloud Messaging for optional push, and Scryfall for card information and artwork. Event pages can open a Google Maps search. These services may apply their own terms and privacy policies to their part of the interaction.</p>
+      <p>UntapGo relies on Supabase for email/password and Google identity authentication and storage, Mapbox for place search and maps, Firebase Cloud Messaging for optional push, and Scryfall for card information and artwork. Event pages can open a Google Maps search. These services may apply their own terms and privacy policies to their part of the interaction.</p>
       <p>UntapGo is not responsible for an external site’s independent content or availability. A link does not mean that UntapGo endorses every statement, product or venue shown there.</p>
     </LegalSection>
     <LegalSection id="availability" title="14. Availability and changes to the service">

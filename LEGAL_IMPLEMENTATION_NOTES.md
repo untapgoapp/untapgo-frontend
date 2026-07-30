@@ -27,7 +27,6 @@ Private developer document. Do not serve or link this file from the application.
 - The frontend does not prove the production frontend/backend host, email provider, provider regions, processor roles, or international-transfer safeguard.
 - Vercel and Fly.io were not named as active hosts merely because the brief suggested them or a default Vercel asset exists.
 - Resend was not named because no frontend integration or configuration was found.
-- Google OAuth was not described as active: the login page implements Supabase email/password only and no `signInWithOAuth` call exists.
 - The service was not called free or beta; no billing code was found, but business status is not proven by absence of a checkout.
 - No analytics, advertising, error monitoring, Trust Score, formal moderation appeal, emergency response time or marketing email was claimed.
 - Account deletion was not described row-by-row because the frontend only proves `DELETE /me`, followed by Supabase sign-out.
@@ -35,6 +34,7 @@ Private developer document. Do not serve or link this file from the application.
 ## Third-party services detected
 
 - Supabase JavaScript client: authentication/session persistence and avatar object storage. The project may use more Supabase services, but backend database use is not proven by this frontend alone.
+- Google identity authentication through Supabase OAuth, limited to the standard OpenID, email and profile identity scopes.
 - Google Firebase Cloud Messaging: web push configuration, token creation/deletion, foreground messaging and messaging service worker.
 - Mapbox: GL maps, tiles/styles, Search Box suggestions/retrieval and legacy geocoding requests.
 - Scryfall: card/search model identifiers and `cards.scryfall.io` artwork URLs used by deck/profile functionality.
@@ -43,7 +43,7 @@ Private developer document. Do not serve or link this file from the application.
 
 ## Cookies and storage technologies detected
 
-- Supabase browser auth localStorage key pattern `sb-<project-ref>-auth-token` and related SDK-managed auth storage.
+- Supabase SSR browser/server auth cookie pattern `sb-<project-ref>-auth-token` (including chunked/PKCE-related cookies), used for email/password and Google OAuth sessions.
 - `supabase_token` in localStorage.
 - `untapgo_coords`, `untapgo_radius`, `untapgo_location_label` in localStorage.
 - Distance-unit preference is account-backed through `/me/preferences/display`; no dedicated localStorage key was found.

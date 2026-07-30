@@ -31,7 +31,8 @@ export default function PrivacyPage() {
 
       <LegalSection id="data" title="3. Information we process">
         <h3>Account and authentication</h3>
-        <p>When you register with email and password, Supabase Authentication processes your email address, password authentication material, account identifier, confirmation status and session information. UntapGo does not need to read your plain-text password. The current frontend does not implement Google sign-in or request Google account scopes.</p>
+        <p>When you register with email and password, Supabase Authentication processes your email address, password authentication material, account identifier, confirmation status and session information. UntapGo does not need to read your plain-text password.</p>
+        <p>If you choose “Continue with Google”, Google authenticates you and Supabase receives the standard identity information made available for the <code>openid</code>, <code>email</code> and <code>profile</code> scopes. This can include a Google account identifier, email address, email-verification state, name and profile image. UntapGo does not receive your Google password and does not request access to Google Drive, Gmail, Calendar or contacts. Google processes the sign-in interaction under its own privacy terms.</p>
         <h3>Profile information</h3>
         <p>You can submit a nickname, avatar, biography and MTG Arena username. The service generates counts of events hosted and played. Privacy settings let you control whether your biography, Arena username, statistics and individually public decks appear on your public profile. Nickname and avatar remain visible so players can identify each other.</p>
         <h3>Events, participation and attendance</h3>
@@ -73,7 +74,7 @@ export default function PrivacyPage() {
       </LegalSection>
 
       <LegalSection id="storage" title="7. Cookies and similar technologies">
-        <p>UntapGo uses browser localStorage for authentication material, selected location and radius, distance preference, a push device identifier and push-enabled state. Supabase also manages browser-side authentication storage. A Firebase service worker supports optional push delivery. These are described in the <a href="/cookies">Cookie Policy</a>.</p>
+        <p>UntapGo uses Supabase-managed first-party cookies for authentication, plus browser localStorage for an API access-token copy, selected location and radius, a push device identifier and push-enabled state. A Firebase service worker supports optional push delivery. These are described in the <a href="/cookies">Cookie Policy</a>.</p>
         <p>No non-essential analytics or marketing storage was found in the current implementation, so UntapGo does not display a consent banner. Device geolocation and push notifications each use the browser’s separate permission prompt.</p>
       </LegalSection>
 
