@@ -15,6 +15,7 @@ import {
 } from "@/components/settings/DistanceUnitProvider";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://untapgo.com"),
   title: "UntapGo",
   description: "Find Magic games and open tables near you.",
   manifest: "/manifest.webmanifest",

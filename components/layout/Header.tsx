@@ -54,6 +54,17 @@ const navLinks = [
   },
 ];
 
+const landingNavLinks = [
+  {
+    href: "/events",
+    label: "Explore events",
+  },
+  {
+    href: "/#how-it-works",
+    label: "How it works",
+  },
+];
+
 function getSearchFromHref(
   href: string,
 ): string {
@@ -131,6 +142,10 @@ export default function Header({
     menuOpen,
     setMenuOpen,
   ] = useState(false);
+  const [
+    hasScrolled,
+    setHasScrolled,
+  ] = useState(false);
 
   const [
     userId,
@@ -149,6 +164,12 @@ export default function Header({
 
   const isOverlay =
     variant === "overlay";
+  const isLanding =
+    pathname === "/";
+  const visibleNavLinks =
+    isLanding
+      ? landingNavLinks
+      : navLinks;
 
   const nickname = profile
     ? getProfileNickname(
@@ -238,6 +259,28 @@ export default function Header({
   }, []);
 
   useEffect(() => {
+    function syncScroll() {
+      setHasScrolled(
+        window.scrollY > 12,
+      );
+    }
+
+    syncScroll();
+    window.addEventListener(
+      "scroll",
+      syncScroll,
+      { passive: true },
+    );
+
+    return () => {
+      window.removeEventListener(
+        "scroll",
+        syncScroll,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
     closeMenus();
 
     setCurrentSearch(
@@ -300,6 +343,10 @@ export default function Header({
           isOverlay
             ? styles.pillOverlay
             : styles.pillDefault
+        } ${isLanding ? styles.landingPill : ""} ${
+          isLanding && hasScrolled
+            ? styles.landingPillScrolled
+            : ""
         }`}
       >
         <Link
@@ -332,7 +379,7 @@ export default function Header({
           }
           aria-label="Main navigation"
         >
-          {navLinks.map(
+          {visibleNavLinks.map(
             (link) => (
               <Link
                 key={
@@ -377,6 +424,14 @@ export default function Header({
         >
           {userId ? (
             <>
+              {isLanding ? (
+                <Link
+                  href="/create"
+                  className={styles.btnSolid}
+                >
+                  Create an event
+                </Link>
+              ) : null}
               <NotificationBell />
 
               <Link
@@ -424,20 +479,30 @@ export default function Header({
                   styles.btnGhost
                 }
               >
-                Log in
+                Sign in
               </Link>
 
               <Link
-                href="/login"
+                href={isLanding ? "/login?next=%2Fcreate" : "/login"}
                 className={
                   styles.btnSolid
                 }
               >
-                Sign up
+                {isLanding ? "Create an event" : "Sign up"}
               </Link>
             </>
           )}
         </div>
+
+        {isLanding ? (
+          <Link
+            href="/events"
+            className={styles.mobilePrimary}
+            onClick={closeMenus}
+          >
+            Explore
+          </Link>
+        ) : null}
 
         <button
           type="button"
@@ -479,7 +544,7 @@ export default function Header({
               : styles.mobileMenuDefault
           }`}
         >
-          {navLinks.map(
+          {visibleNavLinks.map(
             (link) => (
               <Link
                 key={
@@ -560,17 +625,28 @@ export default function Header({
             }
           >
             {userId ? (
-              <Link
-                href="/profile"
-                className={
-                  styles.mobileSolid
-                }
-                onClick={
-                  closeMenus
-                }
-              >
-                Profile
-              </Link>
+              <>
+                {isLanding ? (
+                  <Link
+                    href="/create"
+                    className={styles.mobileGhost}
+                    onClick={closeMenus}
+                  >
+                    Create event
+                  </Link>
+                ) : null}
+                <Link
+                  href="/profile"
+                  className={
+                    styles.mobileSolid
+                  }
+                  onClick={
+                    closeMenus
+                  }
+                >
+                  Profile
+                </Link>
+              </>
             ) : (
               <>
                 <Link
@@ -582,11 +658,11 @@ export default function Header({
                     closeMenus
                   }
                 >
-                  Log in
+                  Sign in
                 </Link>
 
                 <Link
-                  href="/login"
+                  href={isLanding ? "/login?next=%2Fcreate" : "/login"}
                   className={
                     styles.mobileSolid
                   }
@@ -594,7 +670,7 @@ export default function Header({
                     closeMenus
                   }
                 >
-                  Sign up
+                  {isLanding ? "Create event" : "Sign up"}
                 </Link>
               </>
             )}

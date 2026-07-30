@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
+import CreateEventLink from '@/components/landing/CreateEventLink';
 
 import {
   FaDiscord,
@@ -60,8 +62,13 @@ const footerSections: Array<{
 ];
 
 export default function Footer() {
+  const pathname = usePathname();
   const [openSection, setOpenSection] =
     useState<string | null>(null);
+
+  if (pathname === '/') {
+    return <LandingFooter />;
+  }
 
   return (
     <footer className="w-full bg-[#17151E] text-white">
@@ -187,6 +194,56 @@ export default function Footer() {
           </div>
         </div>
 
+      </div>
+    </footer>
+  );
+}
+
+function LandingFooter() {
+  return (
+    <footer className="bg-[#17151E] text-white">
+      <div className="mx-auto w-full max-w-[1200px] px-5 py-10 sm:px-7 md:py-12">
+        <div className="flex flex-col gap-8 border-b border-white/10 pb-9 md:flex-row md:items-start md:justify-between">
+          <Link
+            href="/"
+            className="inline-flex min-h-11 items-center gap-2 self-start rounded-lg outline-none focus-visible:ring-4 focus-visible:ring-[#8C76C8]/40"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt=""
+              width="38"
+              height="38"
+              className="h-[38px] w-[38px] object-contain"
+            />
+            <span className="text-base font-extrabold tracking-[-0.04em]">
+              UntapGo
+            </span>
+          </Link>
+
+          <nav
+            aria-label="Footer navigation"
+            className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/68"
+          >
+            <Link className="flex min-h-11 items-center transition hover:text-white focus-visible:text-white focus-visible:outline-none" href="/events">
+              Explore events
+            </Link>
+            <CreateEventLink className="flex min-h-11 items-center transition hover:text-white focus-visible:text-white focus-visible:outline-none">
+              Create event
+            </CreateEventLink>
+            <Link className="flex min-h-11 items-center transition hover:text-white focus-visible:text-white focus-visible:outline-none" href="/login">
+              Sign in
+            </Link>
+          </nav>
+        </div>
+
+        <div className="flex flex-col gap-4 pt-7 text-xs leading-5 text-white/45 md:flex-row md:items-end md:justify-between">
+          <p className="max-w-xl">
+            UntapGo is an independent community product and is not affiliated
+            with or endorsed by Wizards of the Coast.
+          </p>
+          <p className="shrink-0">© 2026 UntapGo</p>
+        </div>
       </div>
     </footer>
   );

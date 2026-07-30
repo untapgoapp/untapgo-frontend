@@ -13,6 +13,16 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  function getNextDestination() {
+    const value = new URLSearchParams(window.location.search).get("next");
+
+    if (!value || !value.startsWith("/") || value.startsWith("//")) {
+      return "/profile";
+    }
+
+    return value;
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -49,7 +59,7 @@ export default function LoginPage() {
 
       if (loginError) throw loginError;
 
-      router.push("/profile");
+      router.push(getNextDestination());
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Authentication failed.");

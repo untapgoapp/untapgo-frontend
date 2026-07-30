@@ -34,6 +34,23 @@
     0 12px 32px rgba(0, 0, 0, 0.08);
 }
 
+.landingPill {
+  background: rgba(248, 245, 239, 0.72);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.035),
+    0 8px 24px rgba(0, 0, 0, 0.045);
+  transition:
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.landingPillScrolled {
+  background: rgba(255, 255, 255, 0.93);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.07),
+    0 12px 32px rgba(0, 0, 0, 0.085);
+}
+
 .logoLink {
   display: flex;
   flex: 0 0 auto;
@@ -48,12 +65,6 @@
   width: 34px;
   height: 34px;
   object-fit: contain;
-}
-
-.logoText {
-  font-size: 15px;
-  font-weight: 850;
-  letter-spacing: -0.04em;
 }
 
 .nav,
@@ -266,6 +277,10 @@
   place-items: center;
 }
 
+.mobilePrimary {
+  display: none;
+}
+
 .mobileMenu {
   display: none;
 }
@@ -304,12 +319,29 @@
     height: 32px;
   }
 
-  .logoText {
-    font-size: 15px;
-  }
-
   .menuButton {
     display: grid;
+  }
+
+  .mobilePrimary {
+    display: inline-flex;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    border-radius: 999px;
+    background: #6e5aa7;
+    color: white;
+    padding: 0 15px;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .mobilePrimary:focus-visible,
+  .menuButton:focus-visible {
+    outline: 4px solid rgba(110, 90, 167, 0.22);
+    outline-offset: 2px;
   }
 
   .mobileMenu {
@@ -383,5 +415,21 @@
   .headerBehindModal {
     z-index: 1 !important;
     opacity: 0.6;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 900px) {
+  .landingPill {
+    gap: 14px;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .landingPill .nav {
+    gap: 14px;
+  }
+
+  .landingPill .profileName {
+    display: none;
   }
 }
