@@ -22,8 +22,8 @@ test("mobile drawer does not contain My decks", () => {
   assert.doesNotMatch(drawer, />\s*My decks\s*</);
 });
 
-test("mobile drawer does not contain Profile", () => {
-  assert.doesNotMatch(drawer, />\s*Profile\s*</);
+test("mobile drawer contains Profile", () => {
+  assert.match(drawer, />\s*Profile\s*</);
 });
 
 test("mobile drawer has no duplicate Profile button", () => {
@@ -33,7 +33,7 @@ test("mobile drawer has no duplicate Profile button", () => {
         />\s*Profile\s*</g,
       ) ?? []
     ).length,
-    0,
+    1,
   );
 });
 

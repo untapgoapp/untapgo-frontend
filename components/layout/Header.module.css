@@ -281,10 +281,6 @@
   display: none;
 }
 
-.mobileProfileButton {
-  display: none;
-}
-
 .mobileMenu {
   display: none;
 }
@@ -344,38 +340,7 @@
     text-decoration: none;
   }
 
-  .mobileProfileButton {
-    display: grid;
-    width: 44px;
-    min-height: 44px;
-    flex: 0 0 auto;
-    overflow: hidden;
-    border-radius: 999px;
-    place-items: center;
-    text-decoration: none;
-  }
-
-  .mobileProfileAvatar {
-    display: grid;
-    width: 36px;
-    height: 36px;
-    overflow: hidden;
-    border-radius: 999px;
-    background: #e7dfff;
-    color: #171717;
-    font-size: 13px;
-    font-weight: 900;
-    place-items: center;
-  }
-
-  .mobileProfileAvatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-
   .mobilePrimary:focus-visible,
-  .mobileProfileButton:focus-visible,
   .menuButton:focus-visible {
     outline: 4px solid rgba(110, 90, 167, 0.22);
     outline-offset: 2px;

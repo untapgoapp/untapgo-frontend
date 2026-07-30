@@ -537,34 +537,6 @@ export default function Header({
           </Link>
         ) : null}
 
-        {userId ? (
-          <Link
-            href="/profile"
-            className={
-              styles.mobileProfileButton
-            }
-            onClick={closeMenus}
-            aria-label="Open profile"
-          >
-            <span
-              className={
-                styles.mobileProfileAvatar
-              }
-            >
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt=""
-                />
-              ) : (
-                nickname
-                  .slice(0, 1)
-                  .toUpperCase()
-              )}
-            </span>
-          </Link>
-        ) : null}
-
         <button
           type="button"
           className={
@@ -648,6 +620,18 @@ export default function Header({
                 }
               >
                 Notifications
+              </Link>
+
+              <Link
+                href="/profile"
+                className={
+                  styles.mobileItem
+                }
+                onClick={
+                  closeMenus
+                }
+              >
+                Profile
               </Link>
 
             </>
