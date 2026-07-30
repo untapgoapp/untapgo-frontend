@@ -131,6 +131,19 @@ export default function LoginPage() {
                   ? "Log in"
                   : "Create account"}
             </button>
+
+            {mode === "signup" ? (
+              <p className="text-xs leading-5 text-zinc-500">
+                By creating an account, you agree to the{" "}
+                <Link className="font-medium text-[#6E5AA7] underline underline-offset-2" href="/terms">
+                  Terms of Service
+                </Link>{" "}
+                and acknowledge the{" "}
+                <Link className="font-medium text-[#6E5AA7] underline underline-offset-2" href="/privacy">
+                  Privacy Policy
+                </Link>.
+              </p>
+            ) : null}
           </form>
 
           <button

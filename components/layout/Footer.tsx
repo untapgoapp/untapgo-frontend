@@ -56,7 +56,8 @@ const footerSections: Array<{
       { label: 'FAQ', href: '/faq' },
       { label: 'Privacy Policy', href: '/privacy' },
       { label: 'Terms of Service', href: '/terms' },
-      { label: 'Manage Cookies', href: '/cookies' },
+      { label: 'Cookie Policy', href: '/cookies' },
+      { label: 'Legal Notice', href: '/legal-notice' },
     ],
   },
 ];
@@ -242,6 +243,13 @@ function LandingFooter() {
             UntapGo is an independent community product and is not affiliated
             with or endorsed by Wizards of the Coast.
           </p>
+          <nav aria-label="Legal" className="flex flex-wrap gap-x-4 gap-y-1">
+            <Link href="/privacy">Privacy</Link>
+            <Link href="/terms">Terms</Link>
+            <Link href="/cookies">Cookies</Link>
+            <Link href="/community-guidelines">Community Guidelines</Link>
+            <Link href="/legal-notice">Legal Notice</Link>
+          </nav>
           <p className="shrink-0">© 2026 UntapGo</p>
         </div>
       </div>
