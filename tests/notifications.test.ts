@@ -22,7 +22,10 @@ import {
 } from "../lib/notification-presentation.ts";
 import {
   applyNotificationChange,
+  mergeNotificationPage,
   notificationRealtimeTopic,
+  parseClearedBroadcast,
+  parseDeletedBroadcast,
   parseNotificationBroadcast,
 } from "../lib/notification-live.ts";
 import type { NotificationItem } from "../services/notifications.ts";
@@ -155,14 +158,14 @@ test("Home navigation does not mark notifications as read", () => {
   assert.doesNotMatch(source, /markNotificationRead/);
 });
 
-test("Notifications marks an unread item before navigating", () => {
+test("Notifications marks an unread item through shared state before navigating", () => {
   const source = readFileSync(new URL("../app/notifications/page.tsx", import.meta.url), "utf8");
-  const start = source.indexOf("async function handleOpenNotification");
-  const end = source.indexOf("async function handleMarkAllRead", start);
+  const start = source.indexOf("async function openNotification");
+  const end = source.indexOf("async function removeNotification", start);
   const handler = source.slice(start, end);
 
-  assert.ok(handler.indexOf("markNotificationRead") >= 0);
-  assert.ok(handler.indexOf("markNotificationRead") < handler.indexOf("router.push"));
+  assert.ok(handler.indexOf("notifications.markRead") >= 0);
+  assert.ok(handler.indexOf("notifications.markRead") < handler.indexOf("router.push"));
 });
 
 test("push notification hrefs are restricted to the application origin", () => {
@@ -180,78 +183,142 @@ test("notification Realtime uses the recipient-only topic and validates canonica
   const userId = "20000000-0000-4000-8000-000000000001";
   const item = notification("player_followed", {
     id: "50000000-0000-4000-8000-000000000001",
-    user_id: userId,
     event_id: null,
   });
 
   assert.equal(notificationRealtimeTopic(userId), `user:${userId}:notifications`);
   assert.equal(notificationRealtimeTopic("not-a-user-id"), null);
-  assert.deepEqual(parseNotificationBroadcast(item, userId), item);
-  assert.equal(
-    parseNotificationBroadcast(item, "30000000-0000-4000-8000-000000000001"),
-    null,
-  );
+  assert.deepEqual(parseNotificationBroadcast(item), item);
+  assert.equal(parseNotificationBroadcast({ ...item, id: "bad" }), null);
+  assert.equal(parseNotificationBroadcast({ ...item, meta: { href: 42 } }), null);
 });
 
 test("live notification state updates immediately and deduplicates repeated events", () => {
   const first = notification("player_followed", {
     id: "50000000-0000-4000-8000-000000000001",
-    user_id: "20000000-0000-4000-8000-000000000001",
     created_at: "2026-08-01T10:00:00Z",
   });
   const newer = notification("playgroup_post_commented", {
     id: "50000000-0000-4000-8000-000000000002",
-    user_id: first.user_id,
     created_at: "2026-08-01T10:01:00Z",
   });
   let state = { unread_count: 1, items: [first] };
 
   state = applyNotificationChange(
     state,
-    { kind: "received", notification: newer },
-    { limit: 5 },
+    { kind: "created", notification: newer },
+    5,
   );
   assert.equal(state.unread_count, 2);
   assert.deepEqual(state.items.map((item) => item.id), [newer.id, first.id]);
 
   state = applyNotificationChange(
     state,
-    { kind: "received", notification: newer },
-    { limit: 5 },
+    { kind: "created", notification: newer },
+    5,
   );
   assert.equal(state.unread_count, 2);
   assert.equal(state.items.filter((item) => item.id === newer.id).length, 1);
 });
 
-test("read actions synchronize mounted notification surfaces without refetching", () => {
+test("read, delete, and bulk events update shared live state without refetching", () => {
   const unread = notification("player_followed", {
     id: "50000000-0000-4000-8000-000000000001",
   });
-  const state = applyNotificationChange(
+  let state = applyNotificationChange(
     { unread_count: 1, items: [unread] },
-    { kind: "read", notificationId: unread.id, updated: 1 },
-    { limit: 5 },
+    { kind: "updated", notification: { ...unread, is_read: true } },
+    5,
   );
 
   assert.equal(state.unread_count, 0);
   assert.equal(state.items[0]?.is_read, true);
+  state = applyNotificationChange(state, { kind: "deleted", notificationId: unread.id });
+  assert.deepEqual(state.items, []);
+
+  const eventNotice = notification("request_accepted", {
+    id: "50000000-0000-4000-8000-000000000002",
+    event_id: "70000000-0000-4000-8000-000000000001",
+  });
+  state = applyNotificationChange(
+    { unread_count: 1, items: [eventNotice] },
+    { kind: "mark_event_read", eventId: eventNotice.event_id!, updated: 1 },
+  );
+  assert.equal(state.unread_count, 0);
+  assert.equal(state.items[0]?.is_read, true);
+  assert.deepEqual(parseDeletedBroadcast({ id: unread.id }), {
+    kind: "deleted", notificationId: unread.id,
+  });
+  assert.deepEqual(parseClearedBroadcast({ action: "mark_all_read", updated: 4 }), {
+    kind: "mark_all_read", updated: 4,
+  });
 });
 
-test("one private notification bridge applies auth and cleans up its channel", () => {
-  const bridge = readFileSync(
-    new URL("../components/notifications/NotificationRealtimeBridge.tsx", import.meta.url),
+test("REST reconciliation deduplicates and preserves already loaded notification pages", () => {
+  const first = notification("player_followed", { id: "50000000-0000-4000-8000-000000000001" });
+  const second = notification("player_joined", { id: "50000000-0000-4000-8000-000000000002" });
+  const state = mergeNotificationPage(
+    { unread_count: 1, items: [first] },
+    { unread_count: 2, items: [second, first] },
+  );
+  assert.equal(state.unread_count, 2);
+  assert.deepEqual(new Set(state.items.map((item) => item.id)), new Set([first.id, second.id]));
+});
+
+test("one private provider applies auth, handles four events, reconnects, and cleans up", () => {
+  const channel = readFileSync(
+    new URL("../components/notifications/useNotificationRealtimeChannel.ts", import.meta.url),
     "utf8",
   );
-  const layout = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8");
+  const provider = readFileSync(new URL("../components/notifications/NotificationRealtimeProvider.tsx", import.meta.url), "utf8");
+  const shell = readFileSync(new URL("../components/social-shell/SocialLayoutRouter.tsx", import.meta.url), "utf8");
   const home = readFileSync(new URL("../app/home/page.tsx", import.meta.url), "utf8");
   const page = readFileSync(new URL("../app/notifications/page.tsx", import.meta.url), "utf8");
+  const bell = readFileSync(new URL("../components/notifications/NotificationBell.tsx", import.meta.url), "utf8");
 
-  assert.match(bridge, /realtime\.setAuth\(session\.access_token\)/);
-  assert.match(bridge, /private: true/);
-  assert.match(bridge, /NOTIFICATION_REALTIME_EVENT/);
-  assert.match(bridge, /removeChannel\(channel\)/);
-  assert.doesNotMatch(bridge, /\.from\(/);
-  assert.equal(layout.match(/<NotificationRealtimeBridge \/>/g)?.length, 1);
-  assert.match(home, /applyNotificationChange/);
-  assert.match(page, /applyNotificationChange/);
+  assert.ok(channel.indexOf("realtime.setAuth(accessToken)") < channel.indexOf("supabase.channel(topic"));
+  assert.equal((channel.match(/supabase\.channel\(/g) ?? []).length, 1);
+  assert.match(channel, /private: true/);
+  assert.match(channel, /NOTIFICATION_CREATED_EVENT/);
+  assert.match(channel, /NOTIFICATION_UPDATED_EVENT/);
+  assert.match(channel, /NOTIFICATION_DELETED_EVENT/);
+  assert.match(channel, /NOTIFICATIONS_CLEARED_EVENT/);
+  assert.match(channel, /nextStatus === "SUBSCRIBED"/);
+  assert.match(channel, /CHANNEL_ERROR/);
+  assert.match(channel, /TIMED_OUT/);
+  assert.match(channel, /CLOSED/);
+  assert.match(channel, /removeExistingTopicChannel\(topic\)/);
+  assert.match(channel, /removeChannel\(channel\)/);
+  assert.doesNotMatch(channel, /\.from\(/);
+  assert.match(provider, /onAuthStateChange/);
+  assert.match(provider, /setState\(emptyState\)/);
+  assert.match(provider, /onReconnect: \(\) => \{ void refresh\(\); \}/);
+  assert.equal((shell.match(/<NotificationRealtimeProvider>/g) ?? []).length, 1);
+  assert.ok(shell.indexOf("AuthGatePage") < shell.indexOf("<NotificationRealtimeProvider>"));
+  for (const source of [home, page, bell]) assert.match(source, /useNotifications/);
+  for (const source of [home, page, bell]) assert.doesNotMatch(source, /setInterval|visibilitychange/);
+});
+
+test("provider emits one presentation-aware toast only for a genuinely new creation", () => {
+  const provider = readFileSync(new URL("../components/notifications/NotificationRealtimeProvider.tsx", import.meta.url), "utf8");
+  const toast = readFileSync(new URL("../components/notifications/NotificationToastViewport.tsx", import.meta.url), "utf8");
+  assert.match(provider, /change\.kind === "created"/);
+  assert.match(provider, /knownIds\.current\.has/);
+  assert.match(provider, /toastedIds\.current\.has/);
+  assert.match(provider, /for \(const item of latest\.items\) knownIds\.current\.add/);
+  assert.match(toast, /getNotificationPresentation/);
+  assert.match(toast, /getNotificationHref/);
+  assert.match(toast, /onDismiss/);
+  assert.doesNotMatch(toast, /notification\.type ===/);
+});
+
+test("Realtime failure preserves REST state and public auth landing mounts no provider", () => {
+  const provider = readFileSync(new URL("../components/notifications/NotificationRealtimeProvider.tsx", import.meta.url), "utf8");
+  const shell = readFileSync(new URL("../components/social-shell/SocialLayoutRouter.tsx", import.meta.url), "utf8");
+  const catchBlock = provider.slice(provider.indexOf("catch {"), provider.indexOf("finally", provider.indexOf("catch {")));
+  assert.match(catchBlock, /setError/);
+  assert.doesNotMatch(catchBlock, /setState/);
+  const authGate = shell.slice(shell.indexOf('if (["/"'), shell.indexOf("let content"));
+  assert.match(authGate, /return <AuthGatePage>/);
+  assert.doesNotMatch(authGate, /NotificationRealtimeProvider/);
 });

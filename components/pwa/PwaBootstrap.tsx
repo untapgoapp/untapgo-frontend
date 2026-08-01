@@ -2,7 +2,6 @@
 
 import {
   useEffect,
-  useState,
 } from "react";
 
 import {
@@ -10,7 +9,7 @@ import {
 } from "@/lib/firebase/client";
 import { supabase } from "@/lib/supabase/client";
 import {
-  NOTIFICATIONS_CHANGED_EVENT,
+  requestNotificationsRefresh,
 } from "@/services/notifications";
 import {
   clearLocalPushAfterSignOut,
@@ -18,26 +17,6 @@ import {
   registerFirebaseMessagingWorker,
   syncPushSubscription,
 } from "@/services/push";
-
-function getSafeHref(data?: Record<string, string>): string {
-  const explicit = data?.href?.trim();
-
-  if (
-    explicit &&
-    explicit.startsWith("/") &&
-    !explicit.startsWith("//")
-  ) {
-    return explicit;
-  }
-
-  const eventId = data?.event_id?.trim();
-
-  if (eventId) {
-    return `/events/${encodeURIComponent(eventId)}`;
-  }
-
-  return "/notifications";
-}
 
 function shouldSyncPush(): boolean {
   return getPushBrowserState() === "enabled";
@@ -110,15 +89,6 @@ function isTransientNetworkError(
 }
 
 export default function PwaBootstrap() {
-  const [
-    foregroundNotice,
-    setForegroundNotice,
-  ] = useState<{
-    title: string;
-    body: string;
-    href: string;
-  } | null>(null);
-
   useEffect(() => {
     let disposed = false;
     let retryTimer: number | null = null;
@@ -291,28 +261,10 @@ export default function PwaBootstrap() {
 
       const { onMessage } = await import("firebase/messaging");
 
-      unsubscribeMessage = onMessage(messaging, (payload) => {
-        window.dispatchEvent(
-          new CustomEvent(NOTIFICATIONS_CHANGED_EVENT),
-        );
-
-        const title =
-          payload.notification?.title ||
-          payload.data?.title ||
-          "UntapGo";
-
-        const body =
-          payload.notification?.body ||
-          payload.data?.body ||
-          "You have a new notification.";
-
-        const href = getSafeHref(payload.data);
-
-        setForegroundNotice({
-          title,
-          body,
-          href,
-        });
+      unsubscribeMessage = onMessage(messaging, () => {
+        // Realtime owns in-app toast delivery. Foreground push only requests a
+        // REST reconciliation, avoiding duplicate toasts for the same row.
+        requestNotificationsRefresh();
       });
     }
 
@@ -363,42 +315,5 @@ export default function PwaBootstrap() {
     };
   }, []);
 
-  if (!foregroundNotice) {
-    return null;
-  }
-
-  return (
-    <div
-      role="status"
-      aria-live="polite"
-      className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-[10000] w-[min(92vw,24rem)] -translate-x-1/2 rounded-2xl border border-[#6E5AA7]/15 bg-white p-4 shadow-[0_18px_50px_rgba(45,34,66,0.18)]"
-    >
-      <button
-        type="button"
-        className="block w-full text-left outline-none focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20"
-        onClick={() => {
-          window.location.assign(
-            foregroundNotice.href,
-          );
-        }}
-      >
-        <strong className="block text-sm text-zinc-950">
-          {foregroundNotice.title}
-        </strong>
-        <span className="mt-1 block text-sm leading-5 text-zinc-600">
-          {foregroundNotice.body}
-        </span>
-      </button>
-
-      <button
-        type="button"
-        className="mt-2 min-h-11 text-sm font-semibold text-[#6E5AA7]"
-        onClick={() => {
-          setForegroundNotice(null);
-        }}
-      >
-        Dismiss
-      </button>
-    </div>
-  );
+  return null;
 }

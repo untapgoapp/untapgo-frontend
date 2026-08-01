@@ -1,427 +1,117 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
-import {
-  usePathname,
-  useRouter,
-} from "next/navigation";
-import {
-  Bell,
-} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { Bell } from "lucide-react";
 
 import NotificationsPanel from "@/components/notifications/NotificationsPanel";
-import {
-  ApiError,
-} from "@/lib/api";
-import {
-  applyNotificationChange,
-  type NotificationChange,
-} from "@/lib/notification-live";
-import {
-  getNotificationHref,
-  listNotifications,
-  markAllNotificationsRead,
-  markNotificationRead,
-  NOTIFICATIONS_CHANGED_EVENT,
-  type NotificationItem,
-  type NotificationListResponse,
-} from "@/services/notifications";
-
-type AuthenticationState =
-  | "checking"
-  | "authenticated"
-  | "guest";
+import { useNotifications } from "@/components/notifications/NotificationRealtimeProvider";
+import { getNotificationHref, type NotificationItem } from "@/services/notifications";
 
 export default function NotificationBell() {
   const router = useRouter();
   const pathname = usePathname();
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [markingAllRead, setMarkingAllRead] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const notifications = useNotifications();
 
-  const wrapperRef =
-    useRef<HTMLDivElement | null>(
-      null,
-    );
-
-  const [open, setOpen] =
-    useState(false);
-
-  const [
-    authenticationState,
-    setAuthenticationState,
-  ] =
-    useState<AuthenticationState>(
-      "checking",
-    );
-
-  const [notificationState, setNotificationState] =
-    useState<NotificationListResponse>({ unread_count: 0, items: [] });
-  const items = notificationState.items;
-  const unreadCount = notificationState.unread_count;
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [
-    refreshing,
-    setRefreshing,
-  ] = useState(false);
-
-  const [error, setError] =
-    useState<string | null>(
-      null,
-    );
-
-  const [
-    busyNotificationId,
-    setBusyNotificationId,
-  ] = useState<string | null>(
-    null,
-  );
-
-  const [
-    markingAllRead,
-    setMarkingAllRead,
-  ] = useState(false);
-
-  const loadNotifications =
-    useCallback(
-      async (
-        silent = false,
-      ) => {
-        if (silent) {
-          setRefreshing(true);
-        } else {
-          setLoading(true);
-        }
-
-        setError(null);
-
-        try {
-          const result =
-            await listNotifications({
-              limit: 8,
-            });
-
-          setAuthenticationState(
-            "authenticated",
-          );
-
-          setNotificationState(result);
-        } catch (loadError) {
-          if (
-            loadError instanceof
-              ApiError &&
-            loadError.status === 401
-          ) {
-            setAuthenticationState(
-              "guest",
-            );
-
-            setNotificationState({ unread_count: 0, items: [] });
-
-            return;
-          }
-
-          setAuthenticationState(
-            "authenticated",
-          );
-
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Could not load notifications.",
-          );
-        } finally {
-          setLoading(false);
-          setRefreshing(false);
-        }
-      },
-      [],
-    );
+  useEffect(() => setOpen(false), [pathname]);
 
   useEffect(() => {
-    void loadNotifications();
-
-    const interval =
-      window.setInterval(() => {
-        if (
-          document.visibilityState ===
-          "visible"
-        ) {
-          void loadNotifications(
-            true,
-          );
-        }
-      }, 30_000);
-
-    function handleVisibilityChange() {
-      if (
-        document.visibilityState ===
-        "visible"
-      ) {
-        void loadNotifications(
-          true,
-        );
-      }
-    }
-
-    function handleNotificationsChanged(event: Event) {
-      const detail = (event as CustomEvent<NotificationChange>).detail;
-      if (!detail || detail.kind === "refresh") {
-        void loadNotifications(true);
-        return;
-      }
-      setNotificationState((current) => applyNotificationChange(
-        current,
-        detail,
-        { limit: 8 },
-      ));
-    }
-
-    document.addEventListener(
-      "visibilitychange",
-      handleVisibilityChange,
-    );
-
-    window.addEventListener(
-      NOTIFICATIONS_CHANGED_EVENT,
-      handleNotificationsChanged,
-    );
-
-    return () => {
-      window.clearInterval(
-        interval,
-      );
-
-      document.removeEventListener(
-        "visibilitychange",
-        handleVisibilityChange,
-      );
-
-      window.removeEventListener(
-        NOTIFICATIONS_CHANGED_EVENT,
-        handleNotificationsChanged,
-      );
-    };
-  }, [loadNotifications]);
-
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    function handleMouseDown(
-      mouseEvent: MouseEvent,
-    ) {
-      const target =
-        mouseEvent.target;
-
-      if (
-        !(target instanceof Node)
-      ) {
-        return;
-      }
-
-      if (
-        !wrapperRef.current?.contains(
-          target,
-        )
-      ) {
+    if (!open) return;
+    function handleMouseDown(event: MouseEvent) {
+      if (event.target instanceof Node && !wrapperRef.current?.contains(event.target)) {
         setOpen(false);
       }
     }
-
-    function handleKeyDown(
-      keyboardEvent: KeyboardEvent,
-    ) {
-      if (
-        keyboardEvent.key ===
-        "Escape"
-      ) {
-        setOpen(false);
-      }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
     }
-
-    document.addEventListener(
-      "mousedown",
-      handleMouseDown,
-    );
-
-    window.addEventListener(
-      "keydown",
-      handleKeyDown,
-    );
-
+    document.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener(
-        "mousedown",
-        handleMouseDown,
-      );
-
-      window.removeEventListener(
-        "keydown",
-        handleKeyDown,
-      );
+      document.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
 
-  async function handleOpenNotification(
-    notification: NotificationItem,
-  ) {
-    if (
-      busyNotificationId
-    ) {
-      return;
-    }
-
-    setBusyNotificationId(
-      notification.id,
-    );
-
+  async function openNotification(notification: NotificationItem) {
+    if (busyId) return;
+    setBusyId(notification.id);
+    setActionError(null);
     try {
-      if (
-        !notification.is_read
-      ) {
-        await markNotificationRead(
-          notification.id,
-        );
-      }
-
+      if (!notification.is_read) await notifications.markRead(notification);
       setOpen(false);
-
-      router.push(
-        getNotificationHref(
-          notification,
-        ),
-      );
-    } catch (actionError) {
-      setError(
-        actionError instanceof Error
-          ? actionError.message
-          : "Could not open notification.",
-      );
+      router.push(getNotificationHref(notification));
+    } catch {
+      setActionError("Could not open notification.");
     } finally {
-      setBusyNotificationId(
-        null,
-      );
+      setBusyId(null);
     }
   }
 
-  async function handleMarkAllRead() {
-    if (
-      markingAllRead ||
-      unreadCount === 0
-    ) {
-      return;
-    }
-
+  async function markAllRead() {
+    if (markingAllRead || notifications.unread_count === 0) return;
     setMarkingAllRead(true);
-    setError(null);
-
+    setActionError(null);
     try {
-      await markAllNotificationsRead();
-    } catch (actionError) {
-      setError(
-        actionError instanceof Error
-          ? actionError.message
-          : "Could not mark notifications as read.",
-      );
+      await notifications.markAllRead();
+    } catch {
+      setActionError("Could not mark notifications as read.");
     } finally {
       setMarkingAllRead(false);
     }
   }
 
-  if (
-    authenticationState ===
-    "guest"
-  ) {
-    return null;
+  async function removeNotification(notification: NotificationItem) {
+    if (busyId) return;
+    setBusyId(notification.id);
+    setActionError(null);
+    try {
+      await notifications.deleteNotification(notification);
+    } catch {
+      setActionError("Could not remove notification.");
+    } finally {
+      setBusyId(null);
+    }
   }
 
+  if (!notifications.authenticated) return null;
+  const unreadCount = notifications.unread_count;
   return (
-    <div
-      ref={wrapperRef}
-      className="relative"
-    >
+    <div ref={wrapperRef} className="relative">
       <button
         type="button"
-        aria-label={
-          unreadCount > 0
-            ? `${unreadCount} unread notifications`
-            : "Notifications"
-        }
+        aria-label={unreadCount ? `${unreadCount} unread notifications` : "Notifications"}
         aria-expanded={open}
-        onClick={() => {
-          const nextOpen =
-            !open;
-
-          setOpen(nextOpen);
-
-          if (nextOpen) {
-            void loadNotifications(
-              true,
-            );
-          }
-        }}
+        onClick={() => setOpen((current) => !current)}
         className="relative grid h-10 w-10 place-items-center rounded-control text-muted-foreground transition-colors hover:bg-secondary/65 hover:text-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/15"
       >
         <Bell className="h-[18px] w-[18px]" />
-
         {unreadCount > 0 ? (
           <span className="absolute -right-1 -top-1 grid min-h-[18px] min-w-[18px] place-items-center rounded-full border-2 border-surface bg-primary px-1 text-[9px] font-black leading-none text-primary-foreground">
-            {unreadCount > 99
-              ? "99+"
-              : unreadCount}
+            {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         ) : null}
       </button>
-
       {open ? (
         <NotificationsPanel
-          items={items}
-          unreadCount={
-            unreadCount
-          }
-          loading={
-            loading &&
-            items.length === 0
-          }
-          refreshing={
-            refreshing
-          }
-          error={error}
-          busyNotificationId={
-            busyNotificationId
-          }
-          markingAllRead={
-            markingAllRead
-          }
-          onClose={() => {
-            setOpen(false);
-          }}
-          onRefresh={() => {
-            void loadNotifications(
-              true,
-            );
-          }}
-          onMarkAllRead={() => {
-            void handleMarkAllRead();
-          }}
-          onOpenNotification={(
-            notification,
-          ) => {
-            void handleOpenNotification(
-              notification,
-            );
-          }}
+          items={notifications.items.slice(0, 8)}
+          unreadCount={unreadCount}
+          loading={notifications.loading}
+          refreshing={false}
+          error={actionError ?? notifications.error}
+          connection={notifications.connection}
+          busyNotificationId={busyId}
+          markingAllRead={markingAllRead}
+          onClose={() => setOpen(false)}
+          onRefresh={() => { void notifications.refresh(); }}
+          onMarkAllRead={() => { void markAllRead(); }}
+          onOpenNotification={(item) => { void openNotification(item); }}
+          onDeleteNotification={(item) => { void removeNotification(item); }}
         />
       ) : null}
     </div>

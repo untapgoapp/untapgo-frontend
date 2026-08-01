@@ -7,7 +7,6 @@ import "./globals.css";
 
 import FloatingLocationPill from "@/components/location/FloatingLocationPill";
 import { LocationProvider } from "@/components/location/LocationContext";
-import NotificationRealtimeBridge from "@/components/notifications/NotificationRealtimeBridge";
 import PwaBootstrap from "@/components/pwa/PwaBootstrap";
 import {
   DistanceUnitProvider,
@@ -46,7 +45,6 @@ export default function RootLayout({
             >
               {children}
             </SocialLayoutRouter>
-            <NotificationRealtimeBridge />
             <PwaBootstrap />
           </LocationProvider>
         </DistanceUnitProvider>

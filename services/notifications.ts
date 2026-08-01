@@ -1,25 +1,21 @@
 import { api } from "@/lib/api";
-import type { NotificationChange } from "@/lib/notification-live";
 
 export { getNotificationHref } from "@/lib/notification-presentation";
 
-export const NOTIFICATIONS_CHANGED_EVENT =
-  "untapgo:notifications-changed";
+export const NOTIFICATIONS_REFRESH_REQUESTED_EVENT =
+  "untapgo:notifications-refresh-requested";
 
-export type NotificationMeta =
-  Record<string, unknown>;
+export type NotificationMeta = Record<string, unknown> & {
+  href?: string;
+};
 
 export type NotificationItem = {
   id: string;
-  user_id?: string | null;
   event_id?: string | null;
-
   type: string;
   title: string;
   body: string;
-
   meta?: NotificationMeta | null;
-
   is_read: boolean;
   created_at: string;
 };
@@ -32,6 +28,12 @@ export type NotificationListResponse = {
 export type NotificationActionResponse = {
   ok: boolean;
   updated: number;
+  notification?: NotificationItem | null;
+};
+
+export type NotificationDeleteResponse = {
+  ok: boolean;
+  deleted: number;
 };
 
 type ListNotificationsOptions = {
@@ -39,107 +41,53 @@ type ListNotificationsOptions = {
   limit?: number;
 };
 
-export function emitNotificationsChanged(
-  detail: NotificationChange = { kind: "refresh" },
-): void {
-  if (typeof window === "undefined") {
-    return;
+export function requestNotificationsRefresh(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(NOTIFICATIONS_REFRESH_REQUESTED_EVENT));
   }
-
-  window.dispatchEvent(
-    new CustomEvent(NOTIFICATIONS_CHANGED_EVENT, { detail }),
-  );
 }
 
 export async function listNotifications({
   unreadOnly = false,
   limit = 50,
 }: ListNotificationsOptions = {}): Promise<NotificationListResponse> {
-  const search =
-    new URLSearchParams();
-
-  search.set(
-    "unread_only",
-    unreadOnly
-      ? "true"
-      : "false",
+  const search = new URLSearchParams({
+    unread_only: unreadOnly ? "true" : "false",
+    limit: String(Math.min(200, Math.max(1, limit))),
+  });
+  const result = await api.get<NotificationListResponse>(
+    `/notifications?${search.toString()}`,
   );
-
-  search.set(
-    "limit",
-    String(
-      Math.min(
-        200,
-        Math.max(1, limit),
-      ),
-    ),
-  );
-
-  const result =
-    await api.get<NotificationListResponse>(
-      `/notifications?${search.toString()}`,
-    );
-
   return {
-    unread_count: Number(
-      result.unread_count ?? 0,
-    ),
-    items: Array.isArray(
-      result.items,
-    )
-      ? result.items
-      : [],
+    unread_count: Math.max(0, Number(result.unread_count ?? 0)),
+    items: Array.isArray(result.items) ? result.items : [],
   };
 }
 
-export async function markNotificationRead(
+export function markNotificationRead(
   notificationId: string,
 ): Promise<NotificationActionResponse> {
-  const result =
-    await api.post<NotificationActionResponse>(
-      `/notifications/${encodeURIComponent(
-        notificationId,
-      )}/read`,
-      {},
-    );
-
-  emitNotificationsChanged({
-    kind: "read",
-    notificationId,
-    updated: result.updated,
-  });
-
-  return result;
+  return api.post(
+    `/notifications/${encodeURIComponent(notificationId)}/read`,
+    {},
+  );
 }
 
-export async function markNotificationsReadForEvent(
+export function markNotificationsReadForEvent(
   eventId: string,
 ): Promise<NotificationActionResponse> {
-  const result =
-    await api.post<NotificationActionResponse>(
-      `/notifications/read-for-event/${encodeURIComponent(
-        eventId,
-      )}`,
-      {},
-    );
-
-  emitNotificationsChanged({
-    kind: "read_event",
-    eventId,
-    updated: result.updated,
-  });
-
-  return result;
+  return api.post(
+    `/notifications/read-for-event/${encodeURIComponent(eventId)}`,
+    {},
+  );
 }
 
-export async function markAllNotificationsRead(): Promise<NotificationActionResponse> {
-  const result =
-    await api.post<NotificationActionResponse>(
-      "/notifications/clear",
-      {},
-    );
+export function markAllNotificationsRead(): Promise<NotificationActionResponse> {
+  return api.post("/notifications/clear", {});
+}
 
-  emitNotificationsChanged({ kind: "read_all" });
-
-  return result;
+export function deleteNotification(
+  notificationId: string,
+): Promise<NotificationDeleteResponse> {
+  return api.delete(`/notifications/${encodeURIComponent(notificationId)}`);
 }

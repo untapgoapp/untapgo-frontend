@@ -5,15 +5,12 @@ import { useRouter } from "next/navigation";
 
 import HomeDashboardContent from "@/components/home/HomeDashboardContent";
 import HomeRightSidebar from "@/components/home/HomeRightSidebar";
+import { useNotifications } from "@/components/notifications/NotificationRealtimeProvider";
 import SocialAppShell from "@/components/social-shell/SocialAppShell";
 import {
   getEventMembershipState,
   isConfirmedMembership,
 } from "@/lib/event-membership";
-import {
-  applyNotificationChange,
-  type NotificationChange,
-} from "@/lib/notification-live";
 import { supabase } from "@/lib/supabase/client";
 import {
   getMyEvents,
@@ -22,9 +19,6 @@ import {
 } from "@/services/events";
 import {
   getNotificationHref,
-  listNotifications,
-  NOTIFICATIONS_CHANGED_EVENT,
-  type NotificationListResponse,
 } from "@/services/notifications";
 
 const INACTIVE_EVENT_STATUSES = new Set([
@@ -67,14 +61,13 @@ function getConfirmedUpcomingEvents(
 
 export default function HomePage() {
   const router = useRouter();
+  const notificationState = useNotifications();
   const [authenticated, setAuthenticated] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [myEvents, setMyEvents] = useState<EventItem[] | null>(null);
   const [savedEvents, setSavedEvents] = useState<EventItem[] | null>(null);
-  const [notifications, setNotifications] = useState<NotificationListResponse | null>(null);
   const [myEventsFailed, setMyEventsFailed] = useState(false);
   const [savedEventsFailed, setSavedEventsFailed] = useState(false);
-  const [notificationsFailed, setNotificationsFailed] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -107,14 +100,6 @@ export default function HomePage() {
           setSavedEvents([]);
         },
       );
-      void listNotifications({ limit: 5 }).then(
-        (result) => active && setNotifications(result),
-        () => {
-          if (!active) return;
-          setNotificationsFailed(true);
-          setNotifications({ unread_count: 0, items: [] });
-        },
-      );
     }
 
     void loadDashboard();
@@ -122,33 +107,6 @@ export default function HomePage() {
       active = false;
     };
   }, [router]);
-
-  useEffect(() => {
-    function handleNotificationsChanged(event: Event) {
-      const detail = (event as CustomEvent<NotificationChange>).detail;
-      if (!detail || detail.kind === "refresh") {
-        void listNotifications({ limit: 5 }).then(
-          (result) => {
-            setNotifications(result);
-            setNotificationsFailed(false);
-          },
-          () => setNotificationsFailed(true),
-        );
-        return;
-      }
-      setNotifications((current) => applyNotificationChange(
-        current ?? { unread_count: 0, items: [] },
-        detail,
-        { limit: 5 },
-      ));
-    }
-
-    window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, handleNotificationsChanged);
-    return () => window.removeEventListener(
-      NOTIFICATIONS_CHANGED_EVENT,
-      handleNotificationsChanged,
-    );
-  }, []);
 
   const upcomingEvents = useMemo(() => {
     if (!myEvents || !userId) return null;
@@ -164,7 +122,10 @@ export default function HomePage() {
       return total + Math.max(0, Number(event.pending_requests_count ?? 0));
     }, 0);
   }, [upcomingEvents, userId]);
-  const unreadCount = notificationsFailed ? null : notifications?.unread_count ?? null;
+  const notificationsFailed = Boolean(
+    notificationState.error && notificationState.items.length === 0,
+  );
+  const unreadCount = notificationsFailed ? null : notificationState.unread_count;
   const hasRightSidebar = Boolean(
     nextEvent || (pendingRequests ?? 0) > 0 || (unreadCount ?? 0) > 0,
   );
@@ -184,7 +145,7 @@ export default function HomePage() {
         myEventsFailed={myEventsFailed}
         savedEvents={savedEvents}
         savedEventsFailed={savedEventsFailed}
-        notifications={notifications?.items ?? null}
+        notifications={notificationState.loading ? null : notificationState.items.slice(0, 5)}
         notificationsFailed={notificationsFailed}
         onSavedEventRemoved={(eventId) => {
           setSavedEvents((current) => current?.filter((event) => event.id !== eventId) ?? null);

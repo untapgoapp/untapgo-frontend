@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 
 import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
+import NotificationRealtimeProvider from "@/components/notifications/NotificationRealtimeProvider";
 
 import SocialAppShell from "./SocialAppShell";
 import { isSocialAppRoute } from "./navigation";
@@ -21,19 +22,16 @@ export default function SocialLayoutRouter(props: SocialLayoutRouterProps) {
     return <AuthGatePage>{props.children}</AuthGatePage>;
   }
 
-  if (pathname === "/home") {
-    return <StandaloneSocialPage {...props} />;
-  }
+  let content: ReactNode;
+  if (pathname === "/home") content = <StandaloneSocialPage {...props} />;
+  else if (!isSocialAppRoute(pathname)) content = <LegacyChrome {...props} />;
+  else content = (
+      <Suspense fallback={<SocialAppShell {...props} />}>
+        <SocialRouteChrome pathname={pathname} {...props} />
+      </Suspense>
+    );
 
-  if (!isSocialAppRoute(pathname)) {
-    return <LegacyChrome {...props} />;
-  }
-
-  return (
-    <Suspense fallback={<SocialAppShell {...props} />}>
-      <SocialRouteChrome pathname={pathname} {...props} />
-    </Suspense>
-  );
+  return <NotificationRealtimeProvider>{content}</NotificationRealtimeProvider>;
 }
 
 function AuthGatePage({ children }: { children: ReactNode }) {

@@ -6,6 +6,7 @@ import {
   getNotificationPresentation,
   getNotificationTitle,
 } from "@/lib/notification-presentation";
+import { X } from "lucide-react";
 import type {
   NotificationItem,
 } from "@/services/notifications";
@@ -15,6 +16,9 @@ type NotificationCardProps = {
   compact?: boolean;
   disabled?: boolean;
   onActivate: (
+    notification: NotificationItem,
+  ) => void;
+  onDelete?: (
     notification: NotificationItem,
   ) => void;
 };
@@ -129,6 +133,7 @@ export default function NotificationCard({
   compact = false,
   disabled = false,
   onActivate,
+  onDelete,
 }: NotificationCardProps) {
   const visual =
     getNotificationPresentation(
@@ -145,18 +150,11 @@ export default function NotificationCard({
     );
 
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={() => {
-        onActivate(
-          notification,
-        );
-      }}
+    <div
       className={[
-        "group flex w-full items-start gap-3 text-left transition disabled:cursor-wait disabled:opacity-60",
+        "group flex w-full items-start text-left transition",
         compact
-          ? "px-4 py-3.5 hover:bg-black/[0.035]"
+          ? "hover:bg-black/[0.035]"
           : "rounded-[1.25rem] border px-4 py-4 shadow-[0_6px_24px_rgba(0,0,0,0.025)]",
         compact
           ? ""
@@ -165,6 +163,15 @@ export default function NotificationCard({
             : "border-[#6E5AA7]/25 bg-[#FAF8FF] hover:border-[#6E5AA7]/40",
       ].join(" ")}
     >
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onActivate(notification)}
+        className={[
+          "flex min-w-0 flex-1 items-start gap-3 disabled:cursor-wait disabled:opacity-60",
+          compact ? "px-4 py-3.5" : "",
+        ].join(" ")}
+      >
       <div
         className={[
           "grid h-10 w-10 shrink-0 place-items-center rounded-full",
@@ -227,6 +234,22 @@ export default function NotificationCard({
           </time>
         ) : null}
       </div>
-    </button>
+      </button>
+      {onDelete ? (
+        <button
+          type="button"
+          disabled={disabled}
+          aria-label="Remove notification"
+          title="Remove notification"
+          onClick={() => onDelete(notification)}
+          className={[
+            "mr-2 mt-2 grid h-9 w-9 shrink-0 place-items-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 disabled:opacity-50",
+            compact ? "" : "-mr-1 -mt-1",
+          ].join(" ")}
+        >
+          <X className="h-4 w-4" />
+        </button>
+      ) : null}
+    </div>
   );
 }

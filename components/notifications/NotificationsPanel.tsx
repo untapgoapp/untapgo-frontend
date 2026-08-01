@@ -12,6 +12,7 @@ import NotificationCard from "@/components/notifications/NotificationCard";
 import type {
   NotificationItem,
 } from "@/services/notifications";
+import type { NotificationConnectionState } from "./useNotificationRealtimeChannel";
 
 type NotificationsPanelProps = {
   items: NotificationItem[];
@@ -21,6 +22,7 @@ type NotificationsPanelProps = {
   refreshing: boolean;
 
   error: string | null;
+  connection: NotificationConnectionState;
   busyNotificationId: string | null;
   markingAllRead: boolean;
 
@@ -28,6 +30,9 @@ type NotificationsPanelProps = {
   onRefresh: () => void;
   onMarkAllRead: () => void;
   onOpenNotification: (
+    notification: NotificationItem,
+  ) => void;
+  onDeleteNotification: (
     notification: NotificationItem,
   ) => void;
 };
@@ -38,12 +43,14 @@ export default function NotificationsPanel({
   loading,
   refreshing,
   error,
+  connection,
   busyNotificationId,
   markingAllRead,
   onClose,
   onRefresh,
   onMarkAllRead,
   onOpenNotification,
+  onDeleteNotification,
 }: NotificationsPanelProps) {
   return (
     <section
@@ -68,8 +75,7 @@ export default function NotificationsPanel({
           </div>
 
           <p className="mt-1 text-xs text-zinc-500">
-            Event activity and
-            account updates
+            {connection === "unavailable" ? "Live updates paused · REST still available" : "Event activity and account updates"}
           </p>
         </div>
 
@@ -171,6 +177,9 @@ export default function NotificationsPanel({
                   }
                   onActivate={
                     onOpenNotification
+                  }
+                  onDelete={
+                    onDeleteNotification
                   }
                 />
               ),
