@@ -41,14 +41,20 @@ function source(path: string) {
 
 test("Binder view routing defaults invalid values and supports all owner sections", () => {
   assert.equal(normalizeBinderView("unknown"), "items");
-  for (const view of ["items", "wanted", "matches", "received", "sent"] as const) {
+  for (const view of ["community", "items", "wanted", "matches", "received", "sent"] as const) {
     assert.equal(normalizeBinderView(view), view);
   }
   const dashboard = source("../components/binder/BinderDashboard.tsx");
+  assert.match(dashboard, /label: "Community"/);
+  assert.match(dashboard, /label: "My Binder"/);
+  assert.doesNotMatch(dashboard, /My Binders/);
+  assert.match(dashboard, /<BinderCommunityState \/>/);
   assert.match(dashboard, /view === "items"/);
   assert.match(dashboard, /view === "wanted"/);
   assert.match(dashboard, /view === "matches"/);
   assert.match(dashboard, /<InterestsView view=\{view\}/);
+  const communityState = dashboard.slice(dashboard.indexOf("function BinderCommunityState"));
+  assert.doesNotMatch(communityState, /binderApi|fetch\(|api\./);
 });
 
 test("owner and public filters target server endpoints with normalized pagination", () => {

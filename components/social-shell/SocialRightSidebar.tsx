@@ -9,7 +9,7 @@ export default function SocialRightSidebar({
 }: SocialRightSidebarProps) {
   return (
     <aside className="hidden xl:block" aria-label="Contextual sidebar">
-      <div className="sticky top-0 max-h-screen overflow-y-auto py-5">
+      <div className="sticky top-16 max-h-[calc(100dvh-4rem)] overflow-y-auto py-5">
         {children}
       </div>
     </aside>

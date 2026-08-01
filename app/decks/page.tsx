@@ -1,5 +1,11 @@
-import { DeckList } from "@/components/decks/deck-list";
+import DecksDashboard from "@/components/decks/DecksDashboard";
+import { normalizeDecksView } from "@/lib/deck-routes";
 
-export default function DecksPage() {
-  return <DeckList />;
+export default async function DecksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string | string[] }>;
+}) {
+  const query = await searchParams;
+  return <DecksDashboard view={normalizeDecksView(query.view)} />;
 }

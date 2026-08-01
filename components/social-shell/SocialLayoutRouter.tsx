@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, type ReactNode } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 
 import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
@@ -25,11 +25,7 @@ export default function SocialLayoutRouter(props: SocialLayoutRouterProps) {
   let content: ReactNode;
   if (pathname === "/home") content = <StandaloneSocialPage {...props} />;
   else if (!isSocialAppRoute(pathname)) content = <LegacyChrome {...props} />;
-  else content = (
-      <Suspense fallback={<SocialAppShell {...props} />}>
-        <SocialRouteChrome pathname={pathname} {...props} />
-      </Suspense>
-    );
+  else content = <SocialAppShell {...props} />;
 
   return <NotificationRealtimeProvider>{content}</NotificationRealtimeProvider>;
 }
@@ -45,15 +41,6 @@ function StandaloneSocialPage({ children, floatingAction }: SocialLayoutRouterPr
       {floatingAction}
     </div>
   );
-}
-
-function SocialRouteChrome({ pathname, ...props }: SocialLayoutRouterProps & { pathname: string }) {
-  const searchParams = useSearchParams();
-  const isFullScreenEventMap = pathname === "/events" && searchParams.get("view") === "map";
-
-  return isFullScreenEventMap
-    ? <LegacyChrome {...props} />
-    : <SocialAppShell {...props} />;
 }
 
 function LegacyChrome({ children, floatingAction }: SocialLayoutRouterProps) {

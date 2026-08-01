@@ -22,7 +22,7 @@ test("the public root renders the focused authentication landing", () => {
   assert.match(landing, /data-auth-landing/);
   assert.match(landing, /Your Magic community, all in one place\./);
   assert.match(landing, /Find players, join games and keep your Magic community together\./);
-  assert.doesNotMatch(landing, /SocialAppShell|SocialBottomNavigation|SocialDesktopSidebar/);
+  assert.doesNotMatch(landing, /SocialAppShell|SocialTopBar|SocialBottomNavigation|SocialDesktopSidebar/);
 });
 
 test("authenticated auth-entry requests redirect early to home", () => {

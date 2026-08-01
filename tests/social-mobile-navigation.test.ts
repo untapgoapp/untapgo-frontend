@@ -4,6 +4,7 @@ import test from "node:test";
 
 import {
   desktopNavigationItems,
+  desktopSecondaryNavigationItems,
   getActiveSocialNavigationKey,
   getActiveMobileSecondaryNavigationKey,
   isMobileMoreRoute,
@@ -113,11 +114,11 @@ test("More sheet reuses accessible sheet behavior and closes on selection or rou
   assert.match(actionSheet, /previouslyFocused\?\.focus\(\)/);
 });
 
-test("mobile chrome preserves touch targets, overflow protection, safe area and bell", () => {
+test("mobile chrome preserves touch targets, overflow protection, safe area, messages and bell", () => {
   const navigation = source("../components/social-shell/SocialNavigation.tsx");
   const bottom = source("../components/social-shell/SocialBottomNavigation.tsx");
   const shell = source("../components/social-shell/SocialAppShell.tsx");
-  const header = source("../components/social-shell/SocialMobileHeader.tsx");
+  const header = source("../components/social-shell/SocialTopBar.tsx");
   const actionSheet = source("../components/events/EventActionSheet.tsx");
 
   assert.match(navigation, /min-h-14/);
@@ -126,28 +127,41 @@ test("mobile chrome preserves touch targets, overflow protection, safe area and 
   assert.match(shell, /pb-\[calc\(4\.5rem\+env\(safe-area-inset-bottom\)\)\]/);
   assert.match(actionSheet, /h-\[env\(safe-area-inset-bottom\)\]/);
   assert.match(header, /<NotificationBell \/>/);
+  assert.match(header, /<SocialMessagingMenu/);
   assert.doesNotMatch(header, /Binder|Playgroups/);
 });
 
-test("desktop navigation destinations and sidebar composition remain unchanged", () => {
+test("desktop navigation separates destinations from account links", () => {
   assert.deepEqual(
     desktopNavigationItems.map(({ label, href }) => [label, href]),
     [
       ["Home", "/home"],
       ["Events", "/events"],
-      ["Playgroups", "/playgroups"],
       ["Players", "/players"],
-      ["Decks", "/decks"],
+      ["Playgroups", "/playgroups"],
       ["Binder", "/binder"],
-      ["Notifications", "/notifications"],
+      ["Decks", "/decks"],
+    ],
+  );
+  assert.deepEqual(
+    desktopSecondaryNavigationItems.map(({ label, href }) => [label, href]),
+    [
       ["Profile", "/profile"],
+      ["Favorites", "/profile/favorites"],
+      ["Settings", "/settings"],
+      ["Blocked players", "/profile/blocked"],
     ],
   );
   assert.match(
     source("../components/social-shell/SocialDesktopSidebar.tsx"),
     /<SocialNavigation variant="desktop" \/>/,
   );
-  assert.equal(getActiveSocialNavigationKey("/settings"), "profile");
+  assert.match(
+    source("../components/social-shell/SocialDesktopSidebar.tsx"),
+    /<SocialNavigation variant="desktop-secondary" \/>/,
+  );
+  assert.equal(desktopNavigationItems.some(({ href }) => href === "/notifications"), false);
+  assert.equal(getActiveSocialNavigationKey("/settings"), "settings");
   assert.equal(getActiveSocialNavigationKey("/profile/decks"), "decks");
   assert.equal(getActiveSocialNavigationKey("/profile/player-1/binder"), "binder");
 });

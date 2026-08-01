@@ -1,6 +1,5 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  Bell,
   CalendarDays,
   CircleUserRound,
   Ellipsis,
@@ -21,7 +20,6 @@ export type SocialNavigationKey =
   | "players"
   | "decks"
   | "binder"
-  | "notifications"
   | "profile"
   | "favorites"
   | "settings"
@@ -32,7 +30,8 @@ export type SocialNavigationItem = {
   label: string;
   href: string;
   icon: LucideIcon;
-  desktop: boolean;
+  desktopPrimary?: number;
+  desktopSecondary?: number;
   mobilePrimary?: number;
   mobileSecondary?: number;
   matches: (pathname: string) => boolean;
@@ -44,54 +43,50 @@ const atRoot = (pathname: string, root: string) => (
 
 export const socialNavigationItems: readonly SocialNavigationItem[] = [
   {
-    key: "home", label: "Home", href: "/home", icon: House, desktop: true,
+    key: "home", label: "Home", href: "/home", icon: House, desktopPrimary: 1,
     mobilePrimary: 1, matches: (pathname) => pathname === "/home",
   },
   {
-    key: "events", label: "Events", href: "/events", icon: CalendarDays, desktop: true,
+    key: "events", label: "Events", href: "/events", icon: CalendarDays, desktopPrimary: 2,
     mobilePrimary: 2,
     matches: (pathname) => pathname === "/create" || pathname === "/check-in" || atRoot(pathname, "/events"),
   },
   {
-    key: "playgroups", label: "Playgroups", href: "/playgroups", icon: UsersRound,
-    desktop: true, mobilePrimary: 3, matches: (pathname) => atRoot(pathname, "/playgroups"),
-  },
-  {
     key: "players", label: "Players", href: "/players", icon: UserRoundSearch,
-    desktop: true, mobilePrimary: 4, matches: (pathname) => atRoot(pathname, "/players"),
+    desktopPrimary: 3, mobilePrimary: 4, matches: (pathname) => atRoot(pathname, "/players"),
   },
   {
-    key: "decks", label: "Decks", href: "/decks", icon: Layers3, desktop: true,
-    mobileSecondary: 2,
-    matches: (pathname) => atRoot(pathname, "/decks") || atRoot(pathname, "/profile/decks"),
+    key: "playgroups", label: "Playgroups", href: "/playgroups", icon: UsersRound,
+    desktopPrimary: 4, mobilePrimary: 3, matches: (pathname) => atRoot(pathname, "/playgroups"),
   },
   {
-    key: "binder", label: "Binder", href: "/binder", icon: Library, desktop: true,
+    key: "binder", label: "Binder", href: "/binder", icon: Library, desktopPrimary: 5,
     mobileSecondary: 1,
     matches: (pathname) => atRoot(pathname, "/binder") || /^\/profile\/[^/]+\/binder(?:\/|$)/.test(pathname),
   },
   {
-    key: "notifications", label: "Notifications", href: "/notifications", icon: Bell,
-    desktop: true, matches: (pathname) => atRoot(pathname, "/notifications"),
+    key: "decks", label: "Decks", href: "/decks", icon: Layers3, desktopPrimary: 6,
+    mobileSecondary: 2,
+    matches: (pathname) => atRoot(pathname, "/decks") || atRoot(pathname, "/profile/decks"),
   },
   {
     key: "profile", label: "Profile", href: "/profile", icon: CircleUserRound,
-    desktop: true, mobileSecondary: 3,
+    desktopSecondary: 1, mobileSecondary: 3,
     matches: (pathname) => atRoot(pathname, "/profile"),
   },
   {
     key: "favorites", label: "Favorites", href: "/profile/favorites", icon: Heart,
-    desktop: false, mobileSecondary: 4,
+    desktopSecondary: 2, mobileSecondary: 4,
     matches: (pathname) => atRoot(pathname, "/profile/favorites"),
   },
   {
     key: "settings", label: "Settings", href: "/settings", icon: Settings,
-    desktop: false, mobileSecondary: 5,
+    desktopSecondary: 3, mobileSecondary: 5,
     matches: (pathname) => atRoot(pathname, "/settings"),
   },
   {
     key: "blocked", label: "Blocked players", href: "/profile/blocked", icon: ShieldBan,
-    desktop: false, mobileSecondary: 6,
+    desktopSecondary: 4, mobileSecondary: 6,
     matches: (pathname) => atRoot(pathname, "/profile/blocked"),
   },
 ];
@@ -102,7 +97,12 @@ export const mobileMoreNavigationItem = {
   icon: Ellipsis,
 };
 
-export const desktopNavigationItems = socialNavigationItems.filter((item) => item.desktop);
+export const desktopNavigationItems = socialNavigationItems
+  .filter((item) => item.desktopPrimary !== undefined)
+  .sort((left, right) => left.desktopPrimary! - right.desktopPrimary!);
+export const desktopSecondaryNavigationItems = socialNavigationItems
+  .filter((item) => item.desktopSecondary !== undefined)
+  .sort((left, right) => left.desktopSecondary! - right.desktopSecondary!);
 export const mobilePrimaryNavigationItems = socialNavigationItems
   .filter((item) => item.mobilePrimary !== undefined)
   .sort((left, right) => left.mobilePrimary! - right.mobilePrimary!);
@@ -120,9 +120,14 @@ export function isSocialAppRoute(pathname: string): boolean {
 }
 
 export function getActiveSocialNavigationKey(pathname: string): SocialNavigationKey | null {
-  const directMatch = desktopNavigationItems.find((item) => item.matches(pathname));
-  if (directMatch) return directMatch.key;
-  return atRoot(pathname, "/settings") ? "profile" : null;
+  const primaryMatch = desktopNavigationItems.find((item) => item.matches(pathname));
+  if (primaryMatch) return primaryMatch.key;
+  const specificSecondaryMatch = desktopSecondaryNavigationItems.find(
+    (item) => item.key !== "profile" && item.matches(pathname),
+  );
+  return specificSecondaryMatch?.key
+    ?? desktopSecondaryNavigationItems.find((item) => item.key === "profile" && item.matches(pathname))?.key
+    ?? null;
 }
 
 export function getActiveMobileSecondaryNavigationKey(pathname: string): SocialNavigationKey | null {

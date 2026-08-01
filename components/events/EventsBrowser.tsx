@@ -553,11 +553,11 @@ export default function EventsBrowser({
 
   if (view === "map") {
     return (
-      <section className="fixed inset-0 z-0 bg-[#F8F5EF]">
+      <section data-events-map className="absolute inset-0 z-0 bg-[#F8F5EF]">
         <EventMap
           events={mappedEvents}
           fullBleed
-          heightClassName="h-screen"
+          heightClassName="h-full"
           focusLocation={coords}
           radiusKm={radius}
         />

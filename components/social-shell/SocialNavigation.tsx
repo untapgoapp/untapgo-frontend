@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { useNotifications } from "@/components/notifications/NotificationRealtimeProvider";
 import {
   desktopNavigationItems,
+  desktopSecondaryNavigationItems,
   getActiveSocialNavigationKey,
   isMobileMoreRoute,
   mobileMoreNavigationItem,
@@ -13,7 +13,7 @@ import {
 } from "./navigation";
 
 type SocialNavigationProps = {
-  variant: "desktop" | "mobile";
+  variant: "desktop" | "desktop-secondary" | "mobile";
   moreOpen?: boolean;
   onMoreOpen?: () => void;
 };
@@ -24,20 +24,27 @@ export default function SocialNavigation({
   onMoreOpen,
 }: SocialNavigationProps) {
   const pathname = usePathname();
-  const { unread_count: unreadCount } = useNotifications();
   const activeKey = getActiveSocialNavigationKey(pathname);
-  const items = variant === "mobile" ? mobilePrimaryNavigationItems : desktopNavigationItems;
+  const items = variant === "mobile"
+    ? mobilePrimaryNavigationItems
+    : variant === "desktop-secondary"
+      ? desktopSecondaryNavigationItems
+      : desktopNavigationItems;
   const MoreIcon = mobileMoreNavigationItem.icon;
   const moreActive = isMobileMoreRoute(pathname);
 
   return (
     <nav
-      aria-label={variant === "desktop" ? "Social navigation" : "Mobile navigation"}
-      className={variant === "desktop" ? "grid gap-1" : "grid w-full grid-cols-5 overflow-hidden"}
+      aria-label={variant === "mobile"
+        ? "Mobile navigation"
+        : variant === "desktop-secondary"
+          ? "Account navigation"
+          : "Primary navigation"}
+      className={variant === "mobile" ? "grid w-full grid-cols-5 overflow-hidden" : "grid gap-1"}
     >
       {items.map((item) => {
         const Icon = item.icon;
-        const active = variant === "desktop" ? item.key === activeKey : item.matches(pathname);
+        const active = variant === "mobile" ? item.matches(pathname) : item.key === activeKey;
         return (
           <Link
             key={item.key}
@@ -47,11 +54,6 @@ export default function SocialNavigation({
           >
             <Icon aria-hidden="true" className="h-[19px] w-[19px]" strokeWidth={active ? 2.35 : 1.9} />
             <span>{item.label}</span>
-            {variant === "desktop" && item.key === "notifications" && unreadCount > 0 ? (
-              <span className="ml-auto rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            ) : null}
           </Link>
         );
       })}
@@ -81,7 +83,7 @@ function getLinkClassName(variant: SocialNavigationProps["variant"], active: boo
     ].join(" ");
   }
   return [
-    "flex min-h-11 items-center gap-3 rounded-control px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/15",
+    "flex min-h-11 items-center gap-3 rounded-control px-3 text-sm font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/15",
     active
       ? "bg-secondary text-secondary-foreground"
       : "text-muted-foreground hover:bg-surface-subtle hover:text-foreground",

@@ -5,7 +5,6 @@ import type { EventItem } from "@/services/events";
 type HomeRightSidebarProps = {
   nextEvent: EventItem | null;
   pendingRequests: number | null;
-  unreadCount: number | null;
 };
 
 function formatNextEventDate(value?: string | null): string {
@@ -25,10 +24,9 @@ function formatNextEventDate(value?: string | null): string {
 export default function HomeRightSidebar({
   nextEvent,
   pendingRequests,
-  unreadCount,
 }: HomeRightSidebarProps) {
   return (
-    <div className="w-full max-w-[250px] space-y-5 rounded-surface bg-surface/55 p-4">
+    <div className="w-full space-y-5 rounded-surface bg-surface/55 p-4">
       {nextEvent ? (
         <section>
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">Next event</p>
@@ -44,16 +42,6 @@ export default function HomeRightSidebar({
           <div className="mt-1.5 flex items-baseline justify-between gap-3">
             <strong className="text-xl font-black text-zinc-950">{pendingRequests}</strong>
             <Link href="/events/mine" className="text-xs font-semibold text-primary">Review</Link>
-          </div>
-        </section>
-      ) : null}
-
-      {unreadCount !== null && unreadCount > 0 ? (
-        <section>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-quiet-foreground">Unread notifications</p>
-          <div className="mt-1.5 flex items-baseline justify-between gap-3">
-            <strong className="text-xl font-black text-zinc-950">{unreadCount}</strong>
-            <Link href="/notifications" className="text-xs font-semibold text-primary">Open</Link>
           </div>
         </section>
       ) : null}

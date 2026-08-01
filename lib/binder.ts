@@ -8,7 +8,7 @@ export type WantedStatus = "active" | "fulfilled" | "removed";
 export type InterestType = "trade" | "buy" | "either";
 export type InterestStatus = "pending" | "accepted" | "declined" | "withdrawn";
 export type InterestView = "received" | "sent";
-export type BinderView = "items" | "wanted" | "matches" | InterestView;
+export type BinderView = "community" | "items" | "wanted" | "matches" | InterestView;
 
 export type BinderSettings = {
   visibility: BinderVisibility;
@@ -132,7 +132,7 @@ export type WantedCardInput = {
 };
 
 export const BINDER_VIEWS: readonly BinderView[] = [
-  "items", "wanted", "matches", "received", "sent",
+  "community", "items", "wanted", "matches", "received", "sent",
 ];
 
 export const CONDITION_LABELS: Record<CardCondition, string> = {

@@ -125,15 +125,13 @@ export default function HomePage() {
   const notificationsFailed = Boolean(
     notificationState.error && notificationState.items.length === 0,
   );
-  const unreadCount = notificationsFailed ? null : notificationState.unread_count;
   const hasRightSidebar = Boolean(
-    nextEvent || (pendingRequests ?? 0) > 0 || (unreadCount ?? 0) > 0,
+    nextEvent || (pendingRequests ?? 0) > 0,
   );
   const rightSidebar = authenticated && hasRightSidebar ? (
     <HomeRightSidebar
       nextEvent={nextEvent}
       pendingRequests={pendingRequests}
-      unreadCount={unreadCount}
     />
   ) : undefined;
 

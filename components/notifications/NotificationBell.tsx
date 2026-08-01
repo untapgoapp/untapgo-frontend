@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 
@@ -11,24 +11,33 @@ import { getNotificationHref, type NotificationItem } from "@/services/notificat
 export default function NotificationBell() {
   const router = useRouter();
   const pathname = usePathname();
+  const panelId = useId();
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
   const [open, setOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [markingAllRead, setMarkingAllRead] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const notifications = useNotifications();
+  const close = useCallback((restoreFocus = false) => {
+    setOpen(false);
+    if (restoreFocus) requestAnimationFrame(() => triggerRef.current?.focus());
+  }, []);
 
-  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => close(), [close, pathname]);
 
   useEffect(() => {
     if (!open) return;
     function handleMouseDown(event: MouseEvent) {
       if (event.target instanceof Node && !wrapperRef.current?.contains(event.target)) {
-        setOpen(false);
+        close(true);
       }
     }
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close(true);
+      }
     }
     document.addEventListener("mousedown", handleMouseDown);
     window.addEventListener("keydown", handleKeyDown);
@@ -36,7 +45,7 @@ export default function NotificationBell() {
       document.removeEventListener("mousedown", handleMouseDown);
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [open]);
+  }, [close, open]);
 
   async function openNotification(notification: NotificationItem) {
     if (busyId) return;
@@ -84,11 +93,14 @@ export default function NotificationBell() {
   return (
     <div ref={wrapperRef} className="relative">
       <button
+        ref={triggerRef}
         type="button"
         aria-label={unreadCount ? `${unreadCount} unread notifications` : "Notifications"}
+        aria-haspopup="dialog"
+        aria-controls={open ? panelId : undefined}
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
-        className="relative grid h-10 w-10 place-items-center rounded-control text-muted-foreground transition-colors hover:bg-secondary/65 hover:text-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/15"
+        className="relative grid h-10 w-10 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-secondary/65 hover:text-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/15"
       >
         <Bell className="h-[18px] w-[18px]" />
         {unreadCount > 0 ? (
@@ -99,6 +111,7 @@ export default function NotificationBell() {
       </button>
       {open ? (
         <NotificationsPanel
+          id={panelId}
           items={notifications.items.slice(0, 8)}
           unreadCount={unreadCount}
           loading={notifications.loading}
@@ -107,7 +120,7 @@ export default function NotificationBell() {
           connection={notifications.connection}
           busyNotificationId={busyId}
           markingAllRead={markingAllRead}
-          onClose={() => setOpen(false)}
+          onClose={() => close(true)}
           onRefresh={() => { void notifications.refresh(); }}
           onMarkAllRead={() => { void markAllRead(); }}
           onOpenNotification={(item) => { void openNotification(item); }}
