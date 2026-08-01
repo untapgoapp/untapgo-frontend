@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { socialNavigationItems } from "../components/social-shell/navigation.ts";
+import {
+  getActiveSocialNavigationKey,
+  socialNavigationItems,
+} from "../components/social-shell/navigation.ts";
 import { getPlayerProfileHref } from "../lib/player-directory.ts";
 import {
   applyPlaygroupDetailResponse,
@@ -215,5 +218,8 @@ test("an API failure changes only its own section state", () => {
 test("Playgroups navigation is active and no longer marked Soon", () => {
   const item = socialNavigationItems.find(({ key }) => key === "playgroups");
   assert.equal(item?.href, "/playgroups");
-  assert.equal(item?.unavailableLabel, undefined);
+  assert.equal(item?.mobilePrimary, 3);
+  assert.equal(getActiveSocialNavigationKey("/playgroups"), "playgroups");
+  assert.equal(getActiveSocialNavigationKey("/playgroups/new"), "playgroups");
+  assert.equal(getActiveSocialNavigationKey("/playgroups/friday-night"), "playgroups");
 });

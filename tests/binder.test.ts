@@ -268,14 +268,13 @@ test("Wanted, match, and interest UI covers create, edit, remove and row transit
   assert.match(received, />Withdraw</);
 });
 
-test("profile links and navigation expose Binder without adding a sixth mobile item", () => {
+test("profile links and mobile More navigation expose Binder directly", () => {
   const profileLinks = source("../components/profile/ProfileBinderLinks.tsx");
   const navigation = source("../components/social-shell/navigation.ts");
   assert.match(profileLinks, />Binder</);
   assert.match(profileLinks, />Wanted List</);
-  assert.match(navigation, /key: "binder".*mobile: false/);
-  const mobileTrueCount = (navigation.match(/mobile: true/g) ?? []).length;
-  assert.equal(mobileTrueCount, 5);
+  assert.match(navigation, /key: "binder", label: "Binder", href: "\/binder"[\s\S]*?mobileSecondary: 1/);
+  assert.match(navigation, /key: "playgroups", label: "Playgroups"[\s\S]*?mobilePrimary: 3/);
 });
 
 test("Binder notifications have safe internal hrefs and unknown types stay generic", () => {

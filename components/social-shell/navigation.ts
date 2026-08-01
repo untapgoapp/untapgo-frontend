@@ -1,13 +1,15 @@
-import type {
-  LucideIcon,
-} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import {
   Bell,
-  Library,
   CalendarDays,
   CircleUserRound,
+  Ellipsis,
+  Heart,
   House,
   Layers3,
+  Library,
+  Settings,
+  ShieldBan,
   UserRoundSearch,
   UsersRound,
 } from "lucide-react";
@@ -20,87 +22,118 @@ export type SocialNavigationKey =
   | "decks"
   | "binder"
   | "notifications"
-  | "profile";
+  | "profile"
+  | "favorites"
+  | "settings"
+  | "blocked";
 
 export type SocialNavigationItem = {
   key: SocialNavigationKey;
   label: string;
-  href: string | null;
+  href: string;
   icon: LucideIcon;
-  mobile: boolean;
-  unavailableLabel?: string;
+  desktop: boolean;
+  mobilePrimary?: number;
+  mobileSecondary?: number;
+  matches: (pathname: string) => boolean;
 };
 
+const atRoot = (pathname: string, root: string) => (
+  pathname === root || pathname.startsWith(`${root}/`)
+);
+
 export const socialNavigationItems: readonly SocialNavigationItem[] = [
-  { key: "home", label: "Home", href: "/home", icon: House, mobile: true },
-  { key: "events", label: "Events", href: "/events", icon: CalendarDays, mobile: true },
   {
-    key: "playgroups",
-    label: "Playgroups",
-    href: "/playgroups",
-    icon: UsersRound,
-    mobile: false,
+    key: "home", label: "Home", href: "/home", icon: House, desktop: true,
+    mobilePrimary: 1, matches: (pathname) => pathname === "/home",
   },
   {
-    key: "players",
-    label: "Players",
-    href: "/players",
-    icon: UserRoundSearch,
-    mobile: false,
-  },
-  { key: "decks", label: "Decks", href: "/decks", icon: Layers3, mobile: true },
-  { key: "binder", label: "Binder", href: "/binder", icon: Library, mobile: false },
-  {
-    key: "notifications",
-    label: "Notifications",
-    href: "/notifications",
-    icon: Bell,
-    mobile: true,
+    key: "events", label: "Events", href: "/events", icon: CalendarDays, desktop: true,
+    mobilePrimary: 2,
+    matches: (pathname) => pathname === "/create" || pathname === "/check-in" || atRoot(pathname, "/events"),
   },
   {
-    key: "profile",
-    label: "Profile",
-    href: "/profile",
-    icon: CircleUserRound,
-    mobile: true,
+    key: "playgroups", label: "Playgroups", href: "/playgroups", icon: UsersRound,
+    desktop: true, mobilePrimary: 3, matches: (pathname) => atRoot(pathname, "/playgroups"),
+  },
+  {
+    key: "players", label: "Players", href: "/players", icon: UserRoundSearch,
+    desktop: true, mobilePrimary: 4, matches: (pathname) => atRoot(pathname, "/players"),
+  },
+  {
+    key: "decks", label: "Decks", href: "/decks", icon: Layers3, desktop: true,
+    mobileSecondary: 2,
+    matches: (pathname) => atRoot(pathname, "/decks") || atRoot(pathname, "/profile/decks"),
+  },
+  {
+    key: "binder", label: "Binder", href: "/binder", icon: Library, desktop: true,
+    mobileSecondary: 1,
+    matches: (pathname) => atRoot(pathname, "/binder") || /^\/profile\/[^/]+\/binder(?:\/|$)/.test(pathname),
+  },
+  {
+    key: "notifications", label: "Notifications", href: "/notifications", icon: Bell,
+    desktop: true, matches: (pathname) => atRoot(pathname, "/notifications"),
+  },
+  {
+    key: "profile", label: "Profile", href: "/profile", icon: CircleUserRound,
+    desktop: true, mobileSecondary: 3,
+    matches: (pathname) => atRoot(pathname, "/profile"),
+  },
+  {
+    key: "favorites", label: "Favorites", href: "/profile/favorites", icon: Heart,
+    desktop: false, mobileSecondary: 4,
+    matches: (pathname) => atRoot(pathname, "/profile/favorites"),
+  },
+  {
+    key: "settings", label: "Settings", href: "/settings", icon: Settings,
+    desktop: false, mobileSecondary: 5,
+    matches: (pathname) => atRoot(pathname, "/settings"),
+  },
+  {
+    key: "blocked", label: "Blocked players", href: "/profile/blocked", icon: ShieldBan,
+    desktop: false, mobileSecondary: 6,
+    matches: (pathname) => atRoot(pathname, "/profile/blocked"),
   },
 ];
 
+export const mobileMoreNavigationItem = {
+  key: "more" as const,
+  label: "More",
+  icon: Ellipsis,
+};
+
+export const desktopNavigationItems = socialNavigationItems.filter((item) => item.desktop);
+export const mobilePrimaryNavigationItems = socialNavigationItems
+  .filter((item) => item.mobilePrimary !== undefined)
+  .sort((left, right) => left.mobilePrimary! - right.mobilePrimary!);
+export const mobileSecondaryNavigationItems = socialNavigationItems
+  .filter((item) => item.mobileSecondary !== undefined)
+  .sort((left, right) => left.mobileSecondary! - right.mobileSecondary!);
+
 const socialRouteRoots = [
-  "/home",
-  "/events",
-  "/create",
-  "/check-in",
-  "/decks",
-  "/binder",
-  "/notifications",
-  "/playgroups",
-  "/players",
-  "/profile",
-  "/settings",
+  "/home", "/events", "/create", "/check-in", "/decks", "/binder",
+  "/notifications", "/playgroups", "/players", "/profile", "/settings",
 ];
 
 export function isSocialAppRoute(pathname: string): boolean {
-  return socialRouteRoots.some(
-    (root) => pathname === root || pathname.startsWith(`${root}/`),
-  );
+  return socialRouteRoots.some((root) => atRoot(pathname, root));
 }
 
-export function getActiveSocialNavigationKey(
-  pathname: string,
-): SocialNavigationKey | null {
-  if (pathname === "/home") return "home";
-  if (pathname === "/create" || pathname === "/check-in" || pathname.startsWith("/events")) {
-    return "events";
-  }
-  if (pathname.startsWith("/decks") || pathname.startsWith("/profile/decks")) {
-    return "decks";
-  }
-  if (pathname.startsWith("/binder")) return "binder";
-  if (pathname.startsWith("/notifications")) return "notifications";
-  if (pathname.startsWith("/playgroups")) return "playgroups";
-  if (pathname.startsWith("/players")) return "players";
-  if (pathname.startsWith("/profile") || pathname.startsWith("/settings")) return "profile";
+export function getActiveSocialNavigationKey(pathname: string): SocialNavigationKey | null {
+  const directMatch = desktopNavigationItems.find((item) => item.matches(pathname));
+  if (directMatch) return directMatch.key;
+  return atRoot(pathname, "/settings") ? "profile" : null;
+}
 
-  return null;
+export function getActiveMobileSecondaryNavigationKey(pathname: string): SocialNavigationKey | null {
+  const specificMatch = mobileSecondaryNavigationItems.find(
+    (item) => item.key !== "profile" && item.matches(pathname),
+  );
+  return specificMatch?.key
+    ?? mobileSecondaryNavigationItems.find((item) => item.key === "profile" && item.matches(pathname))?.key
+    ?? null;
+}
+
+export function isMobileMoreRoute(pathname: string): boolean {
+  return getActiveMobileSecondaryNavigationKey(pathname) !== null;
 }

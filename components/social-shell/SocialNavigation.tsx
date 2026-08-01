@@ -2,50 +2,42 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useNotifications } from "@/components/notifications/NotificationRealtimeProvider";
 
+import { useNotifications } from "@/components/notifications/NotificationRealtimeProvider";
 import {
+  desktopNavigationItems,
   getActiveSocialNavigationKey,
-  socialNavigationItems,
+  isMobileMoreRoute,
+  mobileMoreNavigationItem,
+  mobilePrimaryNavigationItems,
 } from "./navigation";
 
 type SocialNavigationProps = {
   variant: "desktop" | "mobile";
+  moreOpen?: boolean;
+  onMoreOpen?: () => void;
 };
 
-export default function SocialNavigation({ variant }: SocialNavigationProps) {
+export default function SocialNavigation({
+  variant,
+  moreOpen = false,
+  onMoreOpen,
+}: SocialNavigationProps) {
   const pathname = usePathname();
   const { unread_count: unreadCount } = useNotifications();
   const activeKey = getActiveSocialNavigationKey(pathname);
-  const items = variant === "mobile"
-    ? socialNavigationItems.filter((item) => item.mobile && item.href)
-    : socialNavigationItems;
+  const items = variant === "mobile" ? mobilePrimaryNavigationItems : desktopNavigationItems;
+  const MoreIcon = mobileMoreNavigationItem.icon;
+  const moreActive = isMobileMoreRoute(pathname);
 
   return (
     <nav
       aria-label={variant === "desktop" ? "Social navigation" : "Mobile navigation"}
-      className={variant === "desktop" ? "grid gap-1" : "grid grid-cols-5"}
+      className={variant === "desktop" ? "grid gap-1" : "grid w-full grid-cols-5 overflow-hidden"}
     >
       {items.map((item) => {
         const Icon = item.icon;
-        const active = activeKey === item.key;
-
-        if (!item.href) {
-          return (
-            <span
-              key={item.key}
-              aria-disabled="true"
-              className="flex min-h-11 items-center gap-3 rounded-control px-3 text-sm font-medium text-quiet-foreground"
-            >
-              <Icon aria-hidden="true" className="h-[18px] w-[18px]" />
-              <span>{item.label}</span>
-              <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-quiet-foreground">
-                {item.unavailableLabel}
-              </span>
-            </span>
-          );
-        }
-
+        const active = variant === "desktop" ? item.key === activeKey : item.matches(pathname);
         return (
           <Link
             key={item.key}
@@ -55,17 +47,28 @@ export default function SocialNavigation({ variant }: SocialNavigationProps) {
           >
             <Icon aria-hidden="true" className="h-[19px] w-[19px]" strokeWidth={active ? 2.35 : 1.9} />
             <span>{item.label}</span>
-            {item.key === "notifications" && unreadCount > 0 ? (
-              <span className={variant === "mobile"
-                ? "absolute right-[20%] top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[8px] font-black text-primary-foreground"
-                : "ml-auto rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground"
-              }>
+            {variant === "desktop" && item.key === "notifications" && unreadCount > 0 ? (
+              <span className="ml-auto rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
                 {unreadCount > 99 ? "99+" : unreadCount}
               </span>
             ) : null}
           </Link>
         );
       })}
+
+      {variant === "mobile" ? (
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded={moreOpen}
+          aria-pressed={moreActive}
+          onClick={onMoreOpen}
+          className={getLinkClassName("mobile", moreActive)}
+        >
+          <MoreIcon aria-hidden="true" className="h-[19px] w-[19px]" strokeWidth={moreActive ? 2.35 : 1.9} />
+          <span>{mobileMoreNavigationItem.label}</span>
+        </button>
+      ) : null}
     </nav>
   );
 }
@@ -73,11 +76,10 @@ export default function SocialNavigation({ variant }: SocialNavigationProps) {
 function getLinkClassName(variant: SocialNavigationProps["variant"], active: boolean) {
   if (variant === "mobile") {
     return [
-      "relative flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-semibold transition",
-      active ? "text-primary" : "text-muted-foreground hover:text-foreground",
+      "relative flex min-h-14 min-w-0 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] font-semibold outline-none transition-colors focus-visible:bg-secondary focus-visible:ring-inset focus-visible:ring-[3px] focus-visible:ring-ring/20",
+      active ? "bg-secondary/55 text-primary" : "text-muted-foreground hover:bg-secondary/35 hover:text-foreground",
     ].join(" ");
   }
-
   return [
     "flex min-h-11 items-center gap-3 rounded-control px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/15",
     active
