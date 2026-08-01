@@ -17,6 +17,10 @@ type SocialLayoutRouterProps = {
 export default function SocialLayoutRouter(props: SocialLayoutRouterProps) {
   const pathname = usePathname();
 
+  if (["/", "/login", "/signup", "/reset-password"].includes(pathname)) {
+    return <AuthGatePage>{props.children}</AuthGatePage>;
+  }
+
   if (pathname === "/home") {
     return <StandaloneSocialPage {...props} />;
   }
@@ -30,6 +34,10 @@ export default function SocialLayoutRouter(props: SocialLayoutRouterProps) {
       <SocialRouteChrome pathname={pathname} {...props} />
     </Suspense>
   );
+}
+
+function AuthGatePage({ children }: { children: ReactNode }) {
+  return <div className="min-h-screen overflow-x-hidden">{children}</div>;
 }
 
 function StandaloneSocialPage({ children, floatingAction }: SocialLayoutRouterProps) {

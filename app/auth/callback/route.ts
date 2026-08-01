@@ -1,20 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getSafeNextPath } from "@/lib/auth";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-
-const DEFAULT_DESTINATION = "/profile";
-
-function getSafeDestination(value: string | null): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return DEFAULT_DESTINATION;
-  }
-
-  return value;
-}
 
 function loginErrorRedirect(request: NextRequest) {
   const url = request.nextUrl.clone();
-  url.pathname = "/login";
-  url.search = "?error=oauth_callback_failed";
+  const nextPath = getSafeNextPath(request.nextUrl.searchParams.get("next"));
+  url.pathname = "/";
+  url.search = "";
+  url.searchParams.set("auth", "login");
+  url.searchParams.set("error", "oauth_callback_failed");
+  if (nextPath !== "/home") url.searchParams.set("next", nextPath);
 
   return NextResponse.redirect(url);
 }
@@ -34,7 +29,7 @@ export async function GET(request: NextRequest) {
       return loginErrorRedirect(request);
     }
 
-    const destination = getSafeDestination(
+    const destination = getSafeNextPath(
       request.nextUrl.searchParams.get("next"),
     );
     return NextResponse.redirect(new URL(destination, request.url));
