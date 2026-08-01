@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 
 import {
   desktopNavigationItems,
-  desktopSecondaryNavigationItems,
   getActiveSocialNavigationKey,
   isMobileMoreRoute,
   mobileMoreNavigationItem,
@@ -13,7 +12,7 @@ import {
 } from "./navigation";
 
 type SocialNavigationProps = {
-  variant: "desktop" | "desktop-secondary" | "mobile";
+  variant: "desktop" | "mobile";
   moreOpen?: boolean;
   onMoreOpen?: () => void;
 };
@@ -27,9 +26,7 @@ export default function SocialNavigation({
   const activeKey = getActiveSocialNavigationKey(pathname);
   const items = variant === "mobile"
     ? mobilePrimaryNavigationItems
-    : variant === "desktop-secondary"
-      ? desktopSecondaryNavigationItems
-      : desktopNavigationItems;
+    : desktopNavigationItems;
   const MoreIcon = mobileMoreNavigationItem.icon;
   const moreActive = isMobileMoreRoute(pathname);
 
@@ -37,9 +34,7 @@ export default function SocialNavigation({
     <nav
       aria-label={variant === "mobile"
         ? "Mobile navigation"
-        : variant === "desktop-secondary"
-          ? "Account navigation"
-          : "Primary navigation"}
+        : "Primary navigation"}
       className={variant === "mobile" ? "grid w-full grid-cols-5 overflow-hidden" : "grid gap-1"}
     >
       {items.map((item) => {

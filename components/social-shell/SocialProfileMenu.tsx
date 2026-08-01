@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, Heart, Settings, ShieldBan, UserRound } from "lucide-react";
+import { ChevronDown, Heart, LogOut, Settings, ShieldBan, UserRound } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { supabase } from "@/lib/supabase/client";
 
 export default function SocialProfileMenu({
   nickname,
@@ -13,7 +15,10 @@ export default function SocialProfileMenu({
   nickname: string;
   avatarUrl: string | null;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const close = useCallback((restoreFocus = false) => {
@@ -46,6 +51,21 @@ export default function SocialProfileMenu({
     { href: "/settings", label: "Settings", icon: Settings },
     { href: "/profile/blocked", label: "Blocked players", icon: ShieldBan },
   ];
+
+  async function signOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    setError(null);
+    const { error: signOutError } = await supabase.auth.signOut();
+    if (signOutError) {
+      setError("Could not log out. Please try again.");
+      setSigningOut(false);
+      return;
+    }
+    close();
+    router.replace("/");
+    router.refresh();
+  }
 
   return (
     <div ref={wrapperRef} className="relative">
@@ -90,6 +110,18 @@ export default function SocialProfileMenu({
               </Link>
             );
           })}
+          <div className="my-1 border-t border-border/60" />
+          <button
+            type="button"
+            role="menuitem"
+            disabled={signingOut}
+            onClick={() => { void signOut(); }}
+            className="flex min-h-11 w-full items-center gap-3 rounded-row px-3 text-left text-sm font-semibold text-foreground outline-none hover:bg-secondary/55 focus-visible:bg-secondary disabled:opacity-50"
+          >
+            <LogOut aria-hidden="true" className="h-[17px] w-[17px] text-muted-foreground" />
+            {signingOut ? "Logging out…" : "Log out"}
+          </button>
+          {error ? <p role="alert" className="px-3 py-2 text-xs text-destructive">{error}</p> : null}
         </div>
       ) : null}
     </div>

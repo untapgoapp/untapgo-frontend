@@ -1,6 +1,7 @@
 import { ApiError, api } from "@/lib/api";
 import {
   buildBinderItemsPath,
+  buildCommunityBinderPath,
   buildInterestsPath,
   buildMatchesPath,
   buildWantedPath,
@@ -13,6 +14,8 @@ import {
   type BinderItem,
   type BinderItemInput,
   type BinderMatch,
+  type CommunityBinderFilters,
+  type CommunityBinderResponse,
   type BinderSettings,
   type InterestType,
   type InterestView,
@@ -31,6 +34,8 @@ export const binderApi = {
     api.patch<BinderSettings>("/binder/settings", payload),
   items: (filters: BinderFilters, page: number) =>
     api.get<PageResponse<BinderItem>>(buildBinderItemsPath(filters, page)),
+  community: (filters: CommunityBinderFilters, page: number) =>
+    api.get<CommunityBinderResponse>(buildCommunityBinderPath(filters, page)),
   publicItems: (ownerId: string, filters: BinderFilters, page: number, pageSize = 24) =>
     api.get<PublicBinderResponse>(buildBinderItemsPath(filters, page, pageSize, ownerId)),
   createItem: (input: BinderItemInput) =>

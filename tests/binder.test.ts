@@ -6,6 +6,7 @@ import { CircleCheck, CircleX, Handshake } from "lucide-react";
 import {
   allowedInterestTypes,
   binderItemSaveErrorFields,
+  buildCommunityBinderPath,
   buildBinderItemsPath,
   buildInterestsPath,
   buildMatchesPath,
@@ -19,6 +20,7 @@ import {
   reasonLabel,
   shouldSearchCardQuery,
   type BinderFilters,
+  type CommunityBinderFilters,
 } from "../lib/binder.ts";
 import {
   getNotificationActivityCopy,
@@ -40,7 +42,8 @@ function source(path: string) {
 }
 
 test("Binder view routing defaults invalid values and supports all owner sections", () => {
-  assert.equal(normalizeBinderView("unknown"), "items");
+  assert.equal(normalizeBinderView("unknown"), "community");
+  assert.equal(normalizeBinderView(undefined), "community");
   for (const view of ["community", "items", "wanted", "matches", "received", "sent"] as const) {
     assert.equal(normalizeBinderView(view), view);
   }
@@ -48,13 +51,61 @@ test("Binder view routing defaults invalid values and supports all owner section
   assert.match(dashboard, /label: "Community"/);
   assert.match(dashboard, /label: "My Binder"/);
   assert.doesNotMatch(dashboard, /My Binders/);
-  assert.match(dashboard, /<BinderCommunityState \/>/);
+  assert.match(dashboard, /<CommunityBinderView \/>/);
+  assert.match(dashboard, /<SectionNavigation label="Binder sections"/);
   assert.match(dashboard, /view === "items"/);
   assert.match(dashboard, /view === "wanted"/);
   assert.match(dashboard, /view === "matches"/);
   assert.match(dashboard, /<InterestsView view=\{view\}/);
-  const communityState = dashboard.slice(dashboard.indexOf("function BinderCommunityState"));
-  assert.doesNotMatch(communityState, /binderApi|fetch\(|api\./);
+  assert.match(dashboard, /view === "items" \? <Button/);
+  assert.match(dashboard, /view === "items" \? <div className="mt-4"><BinderSettingsPanel/);
+});
+
+test("Community Binder path includes every database-backed filter", () => {
+  const communityFilters: CommunityBinderFilters = {
+    q: "  Familiar ", availability: "sell", condition: "nm", finish: "foil",
+    set_code: " ELD ", language: " EN ", min_price: "1", max_price: "5", sort: "price_low",
+  };
+  const path = new URL(buildCommunityBinderPath(communityFilters, 2), "https://test.local");
+  assert.equal(path.pathname, "/binder/community");
+  assert.equal(path.searchParams.get("q"), "Familiar");
+  assert.equal(path.searchParams.get("set_code"), "eld");
+  assert.equal(path.searchParams.get("language"), "en");
+  assert.equal(path.searchParams.get("min_price"), "1");
+  assert.equal(path.searchParams.get("max_price"), "5");
+  assert.equal(path.searchParams.get("sort"), "price_low");
+  assert.equal(path.searchParams.get("page"), "2");
+});
+
+test("Community Binder loads the real endpoint with stale-safe pagination and structured interest", () => {
+  const service = source("../services/binder.ts");
+  const view = source("../components/binder/CommunityBinderView.tsx");
+  const filterControls = source("../components/binder/CommunityBinderFilters.tsx");
+  const hook = source("../hooks/usePaginatedResource.ts");
+  const card = source("../components/binder/BinderCard.tsx");
+  assert.match(service, /community: \(filters: CommunityBinderFilters, page: number\)/);
+  assert.match(service, /buildCommunityBinderPath/);
+  assert.match(view, /binderApi\.community/);
+  assert.match(view, /binderApi\.createInterest/);
+  assert.match(view, /<LoadMore/);
+  assert.match(view, /item\.owner\.nickname/);
+  assert.match(view, /item\.proximity\.label/);
+  assert.match(filterControls, /window\.setTimeout/);
+  for (const label of ["Availability", "Condition", "Finish", "Set code", "Language", "Minimum price", "Maximum price"]) assert.match(filterControls, new RegExp(label));
+  assert.match(hook, /requestId !== sequence\.current/);
+  assert.match(hook, /mergeUnique/);
+  assert.match(card, /footer/);
+  assert.doesNotMatch(view, /onEdit|onStatus|onWithdraw|BinderSettingsPanel|Add card/);
+});
+
+test("Binder section navigation is vertical on desktop and compact without horizontal tabs on mobile", () => {
+  const dashboard = source("../components/binder/BinderDashboard.tsx");
+  const navigation = source("../components/section-navigation/SectionNavigation.tsx");
+  assert.match(dashboard, /lg:grid-cols-\[196px_minmax\(0,1fr\)\]/);
+  assert.match(navigation, /hidden w-\[196px\]/);
+  assert.match(navigation, /<select/);
+  assert.match(navigation, /router\.push\(event\.target\.value\)/);
+  assert.doesNotMatch(dashboard, /overflow-x-auto/);
 });
 
 test("owner and public filters target server endpoints with normalized pagination", () => {
@@ -238,7 +289,7 @@ test("backend validation and duplicate conflicts map to safe field-level errors"
 });
 
 test("paginated views reset on scope, ignore stale responses, and isolate row mutations", () => {
-  const hook = source("../components/binder/useBinderPage.ts");
+  const hook = source("../hooks/usePaginatedResource.ts");
   const items = source("../components/binder/BinderItemsView.tsx");
   const interests = source("../components/binder/InterestsView.tsx");
   assert.match(hook, /activeScope\.current !== scope/);

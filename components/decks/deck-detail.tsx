@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { ManaCost } from "@/components/magic/mana-symbols";
 import { deckRoutes } from "@/lib/deck-routes";
 import { ApiError, decksApi, getCardImage } from "@/lib/decks-api";
+import { deckDiscoveryApi } from "@/services/deck-discovery";
 import type {
   Deck,
   DeckCard,
@@ -42,6 +43,16 @@ function sectionLabel(value: string): string {
 function formatLabel(value?: string | null): string {
   if (!value) return "No format";
   return value.charAt(0).toUpperCase() + value.slice(1);
+}
+
+function safeExternalUrl(value?: string | null): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:" ? value : null;
+  } catch {
+    return null;
+  }
 }
 
 function CardRow({
@@ -98,7 +109,7 @@ function CardRow({
   );
 }
 
-export function DeckDetail({ deckId }: { deckId: string }) {
+export function DeckDetail({ deckId, ownerId }: { deckId: string; ownerId?: string }) {
   const router = useRouter();
 
   const [deck, setDeck] = useState<Deck | null>(null);
@@ -112,7 +123,10 @@ export function DeckDetail({ deckId }: { deckId: string }) {
   useEffect(() => {
     let cancelled = false;
 
-    void Promise.all([
+    void Promise.all(ownerId ? [
+      deckDiscoveryApi.publicDeck(ownerId, deckId),
+      deckDiscoveryApi.publicDeckCards(ownerId, deckId),
+    ] : [
       decksApi.get(deckId),
       decksApi.cards(deckId),
     ])
@@ -138,7 +152,7 @@ export function DeckDetail({ deckId }: { deckId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [deckId]);
+  }, [deckId, ownerId]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, DeckCard[]>();
@@ -154,6 +168,7 @@ export function DeckDetail({ deckId }: { deckId: string }) {
         [section, map.get(section) ?? []] as const,
     );
   }, [cards]);
+  const originalDeckUrl = safeExternalUrl(deck?.deck_url);
 
   if (loading) {
     return (
@@ -176,13 +191,13 @@ export function DeckDetail({ deckId }: { deckId: string }) {
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <button
           type="button"
-          onClick={() => router.push(deckRoutes.list)}
+          onClick={() => router.push(ownerId ? "/decks?view=community" : deckRoutes.list)}
           className="self-start text-sm font-semibold text-[#6E5AA7]"
         >
-          ← My decks
+          ← {ownerId ? "Community Decks" : "My decks"}
         </button>
 
-        <div className="grid grid-cols-2 gap-2 sm:flex">
+        {!ownerId ? <div className="grid grid-cols-2 gap-2 sm:flex">
           <SecondaryButton
             type="button"
             onClick={() => setCoverOpen(true)}
@@ -196,7 +211,7 @@ export function DeckDetail({ deckId }: { deckId: string }) {
           >
             Edit deck
           </Link>
-        </div>
+        </div> : null}
       </div>
 
       <Surface className="overflow-hidden">
@@ -296,12 +311,7 @@ export function DeckDetail({ deckId }: { deckId: string }) {
                 to enable card previews and artwork selection.
               </p>
 
-              <Link
-                href={deckRoutes.edit(deck.id)}
-                className="mt-5 inline-flex min-h-11 items-center justify-center rounded-full bg-[#111113] px-5 text-sm font-semibold text-white"
-              >
-                Edit deck
-              </Link>
+              {!ownerId ? <Link href={deckRoutes.edit(deck.id)} className="mt-5 inline-flex min-h-11 items-center justify-center rounded-full bg-[#111113] px-5 text-sm font-semibold text-white">Edit deck</Link> : null}
             </Surface>
           )}
         </div>
@@ -345,9 +355,9 @@ export function DeckDetail({ deckId }: { deckId: string }) {
             ) : null}
           </dl>
 
-          {deck.deck_url ? (
+          {originalDeckUrl ? (
             <a
-              href={deck.deck_url}
+              href={originalDeckUrl}
               target="_blank"
               rel="noreferrer"
               className="mt-6 flex min-h-11 items-center justify-center rounded-full border border-black/[0.08] text-sm font-semibold text-[#6E5AA7] transition hover:bg-[#6E5AA7]/[0.06]"
@@ -358,12 +368,7 @@ export function DeckDetail({ deckId }: { deckId: string }) {
         </Surface>
       </div>
 
-      <DeckCoverPicker
-        deck={deck}
-        open={coverOpen}
-        onClose={() => setCoverOpen(false)}
-        onSaved={setDeck}
-      />
+      {!ownerId ? <DeckCoverPicker deck={deck} open={coverOpen} onClose={() => setCoverOpen(false)} onSaved={setDeck} /> : null}
 
       <DeckCardInspector
         card={selectedCard}

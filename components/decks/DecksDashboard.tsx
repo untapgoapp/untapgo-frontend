@@ -1,38 +1,46 @@
-import { Bookmark, Library } from "lucide-react";
+import Link from "next/link";
+import { Bookmark, Compass, Library, Plus } from "lucide-react";
 
-import { DeckList } from "@/components/decks/deck-list";
-import { PageFrame } from "@/components/decks/deck-ui";
-import type { DecksView } from "@/lib/deck-routes";
+import SectionNavigation from "@/components/section-navigation/SectionNavigation";
+import { Button } from "@/components/ui/button";
+import { deckRoutes, type DecksView } from "@/lib/deck-routes";
 
-import DeckSectionNavigation from "./DeckSectionNavigation";
+import DeckDiscoveryView from "./DeckDiscoveryView";
+import { DeckList } from "./deck-list";
+import { PageFrame } from "./deck-ui";
+
+const identity: Record<DecksView, { title: string; subtitle: string }> = {
+  community: { title: "Community Decks", subtitle: "Discover public decks shared by UntapGo players." },
+  mine: { title: "My Decks", subtitle: "Manage the decks you bring to events." },
+  saved: { title: "Saved Decks", subtitle: "Decks you saved for later." },
+};
 
 export default function DecksDashboard({ view }: { view: DecksView }) {
-  if (view === "mine") {
-    return <DeckList sectionNavigation={<DeckSectionNavigation view={view} />} />;
-  }
+  const page = identity[view];
+  const sections = [
+    { key: "community", label: "Community", href: "/decks?view=community", icon: Compass, active: view === "community" },
+    { key: "mine", label: "My Decks", href: "/decks?view=mine", icon: Library, active: view === "mine" },
+    { key: "saved", label: "Saved Decks", href: "/decks?view=saved", icon: Bookmark, active: view === "saved" },
+  ];
 
-  const community = view === "community";
   return (
     <PageFrame>
-      <header>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">Deck library</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">Decks</h1>
-        <p className="mt-2 max-w-xl text-sm leading-6 text-black/45">Browse community decks or keep your own deck library ready for events.</p>
-      </header>
-      <DeckSectionNavigation view={view} />
-      <section className="py-12 text-center" aria-labelledby="deck-unavailable-title">
-        <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-secondary text-secondary-foreground">
-          {community ? <Library aria-hidden="true" className="h-5 w-5" /> : <Bookmark aria-hidden="true" className="h-5 w-5" />}
-        </span>
-        <h2 id="deck-unavailable-title" className="mt-4 text-lg font-semibold">
-          {community ? "Community Deck discovery is not available yet" : "Saved Decks are not available yet"}
-        </h2>
-        <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-black/45">
-          {community
-            ? "A privacy-safe paginated community endpoint is required before public Decks can appear here."
-            : "UntapGo does not currently provide a saved-Deck endpoint, so this view makes no browser data request."}
-        </p>
-      </section>
+      <div className="grid gap-6 lg:grid-cols-[196px_minmax(0,1fr)] lg:gap-8">
+        <SectionNavigation label="Deck sections" items={sections} />
+        <div className="min-w-0">
+          <header className="flex flex-wrap items-end justify-between gap-4 border-b border-border/60 pb-5">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">Decks</p>
+              <h1 className="mt-1 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{page.title}</h1>
+              <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{page.subtitle}</p>
+            </div>
+            {view === "mine" ? <Button asChild><Link href={deckRoutes.create}><Plus aria-hidden="true" />Add deck</Link></Button> : null}
+          </header>
+          <div className="py-6">
+            {view === "mine" ? <DeckList /> : <DeckDiscoveryView mode={view} />}
+          </div>
+        </div>
+      </div>
     </PageFrame>
   );
 }

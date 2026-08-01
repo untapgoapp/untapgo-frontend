@@ -31,7 +31,6 @@ export type SocialNavigationItem = {
   href: string;
   icon: LucideIcon;
   desktopPrimary?: number;
-  desktopSecondary?: number;
   mobilePrimary?: number;
   mobileSecondary?: number;
   matches: (pathname: string) => boolean;
@@ -67,26 +66,28 @@ export const socialNavigationItems: readonly SocialNavigationItem[] = [
   {
     key: "decks", label: "Decks", href: "/decks", icon: Layers3, desktopPrimary: 6,
     mobileSecondary: 2,
-    matches: (pathname) => atRoot(pathname, "/decks") || atRoot(pathname, "/profile/decks"),
+    matches: (pathname) => atRoot(pathname, "/decks")
+      || atRoot(pathname, "/profile/decks")
+      || /^\/profile\/[^/]+\/decks(?:\/|$)/.test(pathname),
   },
   {
     key: "profile", label: "Profile", href: "/profile", icon: CircleUserRound,
-    desktopSecondary: 1, mobileSecondary: 3,
+    mobileSecondary: 3,
     matches: (pathname) => atRoot(pathname, "/profile"),
   },
   {
     key: "favorites", label: "Favorites", href: "/profile/favorites", icon: Heart,
-    desktopSecondary: 2, mobileSecondary: 4,
+    mobileSecondary: 4,
     matches: (pathname) => atRoot(pathname, "/profile/favorites"),
   },
   {
     key: "settings", label: "Settings", href: "/settings", icon: Settings,
-    desktopSecondary: 3, mobileSecondary: 5,
+    mobileSecondary: 5,
     matches: (pathname) => atRoot(pathname, "/settings"),
   },
   {
     key: "blocked", label: "Blocked players", href: "/profile/blocked", icon: ShieldBan,
-    desktopSecondary: 4, mobileSecondary: 6,
+    mobileSecondary: 6,
     matches: (pathname) => atRoot(pathname, "/profile/blocked"),
   },
 ];
@@ -100,9 +101,6 @@ export const mobileMoreNavigationItem = {
 export const desktopNavigationItems = socialNavigationItems
   .filter((item) => item.desktopPrimary !== undefined)
   .sort((left, right) => left.desktopPrimary! - right.desktopPrimary!);
-export const desktopSecondaryNavigationItems = socialNavigationItems
-  .filter((item) => item.desktopSecondary !== undefined)
-  .sort((left, right) => left.desktopSecondary! - right.desktopSecondary!);
 export const mobilePrimaryNavigationItems = socialNavigationItems
   .filter((item) => item.mobilePrimary !== undefined)
   .sort((left, right) => left.mobilePrimary! - right.mobilePrimary!);
@@ -122,11 +120,11 @@ export function isSocialAppRoute(pathname: string): boolean {
 export function getActiveSocialNavigationKey(pathname: string): SocialNavigationKey | null {
   const primaryMatch = desktopNavigationItems.find((item) => item.matches(pathname));
   if (primaryMatch) return primaryMatch.key;
-  const specificSecondaryMatch = desktopSecondaryNavigationItems.find(
+  const specificSecondaryMatch = mobileSecondaryNavigationItems.find(
     (item) => item.key !== "profile" && item.matches(pathname),
   );
   return specificSecondaryMatch?.key
-    ?? desktopSecondaryNavigationItems.find((item) => item.key === "profile" && item.matches(pathname))?.key
+    ?? mobileSecondaryNavigationItems.find((item) => item.key === "profile" && item.matches(pathname))?.key
     ?? null;
 }
 

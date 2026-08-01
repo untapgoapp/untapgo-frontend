@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Check, Edit3, Handshake, Pause, RotateCcw, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -23,6 +24,7 @@ export default function BinderCard({
   onStatus,
   onWithdraw,
   onInterest,
+  footer,
 }: {
   item: BinderItem;
   owner?: boolean;
@@ -33,6 +35,7 @@ export default function BinderCard({
   onStatus?: (status: BinderItem["status"]) => void;
   onWithdraw?: () => void;
   onInterest?: () => void;
+  footer?: ReactNode;
 }) {
   const price = formatAskingPrice(item);
   const image = item.image_url ? (
@@ -56,6 +59,7 @@ export default function BinderCard({
         </div>
         {price ? <p className="mt-2 text-sm font-semibold">Asking price · {price}</p> : null}
         {item.notes ? <p className="mt-2 line-clamp-3 text-xs leading-5 text-muted-foreground">{item.notes}</p> : null}
+        {footer}
         {onInterest ? <Button type="button" size="sm" variant="secondary" className="mt-3 w-full" disabled={busy} onClick={onInterest}><Handshake aria-hidden="true" />I&apos;m interested</Button> : null}
         {owner ? (
           <div className="mt-3 flex flex-wrap gap-1">

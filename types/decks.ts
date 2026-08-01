@@ -73,6 +73,40 @@ export type Deck = {
 
 export type DeckListResponse = { decks: Deck[] };
 
+export type DeckDiscoverySort = "recent" | "updated" | "name";
+
+export type DeckDiscoveryOwner = {
+  id: string;
+  nickname: string;
+  avatar_url: string | null;
+};
+
+export type CommunityDeck = {
+  id: string;
+  name: string;
+  format_slug: string | null;
+  color_identity: ManaColor[];
+  image_url: string | null;
+  card_count: number;
+  updated_at: string | null;
+  owner: DeckDiscoveryOwner;
+  is_saved: boolean;
+};
+
+export type CommunityDeckPage = {
+  items: CommunityDeck[];
+  page: number;
+  page_size: number;
+  has_more: boolean;
+};
+
+export type DeckDiscoveryFilters = {
+  q: string;
+  format: string;
+  colors: ManaColor[];
+  sort: DeckDiscoverySort;
+};
+
 export type DeckParseError = {
   line_number: number;
   line: string;

@@ -8,6 +8,7 @@ export type WantedStatus = "active" | "fulfilled" | "removed";
 export type InterestType = "trade" | "buy" | "either";
 export type InterestStatus = "pending" | "accepted" | "declined" | "withdrawn";
 export type InterestView = "received" | "sent";
+export type CommunityBinderSort = "nearest" | "recent" | "card_name" | "price_low" | "price_high";
 export type BinderView = "community" | "items" | "wanted" | "matches" | InterestView;
 
 export type BinderSettings = {
@@ -90,6 +91,22 @@ export type PageResponse<T> = {
 export type PublicBinderResponse = PageResponse<BinderItem> & { owner: BinderUser };
 export type PublicWantedResponse = PageResponse<WantedCard> & { owner: BinderUser };
 
+export type BinderProximity = {
+  label: string;
+  distance_km: number | null;
+};
+
+export type CommunityBinderItem = BinderItem & {
+  owner: BinderUser;
+  proximity: BinderProximity | null;
+};
+
+export type CommunityBinderResponse = PageResponse<CommunityBinderItem> & {
+  proximity_available: boolean;
+  nearest_fallback: boolean;
+  sort_applied: CommunityBinderSort;
+};
+
 export type BinderFilters = {
   q: string;
   availability: "" | BinderAvailability;
@@ -97,6 +114,13 @@ export type BinderFilters = {
   finish: "" | CardFinish;
   set_code: string;
   status?: "" | BinderStatus;
+};
+
+export type CommunityBinderFilters = Omit<BinderFilters, "status"> & {
+  language: string;
+  min_price: string;
+  max_price: string;
+  sort: CommunityBinderSort;
 };
 
 export type BinderItemInput = {
@@ -162,7 +186,7 @@ export const INTEREST_LABELS: Record<InterestType, string> = {
 };
 
 export function normalizeBinderView(value: string | null | undefined): BinderView {
-  return BINDER_VIEWS.includes(value as BinderView) ? value as BinderView : "items";
+  return BINDER_VIEWS.includes(value as BinderView) ? value as BinderView : "community";
 }
 
 function addPage(parameters: URLSearchParams, page: number, pageSize: number) {
@@ -190,6 +214,28 @@ export function buildBinderItemsPath(
     ? `/profiles/${encodeURIComponent(ownerId)}/binder`
     : "/binder/items";
   return `${root}?${parameters.toString()}`;
+}
+
+export function buildCommunityBinderPath(
+  filters: CommunityBinderFilters,
+  page: number,
+  pageSize = 24,
+): string {
+  const parameters = new URLSearchParams();
+  const values: Array<[string, string]> = [
+    ["q", filters.q.trim()],
+    ["availability", filters.availability],
+    ["condition", filters.condition],
+    ["finish", filters.finish],
+    ["set_code", filters.set_code.trim().toLowerCase()],
+    ["language", filters.language.trim().toLowerCase()],
+    ["min_price", filters.min_price.trim()],
+    ["max_price", filters.max_price.trim()],
+    ["sort", filters.sort],
+  ];
+  for (const [key, value] of values) if (value) parameters.set(key, value);
+  addPage(parameters, page, pageSize);
+  return `/binder/community?${parameters.toString()}`;
 }
 
 export function buildWantedPath(page: number, pageSize = 24, ownerId?: string): string {

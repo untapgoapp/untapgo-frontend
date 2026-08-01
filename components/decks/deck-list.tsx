@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { ReactNode } from "react";
 
 import { deckRoutes } from "@/lib/deck-routes";
 import { ApiError, decksApi } from "@/lib/decks-api";
@@ -11,15 +10,13 @@ import type { Deck } from "@/types/decks";
 import DeckListRow from "./deck-list-row";
 import {
   ErrorNotice,
-  PageFrame,
-  PlusIcon,
   PrimaryButton,
   SecondaryButton,
   Spinner,
   Surface,
 } from "./deck-ui";
 
-export function DeckList({ sectionNavigation }: { sectionNavigation?: ReactNode }) {
+export function DeckList() {
   const [decks, setDecks] = useState<Deck[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -62,26 +59,7 @@ export function DeckList({ sectionNavigation }: { sectionNavigation?: ReactNode 
   }
 
   return (
-    <PageFrame>
-      <div className="mb-6 lg:mb-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">My decks</h1>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-black/45">
-              Keep the decks you bring to events, with card previews and artwork from Scryfall.
-            </p>
-          </div>
-          <Link
-            href={deckRoutes.create}
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#111113] px-5 text-sm font-semibold text-white transition hover:bg-black/80 sm:w-auto"
-          >
-            <PlusIcon />
-            Add deck
-          </Link>
-        </div>
-        {sectionNavigation}
-      </div>
-
+    <>
       {error ? <div className="mb-4"><ErrorNotice message={error} /></div> : null}
       {loading ? <Spinner label="Loading decks" /> : null}
 
@@ -118,6 +96,6 @@ export function DeckList({ sectionNavigation }: { sectionNavigation?: ReactNode 
           </div>
         </div>
       ) : null}
-    </PageFrame>
+    </>
   );
 }

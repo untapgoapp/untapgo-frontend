@@ -4,7 +4,6 @@ import test from "node:test";
 
 import {
   desktopNavigationItems,
-  desktopSecondaryNavigationItems,
   getActiveSocialNavigationKey,
   getActiveMobileSecondaryNavigationKey,
   isMobileMoreRoute,
@@ -86,6 +85,7 @@ test("More active state recognizes Binder, Decks, Profile and specific profile r
   assert.equal(getActiveMobileSecondaryNavigationKey("/profile/player-1/binder"), "binder");
   assert.equal(getActiveMobileSecondaryNavigationKey("/decks"), "decks");
   assert.equal(getActiveMobileSecondaryNavigationKey("/profile/decks"), "decks");
+  assert.equal(getActiveMobileSecondaryNavigationKey("/profile/player-1/decks/deck-1"), "decks");
   assert.equal(getActiveMobileSecondaryNavigationKey("/profile"), "profile");
   assert.equal(getActiveMobileSecondaryNavigationKey("/profile/favorites"), "favorites");
   assert.equal(getActiveMobileSecondaryNavigationKey("/settings"), "settings");
@@ -131,7 +131,7 @@ test("mobile chrome preserves touch targets, overflow protection, safe area, mes
   assert.doesNotMatch(header, /Binder|Playgroups/);
 });
 
-test("desktop navigation separates destinations from account links", () => {
+test("desktop navigation contains only primary destinations and account links live in avatar menu", () => {
   assert.deepEqual(
     desktopNavigationItems.map(({ label, href }) => [label, href]),
     [
@@ -143,25 +143,16 @@ test("desktop navigation separates destinations from account links", () => {
       ["Decks", "/decks"],
     ],
   );
-  assert.deepEqual(
-    desktopSecondaryNavigationItems.map(({ label, href }) => [label, href]),
-    [
-      ["Profile", "/profile"],
-      ["Favorites", "/profile/favorites"],
-      ["Settings", "/settings"],
-      ["Blocked players", "/profile/blocked"],
-    ],
-  );
-  assert.match(
-    source("../components/social-shell/SocialDesktopSidebar.tsx"),
-    /<SocialNavigation variant="desktop" \/>/,
-  );
-  assert.match(
-    source("../components/social-shell/SocialDesktopSidebar.tsx"),
-    /<SocialNavigation variant="desktop-secondary" \/>/,
-  );
+  const sidebar = source("../components/social-shell/SocialDesktopSidebar.tsx");
+  const profileMenu = source("../components/social-shell/SocialProfileMenu.tsx");
+  assert.match(sidebar, /<SocialNavigation variant="desktop" \/>/);
+  assert.doesNotMatch(sidebar, /desktop-secondary|Profile|Favorites|Settings|Blocked players/);
+  for (const label of ["Profile", "Favorites", "Settings", "Blocked players", "Log out"]) assert.match(profileMenu, new RegExp(label));
+  assert.match(profileMenu, /supabase\.auth\.signOut\(\)/);
+  assert.match(profileMenu, /router\.replace\("\/"\)/);
   assert.equal(desktopNavigationItems.some(({ href }) => href === "/notifications"), false);
   assert.equal(getActiveSocialNavigationKey("/settings"), "settings");
   assert.equal(getActiveSocialNavigationKey("/profile/decks"), "decks");
   assert.equal(getActiveSocialNavigationKey("/profile/player-1/binder"), "binder");
+  assert.equal(getActiveSocialNavigationKey("/profile/player-1/decks/deck-1"), "decks");
 });
