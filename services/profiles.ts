@@ -1,4 +1,37 @@
 import { api } from "@/lib/api";
+import {
+  buildPlayerDirectoryPath,
+  type PlayerDirectoryResponse,
+} from "@/lib/player-directory";
+import {
+  buildProfileRelationshipPath,
+  getProfileFollowMutationRequest,
+  type ProfileFollowMutationResponse,
+  type ProfileRelationship,
+} from "@/lib/profile-follow";
+import {
+  buildProfileNetworkPath,
+  type ProfileNetworkTab,
+} from "@/lib/profile-network";
+import {
+  buildProfileTrustPath,
+  type ProfileTrustSummary,
+} from "@/lib/profile-trust";
+
+export type {
+  PlayerDirectoryItem,
+  PlayerDirectoryResponse,
+} from "@/lib/player-directory";
+export type {
+  ProfileFollowMutationResponse,
+  ProfileRelationship,
+} from "@/lib/profile-follow";
+export type {
+  HostTrustSummary,
+  PlayerTrustSummary,
+  ProfileTrustSummary,
+  TrustDisplayState,
+} from "@/lib/profile-trust";
 
 export const FAVORITE_PROFILES_CHANGED_EVENT =
   "untapgo:favorite-profiles-changed";
@@ -118,6 +151,91 @@ export type ReportUserPayload = {
 type PublicProfileOptions = {
   asPublic?: boolean;
 };
+
+export async function getPlayerDirectory({
+  query,
+  page,
+}: {
+  query: string;
+  page: number;
+}): Promise<PlayerDirectoryResponse> {
+  return api.get<PlayerDirectoryResponse>(
+    buildPlayerDirectoryPath({ query, page }),
+  );
+}
+
+export async function getProfileRelationship(
+  profileId: string,
+): Promise<ProfileRelationship> {
+  const result = await api.get<ProfileRelationship>(
+    buildProfileRelationshipPath(profileId),
+  );
+
+  return {
+    is_following: result.is_following === true,
+    is_followed_by: result.is_followed_by === true,
+    is_mutual: result.is_mutual === true,
+  };
+}
+
+async function mutateProfileFollow(
+  profileId: string,
+  mutation: "follow" | "unfollow",
+): Promise<ProfileFollowMutationResponse> {
+  const request = getProfileFollowMutationRequest(profileId, mutation);
+  const result = request.method === "POST"
+    ? await api.post<ProfileFollowMutationResponse>(request.path)
+    : await api.delete<ProfileFollowMutationResponse>(request.path);
+
+  return {
+    ok: result.ok === true,
+    is_following: result.is_following === true,
+  };
+}
+
+export async function followProfile(
+  profileId: string,
+): Promise<ProfileFollowMutationResponse> {
+  return mutateProfileFollow(profileId, "follow");
+}
+
+export async function unfollowProfile(
+  profileId: string,
+): Promise<ProfileFollowMutationResponse> {
+  return mutateProfileFollow(profileId, "unfollow");
+}
+
+async function getProfileNetwork(
+  profileId: string,
+  tab: ProfileNetworkTab,
+  page: number,
+): Promise<PlayerDirectoryResponse> {
+  return api.get<PlayerDirectoryResponse>(
+    buildProfileNetworkPath({ profileId, tab, page }),
+  );
+}
+
+export async function getProfileFollowers(
+  profileId: string,
+  page: number,
+): Promise<PlayerDirectoryResponse> {
+  return getProfileNetwork(profileId, "followers", page);
+}
+
+export async function getProfileFollowing(
+  profileId: string,
+  page: number,
+): Promise<PlayerDirectoryResponse> {
+  return getProfileNetwork(profileId, "following", page);
+}
+
+export async function getProfileTrustSummary(
+  profileId: string,
+): Promise<ProfileTrustSummary> {
+  return api.get<ProfileTrustSummary>(
+    buildProfileTrustPath(profileId),
+  );
+}
 
 function emitBrowserEvent(
   eventName: string,

@@ -57,41 +57,27 @@ export default function EventMobileActionBar({
   onJoin,
   onCancelRequest,
 }: EventMobileActionBarProps) {
-  if (requested && !isHost) {
-    return null;
-  }
 
   return (
     <nav
       aria-label="Event actions"
-      className="fixed inset-x-0 bottom-0 z-[80] border-t border-[#6E5AA7]/12 bg-[#FCFAFF]/92 px-3 pb-[calc(0.55rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_32px_rgba(55,41,79,0.07)] backdrop-blur-2xl lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-[80] border-t border-border/70 bg-surface/92 px-3 pb-[calc(0.55rem+env(safe-area-inset-bottom))] pt-2 shadow-surface backdrop-blur-2xl lg:hidden"
     >
       {isHost ? (
-        <div className="mx-auto grid max-w-md grid-cols-3">
-          <BarButton
-            icon={
-              attendanceMethod ===
-              "qr" ? (
-                <QrCode />
-              ) : (
-                <ClipboardCheck />
-              )
-            }
-            label={
-              attendanceMethod ===
-              "qr"
-                ? "Show QR"
-                : "Attendance"
-            }
-            onClick={
-              onHostAttendance
-            }
-            disabled={
-              busy ||
-              hostAttendanceDisabled
-            }
-            accent
-          />
+        <div className={`mx-auto grid max-w-md ${attendanceMethod === "none" ? "grid-cols-2" : "grid-cols-3"}`}>
+          {attendanceMethod !== "none" ? (
+            <BarButton
+              icon={
+                attendanceMethod === "qr"
+                  ? <QrCode />
+                  : <ClipboardCheck />
+              }
+              label={attendanceMethod === "qr" ? "Show QR" : "Attendance"}
+              onClick={onHostAttendance}
+              disabled={busy || hostAttendanceDisabled}
+              accent
+            />
+          ) : null}
 
           <BarButton
             icon={<Inbox />}
@@ -205,17 +191,17 @@ function BarButton({
       onClick={onClick}
       disabled={disabled}
       className={[
-        "mx-auto flex min-h-12 min-w-[82px] flex-col items-center justify-center gap-0.5 rounded-xl px-2 text-[11px] font-semibold outline-none transition hover:bg-[#6E5AA7]/[0.045] active:scale-[0.97] active:bg-[#6E5AA7]/[0.075] focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20 disabled:opacity-40",
+        "mx-auto flex min-h-12 min-w-[82px] flex-col items-center justify-center gap-0.5 rounded-control px-2 text-[11px] font-semibold outline-none transition-colors hover:bg-secondary/55 focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-40",
         accent
-          ? "text-[#5B478A]"
-          : "text-zinc-600",
+          ? "text-primary"
+          : "text-muted-foreground",
       ].join(" ")}
     >
       <span
         className={[
           "grid h-7 w-8 place-items-center rounded-lg [&>svg]:h-[19px] [&>svg]:w-[19px]",
           accent
-            ? "bg-[#EEE9FF] shadow-[inset_0_0_0_1px_rgba(110,90,167,0.08)]"
+            ? "bg-secondary"
             : "",
         ].join(" ")}
       >

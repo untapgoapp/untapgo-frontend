@@ -22,11 +22,11 @@ export default async function EventsPage() {
   );
 
   return (
-    <main className="min-h-screen bg-[#F8F5EF] text-black">
+    <main className="min-h-screen bg-background text-foreground">
       <Suspense
         fallback={
-          <div className="mx-auto max-w-3xl px-5 py-12">
-            <p className="text-sm text-zinc-500">
+          <div className="w-full max-w-[1100px] px-4 py-8 sm:px-5">
+            <p className="text-sm text-muted-foreground">
               Loading events...
             </p>
           </div>

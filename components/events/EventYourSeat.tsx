@@ -20,6 +20,7 @@ import {
 
 import EventActionSheet from "@/components/events/EventActionSheet";
 import { decksApi } from "@/lib/decks-api";
+import { getAttendancePresentation } from "@/lib/event-attendance";
 import {
   clearMyEventDeck,
   getEventDecks,
@@ -28,6 +29,7 @@ import {
   type EventDeckBrief,
   type EventDeckVisibility,
   type EventPlayerDeck,
+  type EventMyAttendance,
 } from "@/services/events";
 import type { Deck } from "@/types/decks";
 
@@ -44,6 +46,7 @@ type EventYourSeatProps = {
   canCancelRequest: boolean;
   canScan: boolean;
   attendanceMethod: AttendanceMethod;
+  attendance?: EventMyAttendance | null;
   actionBusy: boolean;
   actionMessage?: string | null;
   actionError?: string | null;
@@ -194,6 +197,7 @@ export default function EventYourSeat({
   canCancelRequest,
   canScan,
   attendanceMethod,
+  attendance,
   actionBusy,
   actionMessage,
   actionError,
@@ -333,6 +337,28 @@ export default function EventYourSeat({
     };
   }, [loadDecks]);
 
+  useEffect(() => {
+    if (isPlaying) {
+      return;
+    }
+
+    setDecks([]);
+    setSavedSelection(null);
+    setDraftDeckId("");
+    setDraftVisibility("name");
+    setDecksLoading(false);
+    setDeckError(null);
+    setDeckMessage(null);
+    setRemoveSheetOpen(false);
+
+    onDeckSheetOpenChange(false);
+    onVisibilitySheetOpenChange(false);
+  }, [
+    isPlaying,
+    onDeckSheetOpenChange,
+    onVisibilitySheetOpenChange,
+  ]);
+
   const sortedDecks =
     useMemo(() => {
       const eventFormat =
@@ -413,6 +439,14 @@ export default function EventYourSeat({
           ? "Not joined"
           : "Unavailable";
 
+  const attendancePresentation =
+    getAttendancePresentation({
+      method: attendanceMethod,
+      attendance,
+      confirmed: isPlaying,
+      pending: requested,
+    });
+
   async function notifyChanged() {
     try {
       await onChanged?.();
@@ -448,6 +482,7 @@ export default function EventYourSeat({
 
   async function saveDeck() {
     if (
+      !isPlaying ||
       !selectedDeck ||
       deckBusy ||
       deckLocked
@@ -495,6 +530,7 @@ export default function EventYourSeat({
 
   async function saveVisibility() {
     if (
+      !isPlaying ||
       deckBusy ||
       deckLocked
     ) {
@@ -552,6 +588,7 @@ export default function EventYourSeat({
 
   async function removeDeck() {
     if (
+      !isPlaying ||
       !savedSelection ||
       deckBusy ||
       deckLocked
@@ -596,22 +633,18 @@ export default function EventYourSeat({
         aria-labelledby="event-your-seat-title"
         className="py-5"
       >
-        <div className="flex items-center justify-between gap-3 px-1">
+        <div className="flex items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2.5">
-              <span
-                aria-hidden="true"
-                className="h-1.5 w-5 rounded-full bg-[#6E5AA7]"
-              />
               <h2
                 id="event-your-seat-title"
-                className="text-lg font-bold tracking-[-0.025em] text-zinc-950"
+                className="text-lg font-semibold tracking-tight text-foreground"
               >
                 Your seat
               </h2>
             </div>
 
-            <p className="mt-1 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               {participationLabel}
             </p>
           </div>
@@ -628,7 +661,7 @@ export default function EventYourSeat({
                 deckBusy
               }
               aria-label="Refresh your seat"
-              className="grid h-11 w-11 place-items-center rounded-full text-[#6E5AA7] outline-none transition hover:bg-[#EEE9FF] active:scale-[0.96] focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20 disabled:opacity-50"
+              className="grid h-10 w-10 place-items-center rounded-control text-primary outline-none transition-colors hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
             >
               <RefreshCw
                 className={[
@@ -642,7 +675,7 @@ export default function EventYourSeat({
           ) : null}
         </div>
 
-        <div className="mt-4 overflow-hidden rounded-[1.3rem] bg-white/60 px-4 shadow-[inset_0_0_0_1px_rgba(110,90,167,0.10),0_10px_28px_rgba(57,43,82,0.035)]">
+        <div className="mt-3 overflow-hidden rounded-row bg-surface/55 px-3 py-1">
           <SeatValueRow
             label="Role"
             value={roleLabel}
@@ -662,7 +695,7 @@ export default function EventYourSeat({
                   deckLocked ||
                   decksLoading
                 }
-                className="flex min-h-14 w-full items-center gap-3 border-t border-[#6E5AA7]/10 py-3 text-left outline-none transition hover:bg-[#6E5AA7]/[0.035] focus-visible:bg-[#6E5AA7]/[0.07] disabled:opacity-55"
+                className="flex min-h-14 w-full items-center gap-3 rounded-control px-2 py-3 text-left outline-none transition-colors hover:bg-secondary/50 focus-visible:bg-secondary/70 focus-visible:ring-[3px] focus-visible:ring-ring/15 disabled:opacity-55"
               >
                 <span className="w-[88px] shrink-0 text-sm text-zinc-500">
                   Deck
@@ -670,7 +703,7 @@ export default function EventYourSeat({
 
                 {savedSelection?.deck
                   ?.image_url ? (
-                  <span className="h-10 w-9 shrink-0 overflow-hidden rounded-lg bg-zinc-200 shadow-[0_4px_10px_rgba(30,24,38,0.14)] ring-1 ring-black/[0.07]">
+                  <span className="h-10 w-9 shrink-0 overflow-hidden rounded-control bg-muted">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={
@@ -683,7 +716,7 @@ export default function EventYourSeat({
                     />
                   </span>
                 ) : (
-                  <span className="grid h-10 w-9 shrink-0 place-items-center rounded-lg bg-[#EEE9FF] text-[#6E5AA7] shadow-[inset_0_0_0_1px_rgba(110,90,167,0.08)]">
+                  <span className="grid h-10 w-9 shrink-0 place-items-center rounded-control bg-secondary text-primary">
                     <Layers3 className="h-4 w-4" />
                   </span>
                 )}
@@ -714,7 +747,7 @@ export default function EventYourSeat({
                   deckLocked ||
                   decksLoading
                 }
-                className="flex min-h-14 w-full items-center gap-3 border-t border-[#6E5AA7]/10 py-3 text-left outline-none transition hover:bg-[#6E5AA7]/[0.035] focus-visible:bg-[#6E5AA7]/[0.07] disabled:opacity-55"
+                className="flex min-h-14 w-full items-center gap-3 rounded-control px-2 py-3 text-left outline-none transition-colors hover:bg-secondary/50 focus-visible:bg-secondary/70 focus-visible:ring-[3px] focus-visible:ring-ring/15 disabled:opacity-55"
               >
                 <span className="w-[88px] shrink-0 text-sm text-zinc-500">
                   Visibility
@@ -746,7 +779,19 @@ export default function EventYourSeat({
             separated
             accent
           />
+
+          <SeatValueRow
+            label="Attendance"
+            value={
+              attendancePresentation.label
+            }
+            separated
+          />
         </div>
+
+        <p className="mt-2 px-1 text-xs leading-5 text-muted-foreground">
+          {attendancePresentation.detail}
+        </p>
 
         {canJoin ? (
           <button
@@ -755,7 +800,7 @@ export default function EventYourSeat({
             disabled={
               actionBusy
             }
-            className="mt-2 flex min-h-11 w-full items-center justify-between rounded-xl border-b border-[#6E5AA7]/10 px-3 text-left text-sm font-semibold text-[#5B478A] outline-none transition hover:bg-[#EEE9FF]/65 active:bg-[#EEE9FF] focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20 disabled:opacity-50"
+            className="mt-3 flex min-h-10 w-full items-center justify-center rounded-control bg-primary px-3 text-sm font-semibold text-primary-foreground outline-none transition-colors hover:bg-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
           >
             <span>
               {isHost
@@ -763,7 +808,6 @@ export default function EventYourSeat({
                 : "Request a seat"}
             </span>
 
-            <ChevronRight className="h-4 w-4" />
           </button>
         ) : null}
 
@@ -782,13 +826,12 @@ export default function EventYourSeat({
             disabled={
               actionBusy
             }
-            className="mt-2 flex min-h-11 w-full items-center justify-between rounded-xl border-b border-[#6E5AA7]/10 px-3 text-left text-sm font-medium text-zinc-700 outline-none transition hover:bg-[#6E5AA7]/[0.035] focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20 disabled:opacity-50"
+            className="mt-2 flex min-h-10 w-full items-center justify-center rounded-control px-3 text-sm font-medium text-muted-foreground outline-none transition-colors hover:bg-surface/70 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
           >
             <span>
               Cancel request
             </span>
 
-            <ChevronRight className="h-4 w-4 text-zinc-400" />
           </button>
         ) : null}
 
@@ -798,14 +841,13 @@ export default function EventYourSeat({
           <button
             type="button"
             onClick={onScan}
-            className="mt-2 flex min-h-11 w-full items-center justify-between rounded-xl border-b border-[#6E5AA7]/10 px-3 text-left text-sm font-semibold text-[#5B478A] outline-none transition hover:bg-[#EEE9FF]/65 active:bg-[#EEE9FF] focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20"
+            className="mt-2 flex min-h-10 w-full items-center justify-center rounded-control bg-secondary px-3 text-sm font-semibold text-secondary-foreground outline-none transition-colors hover:bg-primary/14 focus-visible:ring-[3px] focus-visible:ring-ring/20"
           >
             <span className="inline-flex items-center gap-2">
               <ScanLine className="h-4 w-4" />
               Scan event QR
             </span>
 
-            <ChevronRight className="h-4 w-4" />
           </button>
         ) : null}
 
@@ -816,7 +858,7 @@ export default function EventYourSeat({
             disabled={
               actionBusy
             }
-            className="mt-2 flex min-h-11 w-full items-center justify-between rounded-xl border-b border-[#6E5AA7]/10 px-3 text-left text-sm font-medium text-zinc-700 outline-none transition hover:bg-[#6E5AA7]/[0.035] focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20 disabled:opacity-50"
+            className="mt-2 flex min-h-10 w-full items-center justify-center rounded-control px-3 text-sm font-medium text-muted-foreground outline-none transition-colors hover:bg-surface/70 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
           >
             <span>
               {isHost
@@ -824,7 +866,6 @@ export default function EventYourSeat({
                 : "Leave event"}
             </span>
 
-            <ChevronRight className="h-4 w-4 text-zinc-400" />
           </button>
         ) : null}
 
@@ -862,7 +903,10 @@ export default function EventYourSeat({
       </section>
 
       <EventActionSheet
-        open={deckSheetOpen}
+        open={
+          isPlaying &&
+          deckSheetOpen
+        }
         title="Change deck"
         description="Choose what you plan to bring to this table."
         onClose={closeDeckSheet}
@@ -1018,7 +1062,10 @@ export default function EventYourSeat({
       </EventActionSheet>
 
       <EventActionSheet
-        open={visibilitySheetOpen}
+        open={
+          isPlaying &&
+          visibilitySheetOpen
+        }
         title="Deck visibility"
         description="Control what other players at this table can see."
         onClose={
@@ -1106,7 +1153,10 @@ export default function EventYourSeat({
       </EventActionSheet>
 
       <EventActionSheet
-        open={removeSheetOpen}
+        open={
+          isPlaying &&
+          removeSheetOpen
+        }
         title="Remove deck?"
         description="You will remain a confirmed player at this event."
         onClose={() => {
@@ -1169,9 +1219,7 @@ function SeatValueRow({
     <div
       className={[
         "flex min-h-14 items-center justify-between gap-4 py-3",
-        separated
-          ? "border-t border-[#6E5AA7]/10"
-          : "",
+        separated ? "" : "",
       ].join(" ")}
     >
       <span className="text-sm text-zinc-500">
@@ -1182,8 +1230,8 @@ function SeatValueRow({
         className={[
           "text-right font-medium",
           accent
-            ? "rounded-full bg-[#EEE9FF] px-2.5 py-1 text-xs font-bold text-[#5B478A] shadow-[inset_0_0_0_1px_rgba(110,90,167,0.08)]"
-            : "text-sm text-zinc-900",
+            ? "rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground"
+            : "text-sm text-foreground",
         ].join(" ")}
       >
         {value}

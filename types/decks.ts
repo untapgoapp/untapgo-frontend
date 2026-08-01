@@ -39,6 +39,8 @@ export type ScryfallCard = {
   image_uris?: CardImages | null;
   card_faces: CardFace[];
   artist?: string | null;
+  finishes?: Array<"nonfoil" | "foil" | "etched">;
+  supported_languages?: string[];
 };
 
 export type Deck = {

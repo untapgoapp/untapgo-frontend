@@ -1,19 +1,11 @@
 "use client";
 
-import type {
-  LucideIcon,
-} from "lucide-react";
 import {
-  Bell,
-  CalendarClock,
-  CalendarX,
-  CircleCheck,
-  CircleX,
-  UserMinus,
-  UserPlus,
-  Users,
-} from "lucide-react";
-
+  getNotificationBody,
+  getNotificationIconClasses,
+  getNotificationPresentation,
+  getNotificationTitle,
+} from "@/lib/notification-presentation";
 import type {
   NotificationItem,
 } from "@/services/notifications";
@@ -26,100 +18,6 @@ type NotificationCardProps = {
     notification: NotificationItem,
   ) => void;
 };
-
-type NotificationVisual = {
-  icon: LucideIcon;
-  iconClassName: string;
-  backgroundClassName: string;
-};
-
-function normalize(
-  value?: string | null,
-): string {
-  return (value ?? "")
-    .trim()
-    .toLowerCase();
-}
-
-function getNotificationVisual(
-  type: string,
-): NotificationVisual {
-  switch (normalize(type)) {
-    case "join_request_received":
-      return {
-        icon: UserPlus,
-        iconClassName:
-          "text-[#6E5AA7]",
-        backgroundClassName:
-          "bg-[#EEE9FF]",
-      };
-
-    case "player_joined":
-      return {
-        icon: Users,
-        iconClassName:
-          "text-[#6E5AA7]",
-        backgroundClassName:
-          "bg-[#EEE9FF]",
-      };
-
-    case "request_accepted":
-      return {
-        icon: CircleCheck,
-        iconClassName:
-          "text-emerald-700",
-        backgroundClassName:
-          "bg-emerald-100",
-      };
-
-    case "request_declined":
-      return {
-        icon: CircleX,
-        iconClassName:
-          "text-red-700",
-        backgroundClassName:
-          "bg-red-100",
-      };
-
-    case "kicked":
-      return {
-        icon: UserMinus,
-        iconClassName:
-          "text-red-700",
-        backgroundClassName:
-          "bg-red-100",
-      };
-
-    case "event_cancelled":
-    case "event_canceled":
-      return {
-        icon: CalendarX,
-        iconClassName:
-          "text-red-700",
-        backgroundClassName:
-          "bg-red-100",
-      };
-
-    case "event_updated":
-    case "event_changed":
-      return {
-        icon: CalendarClock,
-        iconClassName:
-          "text-amber-700",
-        backgroundClassName:
-          "bg-amber-100",
-      };
-
-    default:
-      return {
-        icon: Bell,
-        iconClassName:
-          "text-zinc-600",
-        backgroundClassName:
-          "bg-zinc-100",
-      };
-  }
-}
 
 function formatRelativeTime(
   value: string,
@@ -233,11 +131,13 @@ export default function NotificationCard({
   onActivate,
 }: NotificationCardProps) {
   const visual =
-    getNotificationVisual(
+    getNotificationPresentation(
       notification.type,
     );
 
   const Icon = visual.icon;
+  const title = getNotificationTitle(notification);
+  const body = getNotificationBody(notification);
 
   const relativeTime =
     formatRelativeTime(
@@ -268,8 +168,8 @@ export default function NotificationCard({
       <div
         className={[
           "grid h-10 w-10 shrink-0 place-items-center rounded-full",
-          visual.backgroundClassName,
-          visual.iconClassName,
+          getNotificationIconClasses(visual.tone),
+          visual.requiresAttention ? "ring-1 ring-[#6E5AA7]/25" : "",
         ].join(" ")}
       >
         <Icon className="h-4.5 w-4.5" />
@@ -285,7 +185,7 @@ export default function NotificationCard({
                 : "font-bold",
             ].join(" ")}
           >
-            {notification.title}
+            {title}
           </p>
 
           {!notification.is_read ? (
@@ -296,16 +196,22 @@ export default function NotificationCard({
           ) : null}
         </div>
 
-        <p
-          className={[
-            "mt-1 text-sm leading-5 text-zinc-500",
-            compact
-              ? "line-clamp-2"
-              : "",
-          ].join(" ")}
-        >
-          {notification.body}
-        </p>
+        {body ? (
+          <p
+            className={[
+              "mt-1 text-sm leading-5 text-zinc-500",
+              compact ? "line-clamp-2" : "",
+            ].join(" ")}
+          >
+            {body}
+          </p>
+        ) : null}
+
+        {visual.requiresAttention ? (
+          <span className="mt-2 block text-[11px] font-semibold text-[#6E5AA7]">
+            Review request
+          </span>
+        ) : null}
 
         {relativeTime ? (
           <time

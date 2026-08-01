@@ -1,4 +1,7 @@
 import { api } from "@/lib/api";
+import type { NotificationChange } from "@/lib/notification-live";
+
+export { getNotificationHref } from "@/lib/notification-presentation";
 
 export const NOTIFICATIONS_CHANGED_EVENT =
   "untapgo:notifications-changed";
@@ -36,46 +39,16 @@ type ListNotificationsOptions = {
   limit?: number;
 };
 
-function emitNotificationsChanged(): void {
+export function emitNotificationsChanged(
+  detail: NotificationChange = { kind: "refresh" },
+): void {
   if (typeof window === "undefined") {
     return;
   }
 
   window.dispatchEvent(
-    new CustomEvent(
-      NOTIFICATIONS_CHANGED_EVENT,
-    ),
+    new CustomEvent(NOTIFICATIONS_CHANGED_EVENT, { detail }),
   );
-}
-
-function getMetaString(
-  meta: NotificationMeta | null | undefined,
-  key: string,
-): string | null {
-  const value = meta?.[key];
-
-  if (
-    typeof value !== "string" ||
-    !value.trim()
-  ) {
-    return null;
-  }
-
-  return value.trim();
-}
-
-function getSafeInternalPath(
-  value: string | null,
-): string | null {
-  if (
-    !value ||
-    !value.startsWith("/") ||
-    value.startsWith("//")
-  ) {
-    return null;
-  }
-
-  return value;
 }
 
 export async function listNotifications({
@@ -130,7 +103,11 @@ export async function markNotificationRead(
       {},
     );
 
-  emitNotificationsChanged();
+  emitNotificationsChanged({
+    kind: "read",
+    notificationId,
+    updated: result.updated,
+  });
 
   return result;
 }
@@ -146,7 +123,11 @@ export async function markNotificationsReadForEvent(
       {},
     );
 
-  emitNotificationsChanged();
+  emitNotificationsChanged({
+    kind: "read_event",
+    eventId,
+    updated: result.updated,
+  });
 
   return result;
 }
@@ -158,59 +139,7 @@ export async function markAllNotificationsRead(): Promise<NotificationActionResp
       {},
     );
 
-  emitNotificationsChanged();
+  emitNotificationsChanged({ kind: "read_all" });
 
   return result;
-}
-
-export function getNotificationHref(
-  notification: NotificationItem,
-): string {
-  const explicitPath =
-    getSafeInternalPath(
-      getMetaString(
-        notification.meta,
-        "href",
-      ) ??
-        getMetaString(
-          notification.meta,
-          "url",
-        ),
-    );
-
-  if (explicitPath) {
-    return explicitPath;
-  }
-
-  if (notification.event_id) {
-    return `/events/${encodeURIComponent(
-      notification.event_id,
-    )}`;
-  }
-
-  const profileUserId =
-    getMetaString(
-      notification.meta,
-      "requesting_user_id",
-    ) ??
-    getMetaString(
-      notification.meta,
-      "joining_user_id",
-    ) ??
-    getMetaString(
-      notification.meta,
-      "profile_user_id",
-    ) ??
-    getMetaString(
-      notification.meta,
-      "user_id",
-    );
-
-  if (profileUserId) {
-    return `/profile/${encodeURIComponent(
-      profileUserId,
-    )}`;
-  }
-
-  return "/notifications";
 }

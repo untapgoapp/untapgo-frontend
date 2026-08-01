@@ -5,14 +5,14 @@ import type {
 import "mapbox-gl/dist/mapbox-gl.css";
 import "./globals.css";
 
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 import FloatingLocationPill from "@/components/location/FloatingLocationPill";
 import { LocationProvider } from "@/components/location/LocationContext";
+import NotificationRealtimeBridge from "@/components/notifications/NotificationRealtimeBridge";
 import PwaBootstrap from "@/components/pwa/PwaBootstrap";
 import {
   DistanceUnitProvider,
 } from "@/components/settings/DistanceUnitProvider";
+import SocialLayoutRouter from "@/components/social-shell/SocialLayoutRouter";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://untapgo.com"),
@@ -41,15 +41,12 @@ export default function RootLayout({
       <body className="bg-[#F8F5EF]">
         <DistanceUnitProvider>
           <LocationProvider>
-            <Header />
-
-            <main className="min-h-screen pt-24">
+            <SocialLayoutRouter
+              floatingAction={<FloatingLocationPill />}
+            >
               {children}
-            </main>
-
-            <Footer />
-
-            <FloatingLocationPill />
+            </SocialLayoutRouter>
+            <NotificationRealtimeBridge />
             <PwaBootstrap />
           </LocationProvider>
         </DistanceUnitProvider>

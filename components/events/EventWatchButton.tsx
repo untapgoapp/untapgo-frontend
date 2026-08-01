@@ -369,10 +369,10 @@ export default function EventWatchButton({
         aria-label={title}
         title={title}
         className={[
-          "inline-flex min-h-11 items-center justify-center gap-2 rounded-full border px-4 text-sm font-semibold shadow-[0_6px_18px_rgba(58,44,82,0.06)] outline-none transition active:scale-[0.98] focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20 disabled:cursor-wait disabled:opacity-60",
+          "inline-flex min-h-10 items-center justify-center gap-2 rounded-control border px-3.5 text-sm font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:cursor-wait disabled:opacity-60",
           visibleWatched
-            ? "border-[#6E5AA7]/20 bg-[#EEE9FF] text-[#5B478A] hover:bg-[#E8E1FF]"
-            : "border-[#6E5AA7]/15 bg-white/75 text-[#5B478A] hover:border-[#6E5AA7]/25 hover:bg-[#F7F3FF]",
+            ? "border-primary/15 bg-secondary text-secondary-foreground hover:bg-primary/14"
+            : "border-border-strong bg-surface/70 text-primary hover:border-primary/25 hover:bg-secondary/55",
           error
             ? "border-red-300"
             : "",
@@ -415,10 +415,10 @@ export default function EventWatchButton({
       aria-label={title}
       title={title}
       className={[
-        "grid h-11 w-11 shrink-0 place-items-center rounded-full border shadow-[0_6px_18px_rgba(58,44,82,0.06)] outline-none transition active:scale-[0.96] focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20 disabled:cursor-wait disabled:opacity-60",
+        "grid h-10 w-10 shrink-0 place-items-center rounded-control border outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:cursor-wait disabled:opacity-60",
         visibleWatched
-          ? "border-[#6E5AA7]/20 bg-[#EEE9FF] text-[#5B478A]"
-          : "border-[#6E5AA7]/15 bg-white/75 text-[#5B478A] hover:bg-[#F7F3FF]",
+          ? "border-primary/15 bg-secondary text-secondary-foreground"
+          : "border-border-strong bg-surface/70 text-primary hover:border-primary/25 hover:bg-secondary/55",
         error
           ? "border-red-300"
           : "",

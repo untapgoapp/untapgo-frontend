@@ -64,7 +64,22 @@ function friendlyError(
     return "The event is already full.";
   }
 
-  return message;
+  if (
+    normalized.includes("EVENT_CANCELLED") ||
+    normalized.includes("EVENT_ENDED")
+  ) {
+    return "This event no longer accepts check-ins.";
+  }
+
+  if (normalized.includes("BLOCKED_USER")) {
+    return "Check-in is not available for this event.";
+  }
+
+  if (normalized.includes("QR_COOLDOWN_ACTIVE")) {
+    return "You cannot rejoin this event yet.";
+  }
+
+  return "Could not complete check-in. Please try again.";
 }
 
 export default function DirectQrCheckIn({

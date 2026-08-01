@@ -21,12 +21,17 @@ import {
   ApiError,
 } from "@/lib/api";
 import {
+  applyNotificationChange,
+  type NotificationChange,
+} from "@/lib/notification-live";
+import {
   getNotificationHref,
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
   NOTIFICATIONS_CHANGED_EVENT,
   type NotificationItem,
+  type NotificationListResponse,
 } from "@/services/notifications";
 
 type Filter =
@@ -39,15 +44,10 @@ export default function NotificationsPage() {
   const [filter, setFilter] =
     useState<Filter>("all");
 
-  const [items, setItems] =
-    useState<NotificationItem[]>(
-      [],
-    );
-
-  const [
-    unreadCount,
-    setUnreadCount,
-  ] = useState(0);
+  const [notificationState, setNotificationState] =
+    useState<NotificationListResponse>({ unread_count: 0, items: [] });
+  const items = notificationState.items;
+  const unreadCount = notificationState.unread_count;
 
   const [loading, setLoading] =
     useState(true);
@@ -102,10 +102,7 @@ export default function NotificationsPage() {
             });
 
           setUnauthorized(false);
-          setItems(result.items);
-          setUnreadCount(
-            result.unread_count,
-          );
+          setNotificationState(result);
         } catch (loadError) {
           if (
             loadError instanceof
@@ -113,8 +110,7 @@ export default function NotificationsPage() {
             loadError.status === 401
           ) {
             setUnauthorized(true);
-            setItems([]);
-            setUnreadCount(0);
+            setNotificationState({ unread_count: 0, items: [] });
 
             return;
           }
@@ -149,10 +145,17 @@ export default function NotificationsPage() {
         }
       }, 30_000);
 
-    function handleChanged() {
-      void loadNotifications(
-        true,
-      );
+    function handleChanged(event: Event) {
+      const detail = (event as CustomEvent<NotificationChange>).detail;
+      if (!detail || detail.kind === "refresh") {
+        void loadNotifications(true);
+        return;
+      }
+      setNotificationState((current) => applyNotificationChange(
+        current,
+        detail,
+        { limit: 100, unreadOnly: filter === "unread" },
+      ));
     }
 
     window.addEventListener(
@@ -192,35 +195,6 @@ export default function NotificationsPage() {
         await markNotificationRead(
           notification.id,
         );
-
-        setItems(
-          (currentItems) =>
-            filter === "unread"
-              ? currentItems.filter(
-                  (current) =>
-                    current.id !==
-                    notification.id,
-                )
-              : currentItems.map(
-                  (current) =>
-                    current.id ===
-                    notification.id
-                      ? {
-                          ...current,
-                          is_read:
-                            true,
-                        }
-                      : current,
-                ),
-        );
-
-        setUnreadCount(
-          (current) =>
-            Math.max(
-              0,
-              current - 1,
-            ),
-        );
       }
 
       router.push(
@@ -254,20 +228,6 @@ export default function NotificationsPage() {
 
     try {
       await markAllNotificationsRead();
-
-      setUnreadCount(0);
-
-      setItems(
-        (currentItems) =>
-          filter === "unread"
-            ? []
-            : currentItems.map(
-                (notification) => ({
-                  ...notification,
-                  is_read: true,
-                }),
-              ),
-      );
     } catch (actionError) {
       setError(
         actionError instanceof Error
@@ -396,8 +356,7 @@ export default function NotificationsPage() {
               </div>
 
               <p className="text-xs font-medium text-zinc-400">
-                Updates every 30
-                seconds
+                Live activity
               </p>
             </div>
 

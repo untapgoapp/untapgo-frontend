@@ -28,6 +28,7 @@ import {
   kickEventAttendee,
   type AttendanceStatus,
   type EventAttendee,
+  type EventAttendanceParticipant,
   type EventDeckBrief,
   type EventDeckVisibility,
   type EventPlayerDeck,
@@ -54,6 +55,7 @@ type TableRow = {
   isMe: boolean;
   association: EventPlayerDeck | null;
   attendanceStatus: AttendanceStatus | null;
+  verificationMethod?: "host" | "qr" | null;
 };
 
 type OpenDeck = {
@@ -102,43 +104,58 @@ function getNickname(
 function isActiveAttendee(
   attendee: EventAttendee,
 ): boolean {
-  if (
-    attendee.is_playing === true
-  ) {
-    return true;
-  }
-
-  if (
-    attendee.is_playing === false
-  ) {
-    return false;
-  }
-
   const status = normalize(
     attendee.visible_status ??
       attendee.status,
   );
 
-  if (!status) {
-    return true;
+  /*
+   * An explicit membership status is the source of truth.
+   * It must override stale legacy is_playing values.
+   */
+  if (status) {
+    if (
+      [
+        "accepted",
+        "approved",
+        "confirmed",
+        "joined",
+        "playing",
+      ].includes(status)
+    ) {
+      return true;
+    }
+
+    if (
+      [
+        "pending",
+        "requested",
+        "request",
+        "rejected",
+        "declined",
+        "kicked",
+        "removed",
+        "left",
+        "cancelled",
+        "canceled",
+        "withdrawn",
+      ].includes(status)
+    ) {
+      return false;
+    }
+
+    /*
+     * Unknown explicit statuses are not considered
+     * confirmed by default.
+     */
+    return false;
   }
 
-  return ![
-    "pending",
-    "requested",
-    "request",
-    "rejected",
-    "declined",
-    "kicked",
-    "removed",
-    "left",
-    "cancelled",
-    "canceled",
-  ].some((inactiveStatus) =>
-    status.includes(
-      inactiveStatus,
-    ),
-  );
+  /*
+   * Compatibility fallback for older attendee responses
+   * that did not include an explicit status.
+   */
+  return attendee.is_playing === true;
 }
 
 function getVisibilityLabel(
@@ -157,12 +174,17 @@ function getVisibilityLabel(
 
 function getAttendanceLabel(
   status: AttendanceStatus,
+  method?: "host" | "qr" | null,
 ): string {
   if (
     status === "attended" ||
     status === "checked_in"
   ) {
-    return "Attended";
+    return method === "qr"
+      ? "Checked in · QR"
+      : method === "host"
+        ? "Checked in · Host"
+        : "Checked in";
   }
 
   if (status === "no_show") {
@@ -276,7 +298,13 @@ export default function EventTableRoster({
     attendanceByUser,
     setAttendanceByUser,
   ] = useState<
-    Map<string, AttendanceStatus>
+    Map<
+      string,
+      Pick<
+        EventAttendanceParticipant,
+        "attendance_status" | "verification_method"
+      >
+    >
   >(new Map());
 
   const [loading, setLoading] =
@@ -385,7 +413,12 @@ export default function EventTableRoster({
                   String(
                     participant.user_id,
                   ),
-                  participant.attendance_status,
+                  {
+                    attendance_status:
+                      participant.attendance_status,
+                    verification_method:
+                      participant.verification_method,
+                  },
                 ],
               ),
             ),
@@ -502,9 +535,11 @@ export default function EventTableRoster({
                 userId,
               ) ?? null,
             attendanceStatus:
-              attendanceByUser.get(
-                userId,
-              ) ?? null,
+              attendanceByUser.get(userId)
+                ?.attendance_status ?? null,
+            verificationMethod:
+              attendanceByUser.get(userId)
+                ?.verification_method ?? null,
           }),
         )
         .sort((left, right) => {
@@ -640,24 +675,20 @@ export default function EventTableRoster({
     <>
       <section
         aria-labelledby="event-table-title"
-        className="border-t border-[#6E5AA7]/10 py-7 lg:col-start-1 lg:row-start-2 lg:mt-1"
+        className="py-6 lg:col-start-1 lg:row-start-2 lg:mt-1"
       >
         <div className="flex items-end justify-between gap-4">
           <div>
             <div className="flex items-center gap-2.5">
-              <span
-                aria-hidden="true"
-                className="h-1.5 w-5 rounded-full bg-[#6E5AA7]"
-              />
               <h2
                 id="event-table-title"
-                className="text-[22px] font-bold tracking-[-0.03em] text-zinc-950"
+                className="text-xl font-semibold tracking-tight text-foreground"
               >
                 The table
               </h2>
             </div>
 
-            <p className="mt-1.5 text-sm text-zinc-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               {displayedCount}
               {maxPlayers > 0
                 ? ` of ${maxPlayers}`
@@ -674,7 +705,7 @@ export default function EventTableRoster({
             }}
             disabled={loading}
             aria-label="Refresh table roster"
-            className="grid h-11 w-11 place-items-center rounded-full text-[#6E5AA7] outline-none transition hover:bg-[#EEE9FF] active:scale-[0.96] focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20 disabled:opacity-50"
+            className="grid h-10 w-10 place-items-center rounded-control text-primary outline-none transition-colors hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
           >
             <RefreshCw
               className={[
@@ -706,12 +737,12 @@ export default function EventTableRoster({
         ) : null}
 
         {loading ? (
-          <div className="-mx-4 mt-5 flex snap-x gap-3 overflow-hidden px-4 sm:mx-0 sm:grid sm:grid-cols-2 sm:px-0 xl:grid-cols-3">
+          <div className="mt-4 grid gap-1 sm:grid-cols-2">
             {[0, 1, 2].map(
               (item) => (
                 <div
                   key={item}
-                  className="h-[220px] w-[184px] shrink-0 animate-pulse snap-start rounded-[1.35rem] bg-[#6E5AA7]/[0.055] sm:w-auto"
+                  className="h-28 animate-pulse rounded-row bg-surface-subtle"
                 />
               ),
             )}
@@ -720,14 +751,14 @@ export default function EventTableRoster({
 
         {!loading &&
         rows.length === 0 ? (
-          <p className="mt-5 border-t border-[#6E5AA7]/10 py-4 text-sm text-zinc-500">
+          <p className="mt-4 rounded-row bg-surface-subtle/60 px-4 py-3 text-sm text-muted-foreground">
             No players at the table yet.
           </p>
         ) : null}
 
         {!loading &&
         rows.length > 0 ? (
-          <div className="-mx-4 mt-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-3">
+          <div className="mt-4 grid gap-1 sm:grid-cols-2">
             {rows.map((row) => (
               <PlayerCard
                 key={row.userId}
@@ -901,13 +932,13 @@ function PlayerCard({
   return (
     <article
       className={[
-        "flex min-h-[220px] w-[184px] shrink-0 snap-start flex-col rounded-[1.35rem] p-4 transition duration-200 hover:-translate-y-0.5 sm:w-auto",
+        "relative grid min-h-[112px] grid-cols-[44px_minmax(0,1fr)] content-center gap-x-3 rounded-row px-3 py-2.5 transition-colors",
         row.isHost
-          ? "bg-[#FBF8FF] shadow-[inset_0_0_0_1px_rgba(110,90,167,0.17),0_12px_30px_rgba(71,53,103,0.075)]"
-          : "bg-white/75 shadow-[inset_0_0_0_1px_rgba(110,90,167,0.08),0_8px_24px_rgba(55,45,70,0.045)] hover:shadow-[inset_0_0_0_1px_rgba(110,90,167,0.14),0_12px_30px_rgba(55,45,70,0.065)]",
+          ? "bg-secondary/50 hover:bg-secondary/70"
+          : "bg-transparent hover:bg-surface-selected/45 focus-within:bg-surface-selected/45",
       ].join(" ")}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="row-span-2 flex items-start">
         <PlayerAvatar
           nickname={row.nickname}
           avatarUrl={row.avatarUrl}
@@ -919,7 +950,7 @@ function PlayerCard({
             type="button"
             onClick={onRemove}
             aria-label={`Manage ${row.nickname}`}
-            className="-mr-2 -mt-2 grid h-11 w-11 place-items-center rounded-full text-zinc-400 outline-none transition hover:bg-black/[0.05] hover:text-zinc-700 focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20"
+            className="absolute right-1 top-1 grid h-10 w-10 place-items-center rounded-control text-quiet-foreground outline-none transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/20"
           >
             <MoreHorizontal className="h-[18px] w-[18px]" />
           </button>
@@ -930,7 +961,7 @@ function PlayerCard({
         href={`/profile/${encodeURIComponent(
           row.userId,
         )}`}
-        className="mt-1 flex min-h-11 items-center truncate text-sm font-semibold text-zinc-950 outline-none transition hover:text-[#6E5AA7] focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20"
+        className="flex min-h-7 items-end truncate pr-8 text-sm font-semibold text-foreground outline-none transition-colors hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/20"
       >
         {row.nickname}
         {row.isMe ? (
@@ -941,12 +972,12 @@ function PlayerCard({
         ) : null}
       </Link>
 
-      <div className="mt-1 flex min-h-5 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-medium text-zinc-500">
+      <div className="flex min-h-5 flex-wrap items-start gap-x-2 gap-y-1 text-[11px] font-medium text-muted-foreground">
         <span
           className={
             row.isHost
-              ? "rounded-full bg-[#EEE9FF] px-2 py-0.5 font-bold text-[#5B478A] shadow-[inset_0_0_0_1px_rgba(110,90,167,0.08)]"
-              : "text-zinc-500"
+              ? "rounded-full bg-secondary px-2 py-0.5 font-semibold text-secondary-foreground"
+              : "text-muted-foreground"
           }
         >
           {row.isHost ? "Host" : "Player"}
@@ -963,12 +994,13 @@ function PlayerCard({
           >
             {getAttendanceLabel(
               row.attendanceStatus,
+              row.verificationMethod,
             )}
           </span>
         ) : null}
       </div>
 
-      <div className="mt-auto rounded-xl bg-[#F3F0F5]/75 px-2.5 py-2.5 shadow-[inset_0_0_0_1px_rgba(110,90,167,0.055)]">
+      <div className="col-span-2 mt-2 rounded-control bg-surface-subtle/60 px-2.5 py-2">
         {!canViewDecks ? (
           <p className="text-xs leading-5 text-zinc-400">
             Deck visible after confirming a seat
@@ -978,7 +1010,7 @@ function PlayerCard({
         {canViewDecks &&
         !association ? (
           <div className="flex items-center gap-2 text-zinc-400">
-            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-white/65 text-[#8A7BA6]">
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-control bg-surface/70 text-primary/70">
               <Layers3 className="h-3.5 w-3.5" />
             </span>
             <p className="text-xs">
@@ -1050,7 +1082,7 @@ function PlayerCard({
             onClick={() => {
               onOpenDeck(deck);
             }}
-            className="mt-1 flex min-h-11 w-full items-center justify-between rounded-lg px-1 text-xs font-semibold text-[#5B478A] outline-none transition hover:bg-white/65 focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20"
+            className="mt-1 flex min-h-9 w-full items-center justify-between rounded-control px-1 text-xs font-semibold text-primary outline-none transition-colors hover:bg-surface/70 focus-visible:ring-[3px] focus-visible:ring-ring/20"
           >
             View decklist
             <List className="h-3.5 w-3.5" />
@@ -1077,10 +1109,10 @@ function PlayerAvatar({
         src={avatarUrl}
         alt=""
         className={[
-          "h-11 w-11 rounded-full bg-zinc-200 object-cover shadow-[0_4px_12px_rgba(35,27,47,0.12)]",
+          "h-11 w-11 rounded-full bg-muted object-cover",
           isHost
-            ? "ring-2 ring-[#6E5AA7]/30 ring-offset-2 ring-offset-[#FBF8FF]"
-            : "ring-1 ring-black/[0.06]",
+            ? "ring-2 ring-primary/25 ring-offset-2 ring-offset-secondary/50"
+            : "",
         ].join(" ")}
       />
     );
@@ -1089,9 +1121,9 @@ function PlayerAvatar({
   return (
     <div
       className={[
-        "grid h-11 w-11 place-items-center rounded-full bg-[#EEE9FF] text-sm font-bold text-[#5B478A] shadow-[0_4px_12px_rgba(55,41,79,0.08)]",
+        "grid h-11 w-11 place-items-center rounded-full bg-secondary text-sm font-bold text-secondary-foreground",
         isHost
-          ? "ring-2 ring-[#6E5AA7]/30 ring-offset-2 ring-offset-[#FBF8FF]"
+          ? "ring-2 ring-primary/25 ring-offset-2 ring-offset-secondary/50"
           : "ring-1 ring-[#6E5AA7]/10",
       ].join(" ")}
     >

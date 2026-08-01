@@ -448,6 +448,16 @@ export const decksApi = {
     );
   },
 
+  cardById(
+    scryfallId: string,
+  ) {
+    return apiFetch<ScryfallCard>(
+      `/cards/${encodeURIComponent(
+        scryfallId,
+      )}`,
+    );
+  },
+
   searchCards(
     query: string,
     unique:

@@ -39,7 +39,16 @@ export async function GET() {
   const source = `
 function untapgoSafeHref(data) {
   const explicit = typeof data?.href === "string" ? data.href.trim() : "";
-  if (explicit.startsWith("/") && !explicit.startsWith("//")) return explicit;
+  const hasUnsafeCharacter = Array.from(explicit).some(function (character) {
+    const code = character.charCodeAt(0);
+    return code < 32 || code === 92 || code === 127;
+  });
+  if (explicit.startsWith("/") && !explicit.startsWith("//") && !hasUnsafeCharacter) {
+    try {
+      const parsed = new URL(explicit, self.location.origin);
+      if (parsed.origin === self.location.origin) return explicit;
+    } catch {}
+  }
   const eventId = typeof data?.event_id === "string" ? data.event_id.trim() : "";
   return eventId ? "/events/" + encodeURIComponent(eventId) : "/notifications";
 }

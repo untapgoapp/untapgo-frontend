@@ -49,6 +49,26 @@ export type EventAttendanceUpdateResult = {
   verified_by?: string | null;
 };
 
+export type EventAttendanceCheckInState =
+  | "not_required"
+  | "not_participating"
+  | "pending"
+  | "not_open"
+  | "ready"
+  | "closed"
+  | "checked_in";
+
+export type EventMyAttendance = {
+  event_id: string;
+  attendance_method: AttendanceMethod;
+  membership_state: string;
+  attendance_status?: AttendanceStatus | null;
+  verification_method?: "host" | "qr" | null;
+  checked_in_at?: string | null;
+  check_in_state: EventAttendanceCheckInState;
+  can_check_in: boolean;
+};
+
 export type AttendanceFinalizeResult = {
   ok: boolean;
   event_id: string;
@@ -427,6 +447,16 @@ export async function getEventAttendance(
   );
 }
 
+export async function getMyEventAttendance(
+  eventId: string,
+): Promise<EventMyAttendance> {
+  return api.get<EventMyAttendance>(
+    `/events/${encodeURIComponent(
+      eventId,
+    )}/attendance/me`,
+  );
+}
+
 export async function updateEventAttendance({
   eventId,
   userId,
@@ -436,9 +466,7 @@ export async function updateEventAttendance({
   userId: string;
   status:
     | "expected"
-    | "attended"
-    | "no_show"
-    | "excused";
+    | "attended";
 }): Promise<EventAttendanceUpdateResult> {
   return api.patch<EventAttendanceUpdateResult>(
     `/events/${encodeURIComponent(

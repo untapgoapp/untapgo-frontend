@@ -14,6 +14,8 @@ import {
   RefreshCw,
   X,
 } from "lucide-react";
+
+import { Input } from "@/components/ui/input";
 import type {
   Html5Qrcode,
 } from "html5-qrcode";
@@ -101,6 +103,18 @@ function friendlyError(
     [
       "BLOCKED_USER",
       "Check-in is not available for this event.",
+    ],
+    [
+      "EVENT_CANCELLED",
+      "This event was cancelled and no longer accepts check-ins.",
+    ],
+    [
+      "EVENT_ENDED",
+      "This event has ended and no longer accepts check-ins.",
+    ],
+    [
+      "ATTENDANCE_FINALIZED",
+      "Attendance has already been finalised.",
     ],
     [
       "HOST_NOT_PLAYING",
@@ -356,7 +370,7 @@ export default function EventQrScannerModal({
         }
       }}
     >
-      <div className="w-full max-w-md rounded-[1.75rem] bg-[#F8F5EF] p-5 shadow-2xl sm:p-6">
+      <div className="w-full max-w-md rounded-surface bg-background p-5 shadow-overlay sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#6E5AA7]">
@@ -376,7 +390,7 @@ export default function EventQrScannerModal({
             type="button"
             onClick={onClose}
             aria-label="Close scanner"
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-black/10 bg-white text-zinc-700 outline-none focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-control bg-surface text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/20"
           >
             <X size={18} />
           </button>
@@ -384,7 +398,7 @@ export default function EventQrScannerModal({
 
         {!result ? (
           <>
-            <div className="relative mt-6 overflow-hidden rounded-3xl bg-zinc-950">
+            <div className="relative mt-6 overflow-hidden rounded-surface bg-zinc-950">
               <div
                 id={readerId}
                 className="min-h-72 w-full"
@@ -416,20 +430,20 @@ export default function EventQrScannerModal({
             {error ? (
               <div
                 role="alert"
-                className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700"
+                className="mt-4 rounded-row bg-destructive-subtle px-4 py-3 text-sm leading-6 text-destructive"
               >
                 {error}
               </div>
             ) : null}
 
-            <div className="mt-5 border-t border-black/10 pt-5">
+            <div className="mt-5 rounded-row bg-surface-subtle/60 p-3.5">
               <div className="flex items-center gap-2 text-sm font-semibold text-zinc-800">
                 <ClipboardPaste size={16} />
                 Paste check-in link
               </div>
 
               <div className="mt-3 flex gap-2">
-                <input
+                <Input
                   value={manualValue}
                   onChange={(changeEvent) => {
                     setManualValue(
@@ -437,7 +451,7 @@ export default function EventQrScannerModal({
                     );
                   }}
                   placeholder="Paste QR link or token"
-                  className="min-w-0 flex-1 rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none focus:border-[#6E5AA7] focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/15"
+                  className="min-w-0 flex-1"
                 />
 
                 <button
@@ -451,7 +465,7 @@ export default function EventQrScannerModal({
                       manualValue,
                     );
                   }}
-                  className="min-h-11 rounded-2xl bg-[#6E5AA7] px-4 text-sm font-semibold text-white outline-none focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/25 disabled:opacity-50"
+                  className="min-h-11 rounded-control bg-primary px-4 text-sm font-semibold text-primary-foreground outline-none hover:bg-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
                 >
                   Check in
                 </button>
@@ -459,7 +473,7 @@ export default function EventQrScannerModal({
             </div>
           </>
         ) : (
-          <div className="mt-6 rounded-3xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+          <div className="mt-6 rounded-surface bg-success-subtle p-6 text-center">
             <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
 
             <h3 className="mt-4 text-xl font-black text-emerald-950">
@@ -476,7 +490,7 @@ export default function EventQrScannerModal({
 
             <a
               href={`/events/${result.event_id}`}
-              className="mt-5 inline-flex min-h-11 items-center rounded-full bg-emerald-700 px-5 text-sm font-semibold text-white outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/20"
+              className="mt-5 inline-flex min-h-10 items-center rounded-control bg-success px-5 text-sm font-semibold text-white outline-none focus-visible:ring-[3px] focus-visible:ring-success/20"
             >
               View event
             </a>

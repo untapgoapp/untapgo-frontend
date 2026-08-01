@@ -19,12 +19,17 @@ import {
   ApiError,
 } from "@/lib/api";
 import {
+  applyNotificationChange,
+  type NotificationChange,
+} from "@/lib/notification-live";
+import {
   getNotificationHref,
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
   NOTIFICATIONS_CHANGED_EVENT,
   type NotificationItem,
+  type NotificationListResponse,
 } from "@/services/notifications";
 
 type AuthenticationState =
@@ -52,15 +57,10 @@ export default function NotificationBell() {
       "checking",
     );
 
-  const [items, setItems] =
-    useState<NotificationItem[]>(
-      [],
-    );
-
-  const [
-    unreadCount,
-    setUnreadCount,
-  ] = useState(0);
+  const [notificationState, setNotificationState] =
+    useState<NotificationListResponse>({ unread_count: 0, items: [] });
+  const items = notificationState.items;
+  const unreadCount = notificationState.unread_count;
 
   const [loading, setLoading] =
     useState(true);
@@ -110,10 +110,7 @@ export default function NotificationBell() {
             "authenticated",
           );
 
-          setItems(result.items);
-          setUnreadCount(
-            result.unread_count,
-          );
+          setNotificationState(result);
         } catch (loadError) {
           if (
             loadError instanceof
@@ -124,8 +121,7 @@ export default function NotificationBell() {
               "guest",
             );
 
-            setItems([]);
-            setUnreadCount(0);
+            setNotificationState({ unread_count: 0, items: [] });
 
             return;
           }
@@ -173,10 +169,17 @@ export default function NotificationBell() {
       }
     }
 
-    function handleNotificationsChanged() {
-      void loadNotifications(
-        true,
-      );
+    function handleNotificationsChanged(event: Event) {
+      const detail = (event as CustomEvent<NotificationChange>).detail;
+      if (!detail || detail.kind === "refresh") {
+        void loadNotifications(true);
+        return;
+      }
+      setNotificationState((current) => applyNotificationChange(
+        current,
+        detail,
+        { limit: 8 },
+      ));
     }
 
     document.addEventListener(
@@ -290,28 +293,6 @@ export default function NotificationBell() {
         await markNotificationRead(
           notification.id,
         );
-
-        setItems(
-          (currentItems) =>
-            currentItems.map(
-              (current) =>
-                current.id ===
-                notification.id
-                  ? {
-                      ...current,
-                      is_read: true,
-                    }
-                  : current,
-            ),
-        );
-
-        setUnreadCount(
-          (current) =>
-            Math.max(
-              0,
-              current - 1,
-            ),
-        );
       }
 
       setOpen(false);
@@ -347,18 +328,6 @@ export default function NotificationBell() {
 
     try {
       await markAllNotificationsRead();
-
-      setItems(
-        (currentItems) =>
-          currentItems.map(
-            (notification) => ({
-              ...notification,
-              is_read: true,
-            }),
-          ),
-      );
-
-      setUnreadCount(0);
     } catch (actionError) {
       setError(
         actionError instanceof Error
@@ -402,12 +371,12 @@ export default function NotificationBell() {
             );
           }
         }}
-        className="relative grid h-10 w-10 place-items-center rounded-full border border-black/10 bg-white text-zinc-600 transition hover:border-black/20 hover:bg-black/[0.035] hover:text-black"
+        className="relative grid h-10 w-10 place-items-center rounded-control text-muted-foreground transition-colors hover:bg-secondary/65 hover:text-primary focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/15"
       >
         <Bell className="h-[18px] w-[18px]" />
 
         {unreadCount > 0 ? (
-          <span className="absolute -right-1 -top-1 grid min-h-[18px] min-w-[18px] place-items-center rounded-full border-2 border-white bg-[#6E5AA7] px-1 text-[9px] font-black leading-none text-white">
+          <span className="absolute -right-1 -top-1 grid min-h-[18px] min-w-[18px] place-items-center rounded-full border-2 border-surface bg-primary px-1 text-[9px] font-black leading-none text-primary-foreground">
             {unreadCount > 99
               ? "99+"
               : unreadCount}

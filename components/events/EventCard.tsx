@@ -96,6 +96,20 @@ function getStatusLabel(
   return status || "Event";
 }
 
+function getStatusClasses(
+  status?: string | null,
+): string {
+  const normalized = normalizeStatus(status);
+
+  if (normalized === "open") return "bg-secondary text-secondary-foreground";
+  if (normalized === "full") return "bg-warning-subtle text-warning";
+  if (normalized === "cancelled" || normalized === "canceled") {
+    return "bg-destructive-subtle text-destructive";
+  }
+
+  return "bg-muted text-muted-foreground";
+}
+
 function formatEventDate(
   value?: string | null,
 ): string {
@@ -278,22 +292,22 @@ const EventCard: FC<EventCardProps> = ({
   }`;
 
   return (
-    <article className="group relative rounded-[1.35rem] border border-black/10 bg-white px-5 py-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition hover:border-black/20 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]">
+    <article className="group relative min-h-[152px] rounded-row bg-surface/45 px-4 py-4 transition-colors hover:bg-surface-selected/55 focus-within:bg-surface-selected/55 sm:px-5">
       <Link
         href={`/events/${event.id}`}
         aria-label={`Open ${title}`}
-        className="absolute inset-0 z-10 rounded-[1.35rem] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/25"
+        className="absolute inset-0 z-10 rounded-row outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20"
       />
 
       <div className="relative flex items-start justify-between gap-5">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="truncate text-xl font-semibold tracking-tight text-zinc-950">
+            <h2 className="truncate text-lg font-semibold tracking-tight text-foreground">
               {title}
             </h2>
 
             {relationship ? (
-              <span className="rounded-full bg-[#F0EBFF] px-2.5 py-1 text-xs font-semibold text-[#6E5AA7]">
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-secondary-foreground">
                 {
                   relationship
                 }
@@ -301,18 +315,18 @@ const EventCard: FC<EventCardProps> = ({
             ) : null}
           </div>
 
-          <p className="mt-2 truncate text-[15px] text-zinc-700">
-            {host}
+          <p className="mt-1.5 truncate text-sm text-muted-foreground">
+            Hosted by <span className="font-medium text-foreground/80">{host}</span>
           </p>
 
-          <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-500">
-            <span>
+          <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground/85">
               {format}
             </span>
 
             {event.power_level ? (
               <>
-                <span className="text-zinc-300">
+                <span className="text-border-strong">
                   ·
                 </span>
 
@@ -324,7 +338,7 @@ const EventCard: FC<EventCardProps> = ({
               </>
             ) : null}
 
-            <span className="text-zinc-300">
+            <span className="text-border-strong">
               ·
             </span>
 
@@ -333,14 +347,14 @@ const EventCard: FC<EventCardProps> = ({
             </span>
           </div>
 
-          <p className="mt-2 truncate text-sm text-zinc-500">
+          <p className="mt-1.5 truncate text-sm text-muted-foreground">
             {where}
           </p>
         </div>
 
-        <div className="flex shrink-0 flex-col items-end gap-2 pt-0.5">
+        <div className="flex shrink-0 flex-col items-end gap-2">
           <div className="relative z-20 flex items-center gap-2">
-            <span className="rounded-full bg-black/[0.055] px-3 py-1 text-sm font-medium text-zinc-700">
+            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusClasses(event.status)}`}>
               {status}
             </span>
 
@@ -354,16 +368,17 @@ const EventCard: FC<EventCardProps> = ({
               onChanged={
                 onWatchChange
               }
+              className="!h-9 !w-9 !border-0 !shadow-none"
             />
           </div>
 
-          <div className="mt-1 text-right text-sm">
-            <p className="font-semibold text-zinc-800">
-              {players}
+          <div className="text-right text-xs text-muted-foreground">
+            <p className="font-semibold text-foreground/85">
+              {players} players
             </p>
 
             {distance ? (
-              <p className="mt-1 text-zinc-500">
+              <p className="mt-1 text-muted-foreground">
                 {distance}
               </p>
             ) : null}

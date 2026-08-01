@@ -152,7 +152,7 @@ export default function CopyArenaTag({
       title={title}
       aria-label={`Copy MTG Arena tag ${value}`}
       className={[
-        "inline-flex min-h-9 max-w-full items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold transition",
+        "inline-flex min-h-9 max-w-full items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-semibold transition",
         copied
           ? "border-emerald-200 bg-emerald-50 text-emerald-700"
           : copyError

@@ -170,6 +170,7 @@ export default function FloatingLocationPill() {
   return (
     <>
       <button
+        data-floating-location-trigger
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Choose discovery area"

@@ -9,6 +9,7 @@ export type EventMembershipState =
 
 const CONFIRMED_STATUSES = new Set([
   "accepted",
+  "approved",
   "confirmed",
   "joined",
   "playing",

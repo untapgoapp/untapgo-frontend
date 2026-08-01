@@ -183,12 +183,12 @@ export default function EventActionSheet({
             : undefined
         }
         tabIndex={-1}
-        className="flex max-h-[min(88dvh,760px)] w-full flex-col overflow-hidden rounded-t-[1.75rem] bg-[#F7F4FA] shadow-[0_-18px_70px_rgba(31,23,43,0.22)] outline-none sm:max-w-lg sm:rounded-[1.75rem] sm:shadow-[0_28px_90px_rgba(31,23,43,0.28)]"
+        className="flex max-h-[min(88dvh,760px)] w-full flex-col overflow-hidden rounded-t-surface bg-background shadow-overlay outline-none sm:max-w-lg sm:rounded-surface"
         onMouseDown={(event) => {
           event.stopPropagation();
         }}
       >
-        <div className="relative border-b border-[#6E5AA7]/10 bg-[#FEFCFF]/88 px-5 pb-4 pt-5 backdrop-blur-2xl">
+        <div className="relative border-b border-border/60 bg-surface/90 px-5 pb-4 pt-5 backdrop-blur-2xl">
           <div className="absolute left-1/2 top-2 h-1 w-9 -translate-x-1/2 rounded-full bg-[#6E5AA7]/25 sm:hidden" />
 
           <div className="flex items-start justify-between gap-4">
@@ -214,7 +214,7 @@ export default function EventActionSheet({
               type="button"
               onClick={onClose}
               aria-label={`Close ${title}`}
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#EEE9FF] text-[#5B478A] outline-none transition hover:bg-[#E5DEFF] active:scale-[0.96] focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-control bg-secondary text-secondary-foreground outline-none transition-colors hover:bg-primary/14 focus-visible:ring-[3px] focus-visible:ring-ring/20"
             >
               <X className="h-[18px] w-[18px]" />
             </button>
@@ -226,11 +226,11 @@ export default function EventActionSheet({
         </div>
 
         {footer ? (
-          <div className="border-t border-[#6E5AA7]/10 bg-[#FEFCFF]/88 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur-2xl sm:px-5 sm:pb-4">
+          <div className="border-t border-border/60 bg-surface/90 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur-2xl sm:px-5 sm:pb-4">
             {footer}
           </div>
         ) : (
-          <div className="h-[env(safe-area-inset-bottom)] bg-[#FEFCFF]/88 sm:hidden" />
+          <div className="h-[env(safe-area-inset-bottom)] bg-surface/90 sm:hidden" />
         )}
       </div>
     </div>

@@ -539,7 +539,7 @@ export default function EventRequestsPanel({
               processingAny
             }
             aria-label="Refresh join requests"
-            className="grid h-11 w-11 place-items-center rounded-full text-[#6E5AA7] outline-none transition hover:bg-[#EEE9FF] active:scale-[0.96] focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20 disabled:opacity-50"
+            className="grid h-10 w-10 place-items-center rounded-control text-primary outline-none transition-colors hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
           >
             <RefreshCw
               className={[
@@ -588,7 +588,7 @@ export default function EventRequestsPanel({
         ) : null}
 
         {loading ? (
-          <div className="mt-3 divide-y divide-[#6E5AA7]/10 border-y border-[#6E5AA7]/10">
+          <div className="mt-3 grid gap-1">
             {[0, 1].map(
               (item) => (
                 <div
@@ -606,14 +606,14 @@ export default function EventRequestsPanel({
         {!loading &&
         pendingRequests.length ===
           0 ? (
-          <p className="mt-3 border-y border-[#6E5AA7]/10 py-4 text-sm text-zinc-500">
+          <p className="mt-3 rounded-row bg-surface/55 px-3 py-3 text-sm text-muted-foreground">
             No pending requests — you&apos;re all caught up.
           </p>
         ) : null}
 
         {!loading &&
         pendingRequests.length > 0 ? (
-          <div className="mt-3 divide-y divide-[#6E5AA7]/10 border-y border-[#6E5AA7]/10">
+          <div className="mt-3 grid gap-1">
             {pendingRequests.map(
               (request) => {
                 const userId =
@@ -643,7 +643,7 @@ export default function EventRequestsPanel({
                 return (
                   <div
                     key={userId}
-                    className="flex min-h-[68px] items-center gap-3 py-2"
+                    className="flex min-h-[68px] items-center gap-3 rounded-row px-2 py-2 transition-colors hover:bg-secondary/45 focus-within:bg-secondary/45"
                   >
                     <RequestAvatar
                       request={
@@ -686,7 +686,7 @@ export default function EventRequestsPanel({
                           !canManageRequests
                         }
                         aria-label={`Decline ${nickname}`}
-                        className="grid h-11 w-11 place-items-center rounded-full text-zinc-500 outline-none transition hover:bg-red-500/[0.08] hover:text-red-600 focus-visible:ring-4 focus-visible:ring-red-500/15 disabled:opacity-40"
+                        className="grid h-10 w-10 place-items-center rounded-control text-muted-foreground outline-none transition-colors hover:bg-destructive-subtle hover:text-destructive focus-visible:ring-[3px] focus-visible:ring-destructive/15 disabled:opacity-40"
                       >
                         {processing ? (
                           <RefreshCw className="h-4 w-4 animate-spin" />
@@ -707,7 +707,7 @@ export default function EventRequestsPanel({
                           !canApprove
                         }
                         aria-label={`Approve ${nickname}`}
-                        className="grid h-11 w-11 place-items-center rounded-full bg-[#6E5AA7] text-white shadow-[0_5px_14px_rgba(110,90,167,0.2)] outline-none transition hover:bg-[#5F4E94] active:scale-[0.96] focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20 disabled:opacity-40"
+                        className="grid h-10 w-10 place-items-center rounded-control bg-primary text-primary-foreground outline-none transition-colors hover:bg-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-40"
                       >
                         {processing ? (
                           <RefreshCw className="h-4 w-4 animate-spin" />

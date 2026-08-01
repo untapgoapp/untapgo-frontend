@@ -26,14 +26,16 @@ import {
   isConfirmedMembership,
   isPendingMembership,
 } from "@/lib/event-membership";
+import { normalizeAttendanceMethod } from "@/lib/event-attendance";
 import {
   cancelEvent,
+  getMyEventAttendance,
   getPrivateEvent,
   joinEvent,
   leaveEvent,
-  type AttendanceMethod,
   type EventActionResult,
   type EventItem,
+  type EventMyAttendance,
 } from "@/services/events";
 
 type EventUserPanelsProps = {
@@ -186,29 +188,53 @@ function getJoinMessage(
       result.my_status,
     );
 
-  if (
-    result.already_joined ||
-    result.is_playing ||
-    resultStatus === "joined"
-  ) {
-    return isHost
-      ? "You are now hosting and playing."
-      : "Your seat is confirmed.";
-  }
-
-  if (
-    result.requested ||
-    result.already_requested ||
+  const isPending =
+    result.requested === true ||
+    result.already_requested ===
+      true ||
     resultStatus.includes(
       "pend",
     ) ||
     resultStatus.includes(
       "request",
-    )
-  ) {
+    );
+
+  /*
+   * An explicit pending/requested result must always win
+   * over legacy booleans such as is_playing.
+   */
+  if (isPending) {
     return result.already_requested
       ? "Your request is already waiting for the host."
       : "Request sent. Waiting for the host.";
+  }
+
+  const confirmedByStatus = [
+    "joined",
+    "accepted",
+    "approved",
+    "confirmed",
+    "playing",
+  ].includes(resultStatus);
+
+  /*
+   * Legacy booleans are only trusted when the API
+   * did not return an explicit membership status.
+   */
+  const confirmedByLegacy =
+    !resultStatus &&
+    Boolean(
+      result.already_joined ||
+        result.is_playing,
+    );
+
+  if (
+    confirmedByStatus ||
+    confirmedByLegacy
+  ) {
+    return isHost
+      ? "You are now hosting and playing."
+      : "Your seat is confirmed.";
   }
 
   return isHost
@@ -226,6 +252,9 @@ export default function EventUserPanels({
     useState<EventItem>(
       initialEvent,
     );
+
+  const [myAttendance, setMyAttendance] =
+    useState<EventMyAttendance | null>(null);
 
   const [
     currentUserId,
@@ -351,6 +380,7 @@ export default function EventUserPanels({
             setIsLoggedIn(false);
             setCurrentUserId(null);
             setEvent(initialEvent);
+            setMyAttendance(null);
             return;
           }
 
@@ -359,16 +389,28 @@ export default function EventUserPanels({
             session.user.id,
           );
 
-          const privateEvent =
-            await getPrivateEvent(
-              eventId,
-            );
+          const [eventResult, attendanceResult] =
+            await Promise.allSettled([
+              getPrivateEvent(eventId),
+              getMyEventAttendance(eventId),
+            ]);
+
+          if (eventResult.status === "rejected") {
+            throw eventResult.reason;
+          }
+
+          const privateEvent = eventResult.value;
 
           setEvent(privateEvent);
           setRemainingCooldown(
             getInitialCooldown(
               privateEvent.cooldown_seconds,
             ),
+          );
+          setMyAttendance(
+            attendanceResult.status === "fulfilled"
+              ? attendanceResult.value
+              : null,
           );
 
           if (refreshPanels) {
@@ -533,15 +575,17 @@ export default function EventUserPanels({
     );
 
   const attendanceMethod =
-    (event.attendance_method ??
-      "none") as AttendanceMethod;
+    normalizeAttendanceMethod(
+      event.attendance_method,
+    );
 
   const canScan =
     attendanceMethod === "qr" &&
-    (isPlaying ||
-      Boolean(
-        event.allow_walk_ins,
-      ));
+    !isEnded &&
+    !isCancelled &&
+    (myAttendance
+      ? myAttendance.can_check_in
+      : isPlaying || Boolean(event.allow_walk_ins));
 
   async function runAction({
     name,
@@ -654,17 +698,17 @@ export default function EventUserPanels({
   if (!isLoggedIn) {
     return (
       <div className="lg:contents">
-        <section className="border-t border-[#6E5AA7]/10 py-7 lg:col-start-1 lg:row-start-2">
+        <section className="py-6 lg:col-start-1 lg:row-start-2">
           <h2 className="text-[22px] font-semibold tracking-[-0.025em] text-zinc-950">
             The table
           </h2>
 
-          <p className="mt-4 border-y border-black/[0.07] py-4 text-sm text-zinc-500">
+          <p className="mt-3 rounded-row bg-surface-subtle/60 px-4 py-3 text-sm text-muted-foreground">
             Log in to see the table roster.
           </p>
         </section>
 
-        <aside className="border-t border-[#6E5AA7]/10 py-6 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:border-0 lg:py-0">
+        <aside className="mt-4 py-4 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:mt-0 lg:py-0">
           <LoginPanel />
         </aside>
       </div>
@@ -735,8 +779,8 @@ export default function EventUserPanels({
         }
       />
 
-      <aside className="border-t border-[#6E5AA7]/10 lg:col-start-2 lg:row-start-1 lg:row-span-3 lg:border-0">
-        <div className="lg:sticky lg:top-28 lg:rounded-[1.7rem] lg:bg-[#FEFCFF]/80 lg:px-5 lg:shadow-[inset_0_0_0_1px_rgba(110,90,167,0.10),0_20px_56px_rgba(57,43,82,0.06)]">
+      <aside className="mt-4 lg:col-start-2 lg:row-start-1 lg:row-span-3 lg:mt-0">
+        <div className="lg:sticky lg:top-24 lg:rounded-surface lg:bg-surface-subtle/45 lg:px-4">
           <EventYourSeat
             eventId={event.id}
             currentUserId={
@@ -763,6 +807,9 @@ export default function EventUserPanels({
             canScan={canScan}
             attendanceMethod={
               attendanceMethod
+            }
+            attendance={
+              myAttendance
             }
             actionBusy={Boolean(
               actionBusy,
@@ -868,7 +915,7 @@ export default function EventUserPanels({
       </aside>
 
       {isEnded ? (
-        <div className="border-t border-black/[0.08] py-7 lg:col-start-1 lg:row-start-3">
+        <div className="py-6 lg:col-start-1 lg:row-start-3">
           <EventFeedbackPanel
             key={`feedback-${event.id}-${panelsVersion}`}
             eventId={event.id}
@@ -887,12 +934,10 @@ export default function EventUserPanels({
         }
         canScan={canScan}
         hostAttendanceDisabled={
-          attendanceMethod ===
-            "qr" &&
-          (isCancelled ||
-            Boolean(
-              event.attendance_finalized_at,
-            ))
+          attendanceMethod === "none" ||
+          isCancelled ||
+          isEnded ||
+          Boolean(event.attendance_finalized_at)
         }
         attendanceMethod={
           attendanceMethod
@@ -1070,7 +1115,7 @@ function PanelsStateLayout({
 }) {
   return (
     <div className="lg:contents">
-      <section className="border-t border-black/[0.08] py-7 lg:col-start-1 lg:row-start-2">
+      <section className="py-6 lg:col-start-1 lg:row-start-2">
         <h2 className="text-[22px] font-semibold tracking-[-0.025em] text-zinc-950">
           The table
         </h2>
@@ -1085,7 +1130,7 @@ function PanelsStateLayout({
 
 function LoginPanel() {
   return (
-    <section className="py-5 lg:rounded-[1.6rem] lg:bg-white/55 lg:px-5 lg:shadow-[inset_0_0_0_1px_rgba(0,0,0,0.04)]">
+    <section className="rounded-row bg-surface-subtle/55 px-4 py-4">
       <h2 className="text-lg font-semibold tracking-[-0.02em] text-zinc-950">
         Your seat
       </h2>

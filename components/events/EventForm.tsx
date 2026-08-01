@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import LocationPicker, {
   type LocationValue,
 } from "@/components/location/LocationPicker";
+import { normalizeAttendanceMethod } from "@/lib/event-attendance";
 import {
   createEvent,
   updateEvent,
@@ -263,6 +264,11 @@ function getErrorMessage(
         "Choose a valid attendance verification method.",
     },
     {
+      code: "ATTENDANCE_METHOD_LOCKED",
+      message:
+        "Attendance verification cannot be changed after a player has checked in.",
+    },
+    {
       code: "WALK_INS_REQUIRE_QR",
       message:
         "QR check-in is required to allow walk-ins.",
@@ -309,8 +315,9 @@ export default function EventForm({
     attendanceMethod,
     setAttendanceMethod,
   ] = useState<AttendanceMethod>(
-    initialEvent?.attendance_method ??
-      "none",
+    normalizeAttendanceMethod(
+      initialEvent?.attendance_method,
+    ),
   );
 
   const [
@@ -318,7 +325,10 @@ export default function EventForm({
     setAllowWalkIns,
   ] = useState(
     Boolean(
-      initialEvent?.allow_walk_ins,
+      initialEvent?.allow_walk_ins &&
+        normalizeAttendanceMethod(
+          initialEvent?.attendance_method,
+        ) === "qr",
     ),
   );
 
@@ -952,7 +962,9 @@ export default function EventForm({
               disabled={loading}
               onChange={(changeEvent) => {
                 const nextMethod =
-                  changeEvent.target.value as AttendanceMethod;
+                  normalizeAttendanceMethod(
+                    changeEvent.target.value,
+                  );
 
                 setAttendanceMethod(
                   nextMethod,
@@ -984,10 +996,10 @@ export default function EventForm({
 
             <p className={helperTextClass}>
               {attendanceMethod === "none"
-                ? "Attendance will not affect the future trust system for this event."
+                ? "No formal check-in is used. Confirmed players are not automatically marked as attended."
                 : attendanceMethod === "host"
-                  ? "The host visually confirms who attended."
-                  : "Players check in using the event QR. The host can still correct attendance manually."}
+                  ? "The host visually checks in confirmed players at the event."
+                  : "Players verify attendance by scanning the signed event QR with their account."}
             </p>
           </label>
 
@@ -1021,7 +1033,7 @@ export default function EventForm({
 
           {attendanceMethod === "qr" ? (
             <p className="rounded-2xl border border-[#6E5AA7]/15 bg-[#EEE9FF] px-4 py-3 text-xs leading-5 text-[#5F4E94]">
-              QR generation and scanning are added in Attendance Phase A2. The method can already be selected and the host can verify attendance manually.
+              QR events use QR-only verification. The host can display the live code but cannot visually check players in.
             </p>
           ) : null}
         </div>

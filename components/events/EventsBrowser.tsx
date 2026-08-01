@@ -21,6 +21,7 @@ import { useLocation } from "@/components/location/LocationContext";
 import {
   useDistanceUnit,
 } from "@/components/settings/DistanceUnitProvider";
+import { Button } from "@/components/ui/button";
 import {
   formatDistanceAway,
   formatSearchDistance,
@@ -597,15 +598,15 @@ export default function EventsBrowser({
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-5 py-12">
-      <header className="mb-8">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+    <div className="w-full max-w-[1100px] px-4 py-8 sm:px-5 sm:py-10">
+      <header className="mb-7">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-4xl font-black tracking-tight text-zinc-950">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
               Events
             </h1>
 
-            <p className="mt-2 max-w-xl text-[15px] leading-6 text-zinc-600">
+            <p className="mt-1.5 max-w-xl text-sm leading-6 text-muted-foreground sm:text-[15px]">
               Find open Magic
               tables, check the
               details, and request a
@@ -613,15 +614,12 @@ export default function EventsBrowser({
             </p>
           </div>
 
-          <Link
-            href="/create"
-            className="inline-flex w-fit rounded-full bg-[#6E5AA7] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#5F4E94]"
-          >
-            Host game
-          </Link>
+          <Button asChild size="sm" className="w-fit">
+            <Link href="/create">Host game</Link>
+          </Button>
         </div>
 
-        <div className="mt-8 border-b border-black/10">
+        <div className="mt-6">
           <ViewSwitcher
             view={view}
             onChange={changeView}
@@ -629,7 +627,7 @@ export default function EventsBrowser({
         </div>
       </header>
 
-      <section className="mb-6 flex flex-wrap items-center gap-2">
+      <section className="mb-7 flex flex-wrap items-center gap-2 rounded-row bg-surface-subtle/60 p-2.5">
         <Filters
           format={format}
           power={power}
@@ -649,7 +647,7 @@ export default function EventsBrowser({
           onReset={resetFilters}
         />
 
-        <p className="ml-auto text-sm text-zinc-500">
+        <p className="ml-auto px-1 text-xs font-medium text-muted-foreground sm:text-sm">
           {filteredEvents.length}{" "}
           event
           {filteredEvents.length ===
@@ -665,17 +663,17 @@ export default function EventsBrowser({
         0 ? (
         <NoResults />
       ) : (
-        <div className="space-y-10">
+        <div className="space-y-9">
           {coords &&
           nearbyEvents.length ? (
             <section>
-              <div className="mb-4 flex items-end justify-between gap-4">
+              <div className="mb-3 flex items-end justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#6E5AA7]">
+                  <p className="text-sm font-semibold text-primary">
                     Nearby
                   </p>
 
-                  <h2 className="mt-1 text-xl font-semibold tracking-[-0.025em]">
+                  <h2 className="mt-0.5 text-lg font-semibold tracking-tight">
                     Events within{" "}
                     {formatSearchDistance(
                       radius,
@@ -684,20 +682,20 @@ export default function EventsBrowser({
                   </h2>
                 </div>
 
-                <span className="text-sm text-zinc-500">
+                <span className="text-sm text-muted-foreground">
                   {
                     nearbyEvents.length
                   }
                 </span>
               </div>
 
-              <div className="grid gap-3">
+              <div className="grid gap-2 lg:grid-cols-2">
                 {nearbyEvents.map(
                   (event) => (
                     <div
                       key={`nearby-${event.id}`}
                     >
-                      <div className="mb-1.5 px-1 text-xs font-medium text-zinc-500">
+                      <div className="mb-1 px-2 text-xs font-medium text-muted-foreground">
                         {formatDistanceAway(
                           event.distanceKm,
                           distanceUnit,
@@ -715,25 +713,25 @@ export default function EventsBrowser({
           ) : null}
 
           <section>
-            <div className="mb-4 flex items-end justify-between gap-4">
+            <div className="mb-3 flex items-end justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-400">
+                <p className="text-sm font-semibold text-primary">
                   Explore
                 </p>
 
-                <h2 className="mt-1 text-xl font-semibold tracking-[-0.025em]">
+                <h2 className="mt-0.5 text-lg font-semibold tracking-tight">
                   All events
                 </h2>
               </div>
 
-              <span className="text-sm text-zinc-500">
+              <span className="text-sm text-muted-foreground">
                 {
                   filteredEvents.length
                 }
               </span>
             </div>
 
-            <div className="grid gap-3">
+            <div className="grid gap-2 lg:grid-cols-2">
               {filteredEvents.map(
                 (event) => (
                   <EventCard
@@ -760,7 +758,7 @@ function ViewSwitcher({
   ) => void;
 }) {
   return (
-    <nav className="flex gap-8">
+    <nav aria-label="Event view" className="inline-flex rounded-control bg-surface-subtle p-1">
       <TabButton
         active={view === "list"}
         onClick={() =>
@@ -810,13 +808,15 @@ function Filters({
   return (
     <>
       <select
+        id="events-format-filter"
+        aria-label="Filter by format"
         value={format}
         onChange={(event) =>
           onFormatChange(
             event.target.value,
           )
         }
-        className="h-9 rounded-full border border-black/10 bg-white px-3 text-sm text-zinc-700 outline-none transition hover:border-black/20 focus:border-[#6E5AA7]"
+        className="h-9 rounded-control border border-input bg-surface px-3 text-sm text-foreground outline-none transition-colors hover:border-primary/25 focus-visible:border-primary/45 focus-visible:ring-[3px] focus-visible:ring-ring/12"
       >
         {FORMAT_OPTIONS.map(
           (option) => (
@@ -831,13 +831,15 @@ function Filters({
       </select>
 
       <select
+        id="events-power-filter"
+        aria-label="Filter by power level"
         value={power}
         onChange={(event) =>
           onPowerChange(
             event.target.value,
           )
         }
-        className="h-9 rounded-full border border-black/10 bg-white px-3 text-sm text-zinc-700 outline-none transition hover:border-black/20 focus:border-[#6E5AA7]"
+        className="h-9 rounded-control border border-input bg-surface px-3 text-sm text-foreground outline-none transition-colors hover:border-primary/25 focus-visible:border-primary/45 focus-visible:ring-[3px] focus-visible:ring-ring/12"
       >
         {POWER_OPTIONS.map(
           (option) => (
@@ -851,31 +853,29 @@ function Filters({
         )}
       </select>
 
-      <button
+      <Button
         type="button"
+        size="sm"
+        variant={openOnly ? "secondary" : "outline"}
         onClick={() =>
           onOpenOnlyChange(
             !openOnly,
           )
         }
-        className={[
-          "h-9 rounded-full border px-3 text-sm font-medium transition",
-          openOnly
-            ? "border-[#6E5AA7] bg-[#F0EBFF] text-[#6E5AA7]"
-            : "border-black/10 bg-white text-zinc-700 hover:border-black/20",
-        ].join(" ")}
+        aria-pressed={openOnly}
       >
         Open seats
-      </button>
+      </Button>
 
       {hasActiveFilters ? (
-        <button
+        <Button
           type="button"
+          size="sm"
+          variant="ghost"
           onClick={onReset}
-          className="h-9 rounded-full px-3 text-sm font-medium text-zinc-500 hover:text-black"
         >
           Reset
-        </button>
+        </Button>
       ) : null}
     </>
   );
@@ -895,50 +895,44 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={[
-        "relative -mb-px pb-3 text-sm font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-[#6E5AA7]/30",
+        "rounded-control px-4 py-2 text-sm font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/15",
         active
-          ? "text-[#6E5AA7]"
-          : "text-zinc-500 hover:text-black",
+          ? "bg-surface text-primary"
+          : "text-muted-foreground hover:bg-surface/55 hover:text-foreground",
       ].join(" ")}
     >
       {children}
 
-      {active ? (
-        <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-[#6E5AA7]" />
-      ) : null}
     </button>
   );
 }
 
 function EmptyState() {
   return (
-    <section className="border-y border-black/10 py-16 text-center">
+    <section className="rounded-surface bg-surface-subtle/60 px-5 py-14 text-center">
       <h2 className="text-xl font-semibold">
         No events yet
       </h2>
 
-      <p className="mt-2 text-sm text-zinc-500">
+      <p className="mt-2 text-sm text-muted-foreground">
         Create the first table.
       </p>
 
-      <Link
-        href="/create"
-        className="mt-6 inline-flex rounded-full bg-black px-5 py-3 text-sm font-semibold text-white"
-      >
-        Host game
-      </Link>
+      <Button asChild size="sm" className="mt-6">
+        <Link href="/create">Host game</Link>
+      </Button>
     </section>
   );
 }
 
 function NoResults() {
   return (
-    <section className="border-y border-black/10 py-14 text-center">
+    <section className="rounded-surface bg-surface-subtle/60 px-5 py-12 text-center">
       <h2 className="text-xl font-semibold">
         No matching events
       </h2>
 
-      <p className="mt-2 text-sm text-zinc-500">
+      <p className="mt-2 text-sm text-muted-foreground">
         Try clearing a filter or
         changing the format.
       </p>

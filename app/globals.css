@@ -1,33 +1,93 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --background: #f8f5ef;
+  --foreground: #27242c;
+  --surface: #fffdf9;
+  --surface-subtle: #f1ede6;
+  --surface-selected: #eee9ff;
+  --muted: #eeeae3;
+  --muted-foreground: #6f6873;
+  --quiet-foreground: #918a94;
+  --border: #e2dcd4;
+  --border-strong: #d2cac1;
+  --primary: #6e5aa7;
+  --primary-hover: #5d4a8e;
+  --primary-foreground: #ffffff;
+  --secondary: #eee9ff;
+  --secondary-foreground: #55437f;
+  --destructive: #ad4141;
+  --destructive-foreground: #ffffff;
+  --destructive-subtle: #fbeeed;
+  --success: #397354;
+  --success-subtle: #eaf5ee;
+  --warning: #8a6327;
+  --warning-subtle: #faf2df;
+  --ring: #6e5aa7;
+  --ui-radius-control: 0.625rem;
+  --ui-radius-row: 0.75rem;
+  --ui-radius-surface: 1rem;
+  --ui-shadow-surface: 0 1px 2px rgb(48 39 31 / 0.04), 0 8px 24px rgb(48 39 31 / 0.035);
+  --ui-shadow-overlay: 0 20px 60px rgb(35 28 43 / 0.18);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  --color-surface: var(--surface);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-selected: var(--surface-selected);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-quiet-foreground: var(--quiet-foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--border-strong);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-subtle: var(--destructive-subtle);
+  --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
+  --color-warning: var(--warning);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-ring: var(--ring);
+  --radius-control: var(--ui-radius-control);
+  --radius-row: var(--ui-radius-row);
+  --radius-surface: var(--ui-radius-surface);
+  --shadow-surface: var(--ui-shadow-surface);
+  --shadow-overlay: var(--ui-shadow-overlay);
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 html,
 body {
-  background: #f8f5ef;
+  min-height: 100%;
+  background: var(--background);
+}
+
+html {
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--surface-selected);
+  color: var(--secondary-foreground);
 }
 
 .event-detail-shell {
@@ -66,29 +126,6 @@ body {
   }
 }
 
-@keyframes filterHint {
-  0% {
-    transform: translateY(0) scale(1);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16);
-  }
-
-  25% {
-    transform: translateY(-3px) scale(1.04);
-    box-shadow: 0 20px 56px rgba(0, 0, 0, 0.2);
-  }
-
-  50% {
-    transform: translateY(0) scale(1);
-  }
-
-  75% {
-    transform: translateY(-2px) scale(1.025);
-  }
-
-  100% {
-    transform: translateY(0) scale(1);
-  }
-}
 /* Legal documents */
 .legal-page{max-width:1180px;margin:0 auto;padding:0 20px 72px;color:#242129}
 .legal-masthead{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(36,33,41,.12);padding:18px 0}

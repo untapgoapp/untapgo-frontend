@@ -1,411 +1,168 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
-
 import Link from "next/link";
-import {
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Ban,
-  CalendarDays,
-  ChevronRight,
-  Compass,
-  Eye,
-  Heart,
-  Library,
-  LogOut,
-  Pencil,
-  Settings2,
-  UserRound,
-} from "lucide-react";
 
-import CopyArenaTag from "@/components/profile/CopyArenaTag";
-import { supabase } from "@/lib/supabase/client";
+import ProfileDeckSection from "@/components/profile/social/ProfileDeckSection";
+import ProfileBinderLinks from "@/components/profile/ProfileBinderLinks";
+import ProfileEventSections from "@/components/profile/social/ProfileEventSections";
+import ProfileLoadingState from "@/components/profile/social/ProfileLoadingState";
+import ProfileTrustSection from "@/components/profile/social/ProfileTrustSection";
+import SocialPlayerProfile from "@/components/profile/social/SocialPlayerProfile";
 import {
-  getHostedCount,
-  getPlayedCount,
-  getProfileArenaUsername,
-  getProfileAvatarUrl,
+  normalizeOwnerDeck,
+  selectOwnerProfileEvents,
+  type ProfileDeckView,
+  type ProfileEventView,
+} from "@/components/profile/social/profile-view-data";
+import { decksApi } from "@/lib/decks-api";
+import { supabase } from "@/lib/supabase/client";
+import { getMyEvents } from "@/services/events";
+import {
   getProfileId,
-  getProfileNickname,
+  getProfileTrustSummary,
   getPublicProfile,
+  type ProfileTrustSummary,
   type PublicProfile,
 } from "@/services/profiles";
-import {
-  unregisterPushBeforeSignOut,
-} from "@/services/push";
+import { unregisterPushBeforeSignOut } from "@/services/push";
 
 export default function ProfilePage() {
   const router = useRouter();
-
   const [profile, setProfile] = useState<PublicProfile | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [decks, setDecks] = useState<ProfileDeckView[] | null>(null);
+  const [upcoming, setUpcoming] = useState<ProfileEventView[] | null>(null);
+  const [recent, setRecent] = useState<ProfileEventView[] | null>(null);
+  const [trust, setTrust] = useState<ProfileTrustSummary | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileFailed, setProfileFailed] = useState(false);
+  const [decksFailed, setDecksFailed] = useState(false);
+  const [eventsFailed, setEventsFailed] = useState(false);
+  const [trustFailed, setTrustFailed] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState(false);
 
   useEffect(() => {
     let active = true;
 
+    async function loadSections(id: string) {
+      const [deckResult, eventResult, trustResult] = await Promise.allSettled([
+        decksApi.list(),
+        getMyEvents(),
+        getProfileTrustSummary(id),
+      ]);
+      if (!active) return;
+
+      if (deckResult.status === "fulfilled") {
+        setDecks(deckResult.value.decks.map(normalizeOwnerDeck));
+      } else {
+        setDecksFailed(true);
+      }
+
+      if (eventResult.status === "fulfilled") {
+        const selected = selectOwnerProfileEvents(eventResult.value, id);
+        setUpcoming(selected.upcoming);
+        setRecent(selected.recent);
+      } else {
+        setEventsFailed(true);
+      }
+
+      if (trustResult.status === "fulfilled") {
+        setTrust(trustResult.value);
+      } else {
+        setTrustFailed(true);
+      }
+    }
+
     async function loadProfile() {
       setLoading(true);
-      setError(null);
+      setProfileFailed(false);
 
       try {
-        const {
-          data,
-          error: authError,
-        } = await supabase.auth.getUser();
-
-        if (authError) {
-          throw authError;
-        }
-
-        const user = data.user;
-
-        if (!user) {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        if (!data.user) {
           router.replace("/login?next=%2Fprofile");
           return;
         }
 
-        if (!active) {
-          return;
-        }
+        const loadedProfile = await getPublicProfile(data.user.id);
+        if (!active) return;
 
-        setUserEmail(user.email ?? null);
-
-        const loadedProfile = await getPublicProfile(user.id);
-
-        if (!active) {
-          return;
-        }
-
+        setUserId(data.user.id);
         setProfile(loadedProfile);
-      } catch (loadError) {
-        if (!active) {
-          return;
-        }
-
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Could not load your profile.",
-        );
+        setLoading(false);
+        void loadSections(data.user.id);
+      } catch {
+        if (active) setProfileFailed(true);
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       }
     }
 
     void loadProfile();
-
     return () => {
       active = false;
     };
   }, [router]);
 
   async function signOut() {
-    if (signingOut) {
-      return;
-    }
-
+    if (signingOut) return;
     setSigningOut(true);
-    setError(null);
+    setActionError(false);
 
     try {
       await unregisterPushBeforeSignOut();
-
-      const {
-        error: signOutError,
-      } = await supabase.auth.signOut();
-
-      if (signOutError) {
-        throw signOutError;
-      }
-
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
       router.push("/");
       router.refresh();
-    } catch (signOutError) {
-      setError(
-        signOutError instanceof Error
-          ? signOutError.message
-          : "Could not log out.",
-      );
-
+    } catch {
+      setActionError(true);
       setSigningOut(false);
     }
   }
 
-  if (loading) {
+  if (loading) return <ProfileLoadingState />;
+
+  if (profileFailed || !profile || !userId) {
     return (
-      <main className="min-h-screen bg-[#F8F5EF] px-5 py-12 text-black">
-        <div className="mx-auto max-w-2xl">
-          <p className="text-sm text-zinc-500">
-            Loading profile...
-          </p>
+      <main className="min-h-screen bg-[#F8F5EF] px-4 py-8 text-zinc-950 lg:px-0">
+        <div className="w-full max-w-[1050px] border-y border-black/10 py-6">
+          <h1 className="text-xl font-bold">Could not load your profile</h1>
+          <p className="mt-2 text-sm text-zinc-500">Please try again in a moment.</p>
+          <Link href="/profile/edit" className="mt-4 inline-flex text-sm font-semibold text-[#6E5AA7]">
+            Edit profile
+          </Link>
         </div>
       </main>
     );
   }
 
-  if (error) {
-    return (
-      <main className="min-h-screen bg-[#F8F5EF] px-5 py-12 text-black">
-        <div className="mx-auto max-w-2xl">
-          <div className="border-y border-black/10 py-6">
-            <p className="font-semibold">
-              Something went wrong.
-            </p>
-
-            <p className="mt-2 text-sm text-zinc-500">
-              {error}
-            </p>
-
-            <Link
-              href="/profile/edit"
-              className="mt-5 inline-flex rounded-full bg-black px-5 py-3 text-sm font-semibold text-white"
-            >
-              Edit profile
-            </Link>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  if (!profile) {
-    return null;
-  }
-
-  const profileId = getProfileId(profile);
-  const nickname = getProfileNickname(profile);
-  const avatarUrl = getProfileAvatarUrl(profile);
-  const arenaUsername = getProfileArenaUsername(profile);
-  const hostedCount = getHostedCount(profile);
-  const playedCount = getPlayedCount(profile);
-
-  const publicProfileHref = profileId
-    ? `/profile/${encodeURIComponent(profileId)}`
-    : "/profile";
+  const profileId = getProfileId(profile) || userId;
 
   return (
-    <main className="min-h-screen bg-[#F8F5EF] px-5 py-12 text-black">
-      <div className="mx-auto max-w-2xl">
-        <header className="mb-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6E5AA7]">
-            Account
-          </p>
-
-          <h1 className="mt-2 text-4xl font-black tracking-tight">
-            Profile
-          </h1>
-        </header>
-
-        <section className="flex items-center gap-5 border-b border-black/10 pb-8">
-          <div className="h-24 w-24 shrink-0 overflow-hidden rounded-full bg-[#EDE7FF] ring-1 ring-black/5">
-            {avatarUrl ? (
-              <img
-                src={avatarUrl}
-                alt={`${nickname} avatar`}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="grid h-full w-full place-items-center text-3xl font-black text-[#6E5AA7]">
-                {nickname.slice(0, 1).toUpperCase()}
-              </div>
-            )}
-          </div>
-
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate text-2xl font-black tracking-tight">
-              {nickname}
-            </h2>
-
-            {userEmail ? (
-              <p className="mt-1 truncate text-sm text-zinc-500">
-                {userEmail}
-              </p>
-            ) : null}
-
-            {arenaUsername ? (
-              <div className="mt-3">
-                <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400">
-                  MTG Arena
-                </p>
-
-                <CopyArenaTag arenaTag={arenaUsername} />
-              </div>
-            ) : null}
-
-            <p className="mt-3 text-sm text-zinc-500">
-              {hostedCount} hosted · {playedCount} played
-            </p>
-          </div>
-
-          {profileId ? (
-            <Link
-              href={publicProfileHref}
-              className="hidden shrink-0 items-center gap-2 rounded-full bg-black px-4 py-2.5 text-sm font-semibold text-white sm:inline-flex"
-            >
-              <Eye size={15} />
-              Public view
-            </Link>
-          ) : null}
-        </section>
-
-        <div className="mt-10 space-y-10">
-          <LineGroup title="Play">
-            <LineRow
-              href="/events/mine"
-              icon={<CalendarDays size={18} />}
-              title="My events"
-              subtitle="Upcoming, requests, and history"
-            />
-
-            <LineRow
-              href="/profile/decks"
-              icon={<Library size={18} />}
-              title="My decks"
-              subtitle="Commanders, lists, and links"
-            />
-          </LineGroup>
-
-          <LineGroup title="Community">
-            <LineRow
-              href="/profile/favorites"
-              icon={<Heart size={18} />}
-              title="Favorite players"
-              subtitle="Players you want to find again"
-            />
-
-            <LineRow
-              href="/events"
-              icon={<Compass size={18} />}
-              title="Explore games"
-              subtitle="Find open tables near you"
-            />
-          </LineGroup>
-
-          <LineGroup title="Manage">
-            <LineRow
-              href="/profile/edit"
-              icon={<Pencil size={18} />}
-              title="Edit profile"
-              subtitle="Nickname, bio, avatar, and MTG details"
-            />
-
-            {profileId ? (
-              <LineRow
-                href={publicProfileHref}
-                icon={<UserRound size={18} />}
-                title="Public profile"
-                subtitle="See what other players see"
-              />
-            ) : null}
-
-            <LineRow
-              href="/profile/blocked"
-              icon={<Ban size={18} />}
-              title="Blocked users"
-              subtitle="Review and manage blocked players"
-            />
-
-            <LineRow
-              href="/settings"
-              icon={<Settings2 size={18} />}
-              title="Settings"
-              subtitle="Privacy, notifications, and account"
-            />
-          </LineGroup>
-
-          <section className="border-y border-black/10">
-            <button
-              type="button"
-              onClick={() => {
-                void signOut();
-              }}
-              disabled={signingOut}
-              className="group flex w-full items-center gap-4 py-5 text-left disabled:opacity-60"
-            >
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/70 text-zinc-500 ring-1 ring-black/5">
-                <LogOut size={18} />
-              </span>
-
-              <span className="min-w-0 flex-1 font-semibold">
-                {signingOut ? "Signing out..." : "Log out"}
-              </span>
-
-              <ChevronRight
-                size={18}
-                className="text-zinc-300 transition group-hover:translate-x-0.5 group-hover:text-zinc-500"
-              />
-            </button>
-          </section>
-        </div>
-      </div>
-    </main>
-  );
-}
-
-function LineGroup({
-  title,
-  children,
-}: {
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <section>
-      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">
-        {title}
-      </p>
-
-      <div className="border-y border-black/10">
-        {children}
-      </div>
-    </section>
-  );
-}
-
-function LineRow({
-  href,
-  icon,
-  title,
-  subtitle,
-}: {
-  href: string;
-  icon: ReactNode;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="group flex items-center gap-4 border-b border-black/10 py-5 last:border-b-0"
+    <SocialPlayerProfile
+      profile={profile}
+      isOwner
+      networkProfileId={profileId}
+      publicProfileHref={`/profile/${encodeURIComponent(profileId)}`}
+      signingOut={signingOut}
+      onSignOut={() => void signOut()}
+      profileActions={<><ProfileBinderLinks profileId={profileId} owner />{actionError ? (
+        <p className="mt-4 border-y border-red-200 bg-red-50 px-3 py-3 text-sm text-red-700">Could not log out. Please try again.</p>
+      ) : null}</>}
     >
-      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/70 text-zinc-500 ring-1 ring-black/5">
-        {icon}
-      </span>
-
-      <span className="min-w-0 flex-1">
-        <span className="block font-semibold">
-          {title}
-        </span>
-
-        <span className="mt-0.5 block truncate text-sm text-zinc-500">
-          {subtitle}
-        </span>
-      </span>
-
-      <ChevronRight
-        size={18}
-        className="shrink-0 text-zinc-300 transition group-hover:translate-x-0.5 group-hover:text-zinc-500"
+      <ProfileDeckSection decks={decks} failed={decksFailed} isOwner />
+      <ProfileEventSections
+        upcoming={upcoming}
+        recent={recent}
+        failed={eventsFailed}
+        isOwner
       />
-    </Link>
+      <ProfileTrustSection summary={trust} failed={trustFailed} />
+    </SocialPlayerProfile>
   );
 }

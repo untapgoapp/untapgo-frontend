@@ -94,7 +94,14 @@ function errorMessage(
     return "Attendance has already been finalised.";
   }
 
-  return message;
+  if (
+    normalized.includes("EVENT_CANCELLED") ||
+    normalized.includes("EVENT_ENDED")
+  ) {
+    return "This event no longer accepts check-ins.";
+  }
+
+  return "Could not create the check-in QR. Please try again.";
 }
 
 export default function EventQrHostModal({
@@ -261,7 +268,7 @@ export default function EventQrHostModal({
         }
       }}
     >
-      <div className="w-full max-w-md rounded-[1.75rem] bg-[#F8F5EF] p-5 shadow-2xl sm:p-6">
+      <div className="w-full max-w-md rounded-surface bg-background p-5 shadow-overlay sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#6E5AA7]">
@@ -281,7 +288,7 @@ export default function EventQrHostModal({
             type="button"
             onClick={onClose}
             aria-label="Close QR"
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-black/10 bg-white text-zinc-700 outline-none transition hover:border-black/20 hover:text-black focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-control bg-surface text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/20"
           >
             <X size={18} />
           </button>
@@ -289,13 +296,13 @@ export default function EventQrHostModal({
 
         {loading &&
         !session ? (
-          <div className="mt-6 grid min-h-72 place-items-center rounded-3xl bg-white">
+          <div className="mt-6 grid min-h-72 place-items-center rounded-surface bg-surface">
             <RefreshCw className="h-6 w-6 animate-spin text-[#6E5AA7]" />
           </div>
         ) : null}
 
         {error ? (
-          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">
+          <div className="mt-6 rounded-row bg-destructive-subtle p-4 text-sm leading-6 text-destructive">
             <p className="font-semibold">
               QR unavailable
             </p>
@@ -309,7 +316,7 @@ export default function EventQrHostModal({
               onClick={() => {
                 void loadSession();
               }}
-              className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full border border-red-200 bg-white px-4 text-sm font-semibold text-red-700 outline-none focus-visible:ring-4 focus-visible:ring-red-500/15"
+              className="mt-4 inline-flex min-h-10 items-center gap-2 rounded-control bg-surface px-4 text-sm font-semibold text-destructive outline-none focus-visible:ring-[3px] focus-visible:ring-destructive/15"
             >
               <RefreshCw size={15} />
               Try again
@@ -319,7 +326,7 @@ export default function EventQrHostModal({
 
         {session ? (
           <>
-            <div className="mt-6 grid place-items-center rounded-3xl bg-white p-6">
+            <div className="mt-6 grid place-items-center rounded-surface bg-surface p-6">
               <QRCode
                 value={
                   session.check_in_url
@@ -335,7 +342,7 @@ export default function EventQrHostModal({
               />
             </div>
 
-            <div className="mt-4 flex items-center justify-between gap-3 rounded-2xl bg-black/[0.045] px-4 py-3">
+            <div className="mt-4 flex items-center justify-between gap-3 rounded-row bg-surface-subtle px-4 py-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.1em] text-zinc-400">
                   Refreshes in
@@ -351,7 +358,7 @@ export default function EventQrHostModal({
                 onClick={() => {
                   void copyLink();
                 }}
-                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-black/10 bg-white px-4 text-sm font-semibold text-zinc-700 outline-none transition hover:border-black/20 hover:text-black focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20"
+                className="inline-flex min-h-10 items-center gap-2 rounded-control bg-surface px-4 text-sm font-semibold text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/20"
               >
                 {copied ? (
                   <Check size={15} />

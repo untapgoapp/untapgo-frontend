@@ -149,23 +149,19 @@ export default function EventHostControls({
     <section
       id="event-host-controls"
       aria-labelledby="event-host-controls-title"
-      className="border-t border-[#6E5AA7]/10 py-5"
+      className="py-5"
     >
-      <div className="px-1">
+      <div>
         <div className="flex items-center gap-2.5">
-          <span
-            aria-hidden="true"
-            className="h-1.5 w-5 rounded-full bg-[#6E5AA7]"
-          />
           <h2
             id="event-host-controls-title"
-            className="text-lg font-bold tracking-[-0.025em] text-zinc-950"
+            className="text-lg font-semibold tracking-tight text-foreground"
           >
             Host controls
           </h2>
         </div>
 
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-sm text-muted-foreground">
           Review the table and event.
         </p>
       </div>
@@ -173,7 +169,7 @@ export default function EventHostControls({
       <div
         role="tablist"
         aria-label="Host controls"
-        className="mt-4 grid grid-cols-3 rounded-[0.95rem] bg-[#EEE9FF]/65 p-1 shadow-[inset_0_0_0_1px_rgba(110,90,167,0.10)]"
+        className="mt-3 grid grid-cols-3 rounded-control bg-surface/60 p-1"
       >
         {TABS.map(
           (tab, index) => {
@@ -215,10 +211,10 @@ export default function EventHostControls({
                   );
                 }}
                 className={[
-                  "flex min-h-11 min-w-0 items-center justify-center gap-1 rounded-lg px-1.5 text-[12px] font-semibold outline-none transition focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20",
+                  "flex min-h-10 min-w-0 items-center justify-center gap-1 rounded-control px-1.5 text-[12px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/20",
                   active
-                    ? "bg-[#6E5AA7] text-white shadow-[0_4px_12px_rgba(110,90,167,0.24)]"
-                    : "text-[#625A6D] hover:bg-white/45 hover:text-[#5B478A]",
+                    ? "bg-secondary text-secondary-foreground"
+                    : "text-muted-foreground hover:bg-surface hover:text-foreground",
                 ].join(" ")}
               >
                 <span className="truncate">
@@ -230,8 +226,8 @@ export default function EventHostControls({
                     className={[
                       "grid min-w-5 place-items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold",
                       active
-                        ? "bg-white/20 text-white"
-                        : "bg-white/75 text-[#5B478A]",
+                        ? "bg-primary/10 text-secondary-foreground"
+                        : "bg-surface text-primary",
                     ].join(" ")}
                   >
                     {Math.min(
@@ -306,8 +302,8 @@ export default function EventHostControls({
                 }
               />
             ) : (
-              <p className="border-t border-[#6E5AA7]/10 py-4 text-sm text-zinc-500">
-                Attendance verification is not enabled for this event.
+              <p className="rounded-row bg-surface/55 px-3 py-3 text-sm text-muted-foreground">
+                No verification required. Confirmed membership is not recorded as verified attendance.
               </p>
             )}
           </div>
@@ -320,13 +316,13 @@ export default function EventHostControls({
             role="tabpanel"
             aria-labelledby="event-host-tab-manage"
           >
-            <div className="overflow-hidden rounded-[1.3rem] bg-white/60 px-4 shadow-[inset_0_0_0_1px_rgba(110,90,167,0.10),0_10px_28px_rgba(57,43,82,0.035)]">
+            <div className="overflow-hidden rounded-row bg-surface/55 px-2">
               {canCancelEvent ? (
                 <Link
                   href={`/events/${eventId}/edit`}
-                  className="flex min-h-14 items-center gap-3 py-3 outline-none transition hover:bg-[#6E5AA7]/[0.035] focus-visible:bg-[#6E5AA7]/[0.07]"
+                  className="flex min-h-14 items-center gap-3 rounded-control px-2 py-3 outline-none transition-colors hover:bg-secondary/50 focus-visible:bg-secondary/70 focus-visible:ring-[3px] focus-visible:ring-ring/15"
                 >
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#EEE9FF] text-[#5B478A] shadow-[inset_0_0_0_1px_rgba(110,90,167,0.08)]">
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-control bg-secondary text-primary">
                     <Pencil className="h-4 w-4" />
                   </span>
 
@@ -361,7 +357,7 @@ export default function EventHostControls({
                   !isPlaying ||
                   !canLeave
                 }
-                className="flex min-h-14 w-full items-center gap-3 border-t border-[#6E5AA7]/10 py-3 text-left outline-none transition hover:bg-[#6E5AA7]/[0.035] focus-visible:bg-[#6E5AA7]/[0.07] disabled:opacity-45"
+                className="flex min-h-14 w-full items-center gap-3 rounded-control px-2 py-3 text-left outline-none transition-colors hover:bg-secondary/50 focus-visible:bg-secondary/70 focus-visible:ring-[3px] focus-visible:ring-ring/15 disabled:opacity-45"
               >
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#F1EEF4] text-zinc-600">
                   <UserMinus className="h-4 w-4" />
@@ -383,7 +379,7 @@ export default function EventHostControls({
               </button>
             </div>
 
-            <div className="mt-5 border-t border-red-500/15 pt-2">
+            <div className="mt-4 rounded-row bg-destructive-subtle/55 p-1">
               <button
                 type="button"
                 onClick={
@@ -392,7 +388,7 @@ export default function EventHostControls({
                 disabled={
                   !canCancelEvent
                 }
-                className="flex min-h-14 w-full items-center gap-3 rounded-xl px-3 text-left text-red-600 outline-none transition hover:bg-red-500/[0.055] active:bg-red-500/[0.08] focus-visible:ring-4 focus-visible:ring-red-500/15 disabled:opacity-45"
+                className="flex min-h-12 w-full items-center gap-3 rounded-control px-3 text-left text-destructive outline-none transition-colors hover:bg-destructive/10 focus-visible:ring-[3px] focus-visible:ring-destructive/15 disabled:opacity-45"
               >
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-red-500/[0.08]">
                   <XCircle className="h-[18px] w-[18px]" />

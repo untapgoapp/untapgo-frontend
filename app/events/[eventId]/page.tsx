@@ -253,18 +253,18 @@ function getStatusClasses(
     );
 
   if (status === "open") {
-    return "bg-[#EEE9FF] text-[#6E5AA7]";
+    return "bg-secondary text-secondary-foreground";
   }
 
   if (status === "full") {
-    return "bg-amber-100 text-amber-800";
+    return "bg-warning-subtle text-warning";
   }
 
   if (
     status === "started" ||
     status === "in_progress"
   ) {
-    return "bg-zinc-900 text-white";
+    return "bg-muted text-foreground";
   }
 
   if (
@@ -272,17 +272,17 @@ function getStatusClasses(
     status === "finished" ||
     status === "completed"
   ) {
-    return "bg-zinc-200 text-zinc-700";
+    return "bg-muted text-muted-foreground";
   }
 
   if (
     status === "cancelled" ||
     status === "canceled"
   ) {
-    return "bg-red-100 text-red-700";
+    return "bg-destructive-subtle text-destructive";
   }
 
-  return "bg-black/[0.06] text-zinc-700";
+  return "bg-muted text-muted-foreground";
 }
 
 export default async function EventDetailPage({
@@ -320,11 +320,11 @@ export default async function EventDetailPage({
     !event
   ) {
     return (
-      <div className="min-h-screen bg-[#F8F5EF] px-4 py-8 text-zinc-950 sm:px-6">
-        <div className="mx-auto max-w-3xl">
+      <div className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6">
+        <div className="w-full max-w-3xl">
           <Link
             href="/events"
-            className="inline-flex min-h-11 items-center gap-2 rounded-xl px-1 text-sm font-semibold text-zinc-600 outline-none transition hover:text-black focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20"
+            className="inline-flex min-h-10 items-center gap-2 rounded-control px-1 text-sm font-semibold text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/20"
           >
             <ArrowLeft
               size={16}
@@ -333,13 +333,13 @@ export default async function EventDetailPage({
             Back to events
           </Link>
 
-          <section className="mt-6 border-y border-red-500/20 py-5">
-            <p className="font-semibold text-red-700">
+          <section className="mt-6 rounded-row bg-destructive-subtle px-4 py-4">
+            <p className="font-semibold text-destructive">
               Could not load event
             </p>
 
             {errorMessage ? (
-              <p className="mt-2 text-sm leading-6 text-red-600">
+              <p className="mt-2 text-sm leading-6 text-destructive">
                 {errorMessage}
               </p>
             ) : null}
@@ -389,11 +389,11 @@ export default async function EventDetailPage({
     );
 
   return (
-    <div className="event-detail-shell min-h-screen bg-[#F8F5EF] px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-6 text-zinc-950 sm:px-6 sm:pt-8 lg:pb-14">
-      <div className="mx-auto max-w-6xl">
+    <div className="event-detail-shell min-h-screen bg-background px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-5 text-foreground sm:px-5 sm:pt-7 lg:pb-12 lg:px-0">
+      <div className="w-full max-w-[1120px]">
         <Link
           href="/events"
-          className="inline-flex min-h-11 items-center gap-2 rounded-xl px-1 text-sm font-semibold text-zinc-500 outline-none transition hover:text-[#594586] focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20"
+          className="inline-flex min-h-10 items-center gap-2 rounded-control px-1 text-sm font-semibold text-muted-foreground outline-none transition-colors hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/20"
         >
           <ArrowLeft
             size={16}
@@ -402,20 +402,18 @@ export default async function EventDetailPage({
           Back to events
         </Link>
 
-        <div className="mt-5 grid gap-x-10 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+        <div className="mt-4 grid gap-x-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
           <div className="min-w-0 lg:col-start-1 lg:row-start-1">
-            <header className="border-b border-[#6E5AA7]/[0.13] pb-7">
+            <header className="pb-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="inline-flex items-center gap-1.5 rounded-full bg-[#EEE9FF] px-2.5 py-1 text-[12px] font-bold text-[#5B478A] shadow-[inset_0_0_0_1px_rgba(110,90,167,0.08)]">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#806AB8]" />
-
+                  <p className="text-sm font-semibold text-primary">
                     {getFormatLabel(
                       event,
                     )}
                   </p>
 
-                  <h1 className="mt-3 max-w-3xl break-words text-[38px] font-extrabold leading-[1.01] tracking-[-0.048em] text-[#1B1820] sm:text-[54px]">
+                  <h1 className="mt-1.5 max-w-3xl break-words text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-[42px]">
                     {event.title ||
                       "Untitled event"}
                   </h1>
@@ -424,14 +422,14 @@ export default async function EventDetailPage({
                 <EventWatchButton
                   eventId={event.id}
                   variant="button"
-                  className="min-h-11 shrink-0"
+                  className="shrink-0"
                 />
               </div>
 
               <div className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-2 text-sm">
                 <span
                   className={[
-                    "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold shadow-[inset_0_0_0_1px_rgba(110,90,167,0.06)]",
+                    "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
                     getStatusClasses(
                       event,
                     ),
@@ -444,14 +442,14 @@ export default async function EventDetailPage({
                   )}
                 </span>
 
-                <span className="font-semibold text-zinc-800">
+                <span className="font-semibold text-foreground/85">
                   {attendeesCount}/
                   {maxPlayers} players
                 </span>
 
-                <span className="h-1 w-1 rounded-full bg-[#6E5AA7]/30" />
+                <span className="h-1 w-1 rounded-full bg-border-strong" />
 
-                <span className="text-zinc-500">
+                <span className="text-muted-foreground">
                   {seatsLeft} seat
                   {seatsLeft === 1
                     ? ""
@@ -462,7 +460,7 @@ export default async function EventDetailPage({
 
               {event.power_level ||
               proxiesLabel ? (
-                <div className="mt-3 flex flex-wrap items-center gap-2">
+                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
                   {event.power_level ? (
                     <Pill>
                       {
@@ -484,12 +482,12 @@ export default async function EventDetailPage({
             </header>
 
             {description ? (
-              <section className="border-b border-[#6E5AA7]/[0.1] py-6">
-                <h2 className="text-base font-bold tracking-[-0.015em] text-zinc-900">
+              <section className="py-5">
+                <h2 className="text-base font-semibold tracking-tight text-foreground">
                   About this event
                 </h2>
 
-                <p className="mt-2 max-w-2xl whitespace-pre-wrap text-[15px] leading-7 text-zinc-600">
+                <p className="mt-2 max-w-2xl whitespace-pre-wrap text-[15px] leading-7 text-muted-foreground">
                   {description}
                 </p>
               </section>
@@ -497,9 +495,9 @@ export default async function EventDetailPage({
 
             <section
               aria-label="Event details"
-              className="my-6 overflow-hidden rounded-[1.35rem] bg-white/55 px-4 shadow-[inset_0_0_0_1px_rgba(110,90,167,0.08),0_10px_28px_rgba(64,47,91,0.025)]"
+              className="my-4 rounded-row bg-surface-subtle/60 px-4 py-1"
             >
-              <div className="divide-y divide-[#6E5AA7]/[0.09]">
+              <div className="grid gap-x-5 sm:grid-cols-3">
                 <InfoRow
                   icon={
                     <CalendarDays
@@ -544,12 +542,12 @@ export default async function EventDetailPage({
             </section>
 
             {event.host_notes ? (
-              <section className="border-y border-[#6E5AA7]/[0.1] py-5">
-                <h2 className="text-sm font-bold text-[#65518F]">
+              <section className="my-5 rounded-row bg-secondary/45 px-4 py-4">
+                <h2 className="text-sm font-semibold text-secondary-foreground">
                   Host notes
                 </h2>
 
-                <p className="mt-2 max-w-2xl whitespace-pre-wrap text-[15px] leading-7 text-zinc-600">
+                <p className="mt-2 max-w-2xl whitespace-pre-wrap text-[15px] leading-7 text-muted-foreground">
                   {
                     event.host_notes
                   }
@@ -558,18 +556,16 @@ export default async function EventDetailPage({
             ) : null}
 
             {coordinates ? (
-              <section className="py-7">
+              <section className="py-6">
                 <div className="mb-3 flex items-end justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2.5">
-                      <span className="h-1.5 w-6 rounded-full bg-[#6E5AA7]" />
-
-                      <h2 className="text-[22px] font-bold tracking-[-0.03em]">
+                      <h2 className="text-xl font-semibold tracking-tight">
                         Location
                       </h2>
                     </div>
 
-                    <p className="mt-1 truncate text-sm text-zinc-500">
+                    <p className="mt-1 truncate text-sm text-muted-foreground">
                       {event.address_text ||
                         "Event location"}
                     </p>
@@ -580,7 +576,7 @@ export default async function EventDetailPage({
                       href={mapsUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full bg-[#EEE9FF] px-4 text-sm font-semibold text-[#5B478A] shadow-[inset_0_0_0_1px_rgba(110,90,167,0.08)] outline-none transition hover:bg-[#E7E0FF] hover:text-[#49356F] active:scale-[0.98] focus-visible:ring-4 focus-visible:ring-[#6E5AA7]/20"
+                      className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-control bg-secondary px-3.5 text-sm font-semibold text-secondary-foreground outline-none transition-colors hover:bg-primary/14 focus-visible:ring-[3px] focus-visible:ring-ring/20"
                     >
                       Open in maps
                       <ArrowUpRight className="h-3.5 w-3.5" />
@@ -618,22 +614,22 @@ function InfoRow({
   secondary?: string | null;
 }) {
   return (
-    <div className="grid min-h-[70px] grid-cols-[36px_minmax(0,1fr)] items-center gap-3 py-3">
-      <div className="grid h-8 w-8 place-items-center rounded-[10px] bg-[#EEE9FF] text-[#6E5AA7] shadow-[inset_0_0_0_1px_rgba(110,90,167,0.08)]">
+    <div className="grid min-h-[70px] grid-cols-[28px_minmax(0,1fr)] items-center gap-2.5 py-3">
+      <div className="text-primary">
         {icon}
       </div>
 
       <div className="min-w-0">
-        <p className="text-[11px] font-semibold text-[#6E5AA7]/75">
+        <p className="text-xs font-medium text-quiet-foreground">
           {label}
         </p>
 
-        <p className="mt-0.5 break-words text-[15px] font-medium text-zinc-900">
+        <p className="mt-0.5 break-words text-sm font-semibold text-foreground">
           {primary}
         </p>
 
         {secondary ? (
-          <p className="mt-0.5 text-sm text-zinc-500">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {secondary}
           </p>
         ) : null}
@@ -648,7 +644,7 @@ function Pill({
   children: ReactNode;
 }) {
   return (
-    <span className="rounded-full border border-[#6E5AA7]/[0.09] bg-[#EEE9FF]/65 px-2.5 py-1 text-xs font-semibold text-[#625080]">
+    <span className="text-sm text-muted-foreground first-letter:uppercase">
       {children}
     </span>
   );
