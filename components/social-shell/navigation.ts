@@ -36,6 +36,22 @@ export type SocialNavigationItem = {
   matches: (pathname: string) => boolean;
 };
 
+export type ContextualNavigationKey = "binder" | "decks";
+
+export type ContextualNavigationItem = {
+  key: string;
+  label: string;
+  href: string;
+  views: readonly string[];
+};
+
+export type ContextualNavigationSection = {
+  key: ContextualNavigationKey;
+  label: string;
+  selectorLabel: string;
+  items: readonly ContextualNavigationItem[];
+};
+
 const atRoot = (pathname: string, root: string) => (
   pathname === root || pathname.startsWith(`${root}/`)
 );
@@ -98,6 +114,31 @@ export const mobileMoreNavigationItem = {
   icon: Ellipsis,
 };
 
+export const contextualNavigationSections: Record<ContextualNavigationKey, ContextualNavigationSection> = {
+  binder: {
+    key: "binder",
+    label: "BINDER",
+    selectorLabel: "Binder sections",
+    items: [
+      { key: "community", label: "Community", href: "/binder?view=community", views: ["community"] },
+      { key: "items", label: "My Binder", href: "/binder?view=items", views: ["items"] },
+      { key: "wanted", label: "Wanted List", href: "/binder?view=wanted", views: ["wanted"] },
+      { key: "matches", label: "Matches", href: "/binder?view=matches", views: ["matches"] },
+      { key: "requests", label: "Trade requests", href: "/binder?view=received", views: ["received", "sent"] },
+    ],
+  },
+  decks: {
+    key: "decks",
+    label: "DECKS",
+    selectorLabel: "Deck sections",
+    items: [
+      { key: "community", label: "Community", href: "/decks?view=community", views: ["community"] },
+      { key: "mine", label: "My Decks", href: "/decks?view=mine", views: ["mine"] },
+      { key: "saved", label: "Saved Decks", href: "/decks?view=saved", views: ["saved"] },
+    ],
+  },
+};
+
 export const desktopNavigationItems = socialNavigationItems
   .filter((item) => item.desktopPrimary !== undefined)
   .sort((left, right) => left.desktopPrimary! - right.desktopPrimary!);
@@ -139,4 +180,28 @@ export function getActiveMobileSecondaryNavigationKey(pathname: string): SocialN
 
 export function isMobileMoreRoute(pathname: string): boolean {
   return getActiveMobileSecondaryNavigationKey(pathname) !== null;
+}
+
+export function getContextualNavigation(
+  pathname: string,
+  requestedView: string | null,
+): { section: ContextualNavigationSection; activeKey: string | null } | null {
+  if (atRoot(pathname, "/binder")) {
+    const section = contextualNavigationSections.binder;
+    const activeKey = pathname === "/binder"
+      ? section.items.find((item) => item.views.includes(requestedView ?? "community"))?.key ?? "community"
+      : null;
+    return { section, activeKey };
+  }
+
+  const isDeckRoute = atRoot(pathname, "/decks") || atRoot(pathname, "/profile/decks");
+  if (!isDeckRoute) return null;
+
+  const section = contextualNavigationSections.decks;
+  const isListRoute = pathname === "/decks" || pathname === "/profile/decks";
+  const defaultView = pathname === "/profile/decks" ? "mine" : "community";
+  const activeKey = isListRoute
+    ? section.items.find((item) => item.views.includes(requestedView ?? defaultView))?.key ?? defaultView
+    : null;
+  return { section, activeKey };
 }

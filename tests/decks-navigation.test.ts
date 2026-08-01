@@ -18,17 +18,32 @@ test("Deck section routes default safely to Community", () => {
   assert.equal(deckRoutes.publicDetail("owner/id", "deck/id"), "/profile/owner%2Fid/decks/deck%2Fid");
 });
 
-test("Deck navigation uses the shared vertical desktop menu and compact mobile selector", () => {
+test("Deck navigation uses the global contextual sidebar and compact mobile selector", () => {
   const dashboard = source("../components/decks/DecksDashboard.tsx");
   const navigation = source("../components/section-navigation/SectionNavigation.tsx");
-  assert.match(dashboard, /label: "Community"/);
-  assert.match(dashboard, /label: "My Decks"/);
-  assert.match(dashboard, /label: "Saved Decks"/);
-  assert.match(dashboard, /<SectionNavigation label="Deck sections"/);
-  assert.match(navigation, /hidden w-\[196px\]/);
+  const metadata = source("../components/social-shell/navigation.ts");
+  const sidebar = source("../components/social-shell/SocialDesktopSidebar.tsx");
+  for (const label of ["Community", "My Decks", "Saved Decks"]) {
+    assert.match(metadata, new RegExp(`label: "${label}"`));
+  }
+  assert.match(sidebar, /<SocialContextualNavigation \/>/);
+  assert.match(dashboard, /<SectionNavigation section="decks" activeKey=\{view\} \/>/);
   assert.match(navigation, /<select/);
-  assert.match(navigation, /w-full/);
-  assert.doesNotMatch(dashboard, /overflow-x-auto|rounded-full.*Community/);
+  assert.match(navigation, /max-w-full/);
+  assert.match(navigation, /lg:hidden/);
+  assert.doesNotMatch(navigation, /<aside|w-\[196px\]/);
+  assert.doesNotMatch(dashboard, /lg:grid-cols-\[196px|overflow-x-auto|rounded-full.*Community/);
+});
+
+test("Deck server component passes only serializable section props to its client selector", () => {
+  const dashboard = source("../components/decks/DecksDashboard.tsx");
+  const navigation = source("../components/section-navigation/SectionNavigation.tsx");
+  assert.doesNotMatch(dashboard, /^"use client"/);
+  assert.doesNotMatch(dashboard, /Bookmark|Compass|Library|icon\s*:/);
+  assert.match(dashboard, /section="decks" activeKey=\{view\}/);
+  assert.doesNotMatch(navigation, /LucideIcon|items: SectionNavigationItem/);
+  assert.match(navigation, /section: ContextualNavigationKey/);
+  assert.match(navigation, /activeKey: string/);
 });
 
 test("Community Deck paths encode filters and explicit pagination", () => {
@@ -67,6 +82,20 @@ test("Community and Saved Decks use real authenticated endpoints with optimistic
   assert.match(view, /restored\.splice/);
   assert.match(view, /rowErrors/);
   assert.match(view, /<LoadMore/);
+});
+
+test("production-shaped discovery errors stay scoped and My Decks uses its independent API", () => {
+  const dashboard = source("../components/decks/DecksDashboard.tsx");
+  const discovery = source("../components/decks/DeckDiscoveryView.tsx");
+  const pagination = source("../hooks/usePaginatedResource.ts");
+  const mine = source("../components/decks/deck-list.tsx");
+  assert.match(discovery, /resource\.error \? <BinderError/);
+  assert.match(discovery, /onRetry=\{resource\.retry\}/);
+  assert.match(pagination, /catch \{/);
+  assert.match(pagination, /This section could not be loaded/);
+  assert.match(dashboard, /view === "mine" \? <DeckList \/> : <DeckDiscoveryView/);
+  assert.match(mine, /decksApi\s*\.list\(\)/);
+  assert.doesNotMatch(mine, /deckDiscoveryApi|\/decks\/community|\/decks\/saved/);
 });
 
 test("public discovery cards open the authenticated public deck route without owner controls", () => {

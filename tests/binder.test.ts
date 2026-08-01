@@ -48,11 +48,12 @@ test("Binder view routing defaults invalid values and supports all owner section
     assert.equal(normalizeBinderView(view), view);
   }
   const dashboard = source("../components/binder/BinderDashboard.tsx");
-  assert.match(dashboard, /label: "Community"/);
-  assert.match(dashboard, /label: "My Binder"/);
+  const metadata = source("../components/social-shell/navigation.ts");
+  assert.match(metadata, /label: "Community"/);
+  assert.match(metadata, /label: "My Binder"/);
   assert.doesNotMatch(dashboard, /My Binders/);
   assert.match(dashboard, /<CommunityBinderView \/>/);
-  assert.match(dashboard, /<SectionNavigation label="Binder sections"/);
+  assert.match(dashboard, /<SectionNavigation[\s\S]*section="binder"/);
   assert.match(dashboard, /view === "items"/);
   assert.match(dashboard, /view === "wanted"/);
   assert.match(dashboard, /view === "matches"/);
@@ -98,13 +99,16 @@ test("Community Binder loads the real endpoint with stale-safe pagination and st
   assert.doesNotMatch(view, /onEdit|onStatus|onWithdraw|BinderSettingsPanel|Add card/);
 });
 
-test("Binder section navigation is vertical on desktop and compact without horizontal tabs on mobile", () => {
+test("Binder section navigation uses the desktop sidebar and compact selector on mobile", () => {
   const dashboard = source("../components/binder/BinderDashboard.tsx");
   const navigation = source("../components/section-navigation/SectionNavigation.tsx");
-  assert.match(dashboard, /lg:grid-cols-\[196px_minmax\(0,1fr\)\]/);
-  assert.match(navigation, /hidden w-\[196px\]/);
+  const sidebar = source("../components/social-shell/SocialDesktopSidebar.tsx");
+  assert.match(sidebar, /<SocialContextualNavigation \/>/);
+  assert.doesNotMatch(dashboard, /lg:grid-cols-\[196px_minmax\(0,1fr\)\]/);
+  assert.doesNotMatch(navigation, /<aside|w-\[196px\]/);
   assert.match(navigation, /<select/);
   assert.match(navigation, /router\.push\(event\.target\.value\)/);
+  assert.match(navigation, /lg:hidden/);
   assert.doesNotMatch(dashboard, /overflow-x-auto/);
 });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Compass, Handshake, Library, ListPlus, Plus, Sparkles } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
@@ -32,40 +32,33 @@ export default function BinderDashboard() {
   const view = normalizeBinderView(searchParams.get("view"));
   const [addRequest, setAddRequest] = useState(0);
   const identity = pageIdentity[view];
-  const sections = [
-    { key: "community", label: "Community", href: "/binder?view=community", icon: Compass, active: view === "community" },
-    { key: "items", label: "My Binder", href: "/binder?view=items", icon: Library, active: view === "items" },
-    { key: "wanted", label: "Wanted List", href: "/binder?view=wanted", icon: ListPlus, active: view === "wanted" },
-    { key: "matches", label: "Matches", href: "/binder?view=matches", icon: Sparkles, active: view === "matches" },
-    { key: "requests", label: "Trade requests", href: "/binder?view=received", icon: Handshake, active: view === "received" || view === "sent" },
-  ];
 
   return (
     <main className="min-h-screen px-4 py-6 text-foreground sm:px-5 sm:py-8 lg:px-0">
       <div className="w-full max-w-[1180px]">
-        <div className="grid gap-6 lg:grid-cols-[196px_minmax(0,1fr)] lg:gap-8">
-          <SectionNavigation label="Binder sections" items={sections} />
-
-          <div className="min-w-0">
-            <header className="flex flex-wrap items-end justify-between gap-4 border-b border-border/60 pb-5">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">Binder</p>
-                <h1 className="mt-1 text-3xl font-bold tracking-[-0.035em]">{identity.title}</h1>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{identity.subtitle}</p>
-              </div>
-              {view === "items" ? <Button type="button" onClick={() => setAddRequest((value) => value + 1)}><Plus aria-hidden="true" />Add card</Button> : null}
-            </header>
-
-            {view === "items" ? <div className="mt-4"><BinderSettingsPanel /></div> : null}
-            {view === "received" || view === "sent" ? <TradeRequestNav view={view} /> : null}
-
-            <div className="py-6">
-              {view === "community" ? <CommunityBinderView /> : null}
-              {view === "items" ? <BinderItemsView addRequest={addRequest} /> : null}
-              {view === "wanted" ? <WantedListView /> : null}
-              {view === "matches" ? <MatchesView /> : null}
-              {view === "received" || view === "sent" ? <InterestsView view={view} /> : null}
+        <SectionNavigation
+          section="binder"
+          activeKey={view === "received" || view === "sent" ? "requests" : view}
+        />
+        <div className="mt-6 min-w-0 lg:mt-0">
+          <header className="flex flex-wrap items-end justify-between gap-4 border-b border-border/60 pb-5">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">Binder</p>
+              <h1 className="mt-1 text-3xl font-bold tracking-[-0.035em]">{identity.title}</h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{identity.subtitle}</p>
             </div>
+            {view === "items" ? <Button type="button" onClick={() => setAddRequest((value) => value + 1)}><Plus aria-hidden="true" />Add card</Button> : null}
+          </header>
+
+          {view === "items" ? <div className="mt-4"><BinderSettingsPanel /></div> : null}
+          {view === "received" || view === "sent" ? <TradeRequestNav view={view} /> : null}
+
+          <div className="py-6">
+            {view === "community" ? <CommunityBinderView /> : null}
+            {view === "items" ? <BinderItemsView addRequest={addRequest} /> : null}
+            {view === "wanted" ? <WantedListView /> : null}
+            {view === "matches" ? <MatchesView /> : null}
+            {view === "received" || view === "sent" ? <InterestsView view={view} /> : null}
           </div>
         </div>
       </div>
