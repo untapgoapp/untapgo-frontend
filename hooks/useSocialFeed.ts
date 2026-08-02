@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   mergeSocialPosts,
+  replaceSocialPost,
   type SocialFeedView,
   type SocialPost,
 } from "@/lib/social-feed";
@@ -68,11 +69,19 @@ export default function useSocialFeed(view: SocialFeedView) {
     return post;
   }, []);
 
-  const remove = useCallback(async (postId: string) => {
-    const removedIndex = items.findIndex((post) => post.id === postId);
-    const removed = removedIndex >= 0 ? items[removedIndex] : undefined;
+  const update = useCallback((post: SocialPost) => {
+    setItems((current) => replaceSocialPost(current, post));
+  }, []);
 
-    setItems((current) => current.filter((post) => post.id !== postId));
+  const remove = useCallback(async (postId: string) => {
+    let removed: SocialPost | undefined;
+    let removedIndex = -1;
+
+    setItems((current) => {
+      removedIndex = current.findIndex((post) => post.id === postId);
+      removed = removedIndex >= 0 ? current[removedIndex] : undefined;
+      return current.filter((post) => post.id !== postId);
+    });
 
     try {
       await deleteSocialPost(postId);
@@ -81,13 +90,13 @@ export default function useSocialFeed(view: SocialFeedView) {
         setItems((current) => {
           if (current.some((post) => post.id === postId)) return current;
           const next = [...current];
-          next.splice(Math.max(0, removedIndex), 0, removed);
+          next.splice(Math.max(0, removedIndex), 0, removed!);
           return next;
         });
       }
       throw cause;
     }
-  }, [items]);
+  }, []);
 
   return {
     items,
@@ -96,6 +105,7 @@ export default function useSocialFeed(view: SocialFeedView) {
     error,
     hasMore,
     create,
+    update,
     remove,
     retry: () => load(1, true),
     loadMore: () => {

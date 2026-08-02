@@ -189,6 +189,7 @@ export default function HomeDashboardContent({
               onRetry={feed.retry}
               onLoadMore={feed.loadMore}
               onDelete={feed.remove}
+              onChange={feed.update}
             />
           </section>
         </div>

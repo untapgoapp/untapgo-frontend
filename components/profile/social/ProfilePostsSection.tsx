@@ -4,7 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import SocialPostCard from "@/components/social-feed/SocialPostCard";
 import { Button } from "@/components/ui/button";
-import { mergeSocialPosts, type SocialPost } from "@/lib/social-feed";
+import {
+  mergeSocialPosts,
+  replaceSocialPost,
+  type SocialPost,
+} from "@/lib/social-feed";
 import {
   deleteSocialPost,
   getProfileSocialPosts,
@@ -80,15 +84,13 @@ export default function ProfilePostsSection({
 
   return (
     <section id="posts" aria-labelledby="profile-posts-title" className="scroll-mt-6 py-6">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h2 id="profile-posts-title" className="text-lg font-semibold tracking-tight">
-            Posts
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {isOwner ? "What you have shared on UntapGo." : "Public posts shared by this player."}
-          </p>
-        </div>
+      <div>
+        <h2 id="profile-posts-title" className="text-lg font-semibold tracking-tight">
+          Posts
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {isOwner ? "What you have shared on UntapGo." : "Public posts shared by this player."}
+        </p>
       </div>
 
       {loading ? (
@@ -124,6 +126,7 @@ export default function ProfilePostsSection({
             <SocialPostCard
               key={post.id}
               post={post}
+              onChange={(updated) => setItems((current) => replaceSocialPost(current, updated))}
               onDelete={post.can_delete ? remove : undefined}
             />
           ))}

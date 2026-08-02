@@ -14,6 +14,7 @@ type HomeFeedListProps = {
   hasMore: boolean;
   onRetry: () => void;
   onLoadMore: () => void;
+  onChange: (post: SocialPost) => void;
   onDelete: (postId: string) => Promise<void>;
 };
 
@@ -46,6 +47,7 @@ export default function HomeFeedList({
   hasMore,
   onRetry,
   onLoadMore,
+  onChange,
   onDelete,
 }: HomeFeedListProps) {
   if (loading) return <FeedSkeleton />;
@@ -70,7 +72,12 @@ export default function HomeFeedList({
     <div className="bg-background">
       <div className="grid gap-3 py-3">
         {items.map((post) => (
-          <SocialPostCard key={post.id} post={post} onDelete={onDelete} />
+          <SocialPostCard
+            key={post.id}
+            post={post}
+            onChange={onChange}
+            onDelete={onDelete}
+          />
         ))}
       </div>
 

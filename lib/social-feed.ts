@@ -1,5 +1,6 @@
 export const SOCIAL_FEED_PAGE_SIZE = 20;
 export const SOCIAL_POST_MAX_LENGTH = 4000;
+export const SOCIAL_COMMENT_MAX_LENGTH = 2000;
 
 export type SocialFeedView = "for-you" | "following";
 
@@ -15,11 +16,44 @@ export type SocialPost = {
   body: string;
   created_at: string;
   updated_at: string;
+  edited_at: string | null;
+  can_edit: boolean;
   can_delete: boolean;
+  like_count: number;
+  comment_count: number;
+  is_liked: boolean;
+  is_saved: boolean;
 };
 
 export type SocialPostPage = {
   items: SocialPost[];
+  page: number;
+  page_size: number;
+  has_more: boolean;
+};
+
+export type SocialPostLikeState = {
+  is_liked: boolean;
+  like_count: number;
+};
+
+export type SocialPostSaveState = {
+  is_saved: boolean;
+};
+
+export type SocialComment = {
+  id: string;
+  post_id: string;
+  author: SocialPostAuthor;
+  body: string;
+  created_at: string;
+  updated_at: string;
+  edited_at: string | null;
+  can_delete: boolean;
+};
+
+export type SocialCommentPage = {
+  items: SocialComment[];
   page: number;
   page_size: number;
   has_more: boolean;
@@ -36,6 +70,25 @@ export function mergeSocialPosts(
   const byId = new Map<string, SocialPost>();
   current.forEach((post) => byId.set(post.id, post));
   incoming.forEach((post) => byId.set(post.id, post));
+  return Array.from(byId.values());
+}
+
+export function replaceSocialPost(
+  current: SocialPost[],
+  replacement: SocialPost,
+): SocialPost[] {
+  return current.map((post) => (
+    post.id === replacement.id ? replacement : post
+  ));
+}
+
+export function mergeSocialComments(
+  current: SocialComment[],
+  incoming: SocialComment[],
+): SocialComment[] {
+  const byId = new Map<string, SocialComment>();
+  current.forEach((comment) => byId.set(comment.id, comment));
+  incoming.forEach((comment) => byId.set(comment.id, comment));
   return Array.from(byId.values());
 }
 
@@ -57,4 +110,8 @@ export function formatSocialPostTime(value: string): string {
     day: "numeric",
     year: new Date(value).getFullYear() === new Date().getFullYear() ? undefined : "numeric",
   }).format(new Date(value));
+}
+
+export function formatSocialCount(value: number, singular: string, plural: string): string {
+  return `${value} ${value === 1 ? singular : plural}`;
 }
