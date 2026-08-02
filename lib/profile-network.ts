@@ -69,17 +69,20 @@ export function buildProfileNetworkPath({
   profileId,
   tab,
   page,
+  query = "",
   pageSize = PROFILE_NETWORK_PAGE_SIZE,
 }: {
   profileId: string;
   tab: ProfileNetworkTab;
   page: number;
   pageSize?: number;
+  query?: string;
 }): string {
   const parameters = new URLSearchParams({
     page: String(page),
     page_size: String(pageSize),
   });
+  if (query.trim()) parameters.set("q", query.trim());
 
   return (
     `/profiles/${encodeURIComponent(profileId)}/${tab}` +

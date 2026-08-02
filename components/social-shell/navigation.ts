@@ -9,6 +9,8 @@ import {
   Library,
   Settings,
   ShieldBan,
+  UserCheck,
+  UserPlus,
   UserRoundSearch,
   UsersRound,
 } from "lucide-react";
@@ -36,13 +38,14 @@ export type SocialNavigationItem = {
   matches: (pathname: string) => boolean;
 };
 
-export type ContextualNavigationKey = "binder" | "decks";
+export type ContextualNavigationKey = "binder" | "decks" | "players";
 
 export type ContextualNavigationItem = {
   key: string;
   label: string;
   href: string;
   views: readonly string[];
+  icon?: LucideIcon;
 };
 
 export type ContextualNavigationSection = {
@@ -115,6 +118,17 @@ export const mobileMoreNavigationItem = {
 };
 
 export const contextualNavigationSections: Record<ContextualNavigationKey, ContextualNavigationSection> = {
+  players: {
+    key: "players",
+    label: "PLAYERS",
+    selectorLabel: "Player sections",
+    items: [
+      { key: "discover", label: "Discover", href: "/players?view=discover", views: ["discover"], icon: UserRoundSearch },
+      { key: "connections", label: "Connections", href: "/players?view=connections", views: ["connections"], icon: UsersRound },
+      { key: "followers", label: "Followers", href: "/players?view=followers", views: ["followers"], icon: UserPlus },
+      { key: "following", label: "Following", href: "/players?view=following", views: ["following"], icon: UserCheck },
+    ],
+  },
   binder: {
     key: "binder",
     label: "BINDER",
@@ -186,6 +200,14 @@ export function getContextualNavigation(
   pathname: string,
   requestedView: string | null,
 ): { section: ContextualNavigationSection; activeKey: string | null } | null {
+  if (atRoot(pathname, "/players")) {
+    const section = contextualNavigationSections.players;
+    const activeKey = pathname === "/players"
+      ? section.items.find((item) => item.views.includes(requestedView ?? "discover"))?.key ?? "discover"
+      : null;
+    return { section, activeKey };
+  }
+
   if (atRoot(pathname, "/binder")) {
     const section = contextualNavigationSections.binder;
     const activeKey = pathname === "/binder"

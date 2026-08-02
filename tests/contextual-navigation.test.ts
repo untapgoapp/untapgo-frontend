@@ -37,8 +37,25 @@ test("Deck contextual navigation stays useful on owner detail routes without fal
   assert.equal(getContextualNavigation("/profile/player-1/decks/deck-1", null), null);
 });
 
+test("Players contextual navigation defaults to Discover and stays off public profiles", () => {
+  const players = getContextualNavigation("/players", "connections");
+  assert.equal(players?.section.label, "PLAYERS");
+  assert.equal(players?.activeKey, "connections");
+  assert.deepEqual(
+    contextualNavigationSections.players.items.map(({ label, href }) => [label, href]),
+    [
+      ["Discover", "/players?view=discover"],
+      ["Connections", "/players?view=connections"],
+      ["Followers", "/players?view=followers"],
+      ["Following", "/players?view=following"],
+    ],
+  );
+  assert.equal(getContextualNavigation("/players", "invalid")?.activeKey, "discover");
+  assert.equal(getContextualNavigation("/profile/player-1", null), null);
+});
+
 test("only one contextual menu renders and unrelated routes render none", () => {
-  for (const pathname of ["/home", "/events", "/players", "/playgroups", "/profile", "/notifications", "/settings"]) {
+  for (const pathname of ["/home", "/events", "/playgroups", "/profile", "/notifications", "/settings"]) {
     assert.equal(getContextualNavigation(pathname, null), null);
   }
   const component = source("../components/social-shell/SocialContextualNavigation.tsx");

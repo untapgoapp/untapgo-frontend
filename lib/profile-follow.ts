@@ -82,12 +82,20 @@ export function getProfileFollowMutationRequest(
 export function getProfileRelationshipLabel(
   relationship: ProfileRelationship,
 ): string | null {
-  if (relationship.is_mutual) return "Mutual follow";
   if (relationship.is_followed_by && !relationship.is_following) {
     return "Follows you";
   }
 
   return null;
+}
+
+export function getProfileFollowActionLabel(
+  relationship: ProfileRelationship,
+): "Follow" | "Follow back" | "Following" | "Connected" {
+  if (relationship.is_mutual) return "Connected";
+  if (relationship.is_following) return "Following";
+  if (relationship.is_followed_by) return "Follow back";
+  return "Follow";
 }
 
 export function canStartProfileFollowMutation(
@@ -96,7 +104,7 @@ export function canStartProfileFollowMutation(
   return state.status === "ready" && state.relationship !== null;
 }
 
-function updateFollowing(
+export function updateProfileFollowing(
   relationship: ProfileRelationship,
   isFollowing: boolean,
 ): ProfileRelationship {
@@ -141,7 +149,7 @@ export function profileFollowReducer(
 
   if (action.type === "mutation_succeeded" && state.relationship) {
     return {
-      relationship: updateFollowing(
+      relationship: updateProfileFollowing(
         state.relationship,
         action.isFollowing,
       ),

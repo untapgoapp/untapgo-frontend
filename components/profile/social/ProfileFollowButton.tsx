@@ -5,6 +5,7 @@ import { useEffect, useReducer, useRef } from "react";
 import {
   canShowProfileFollow,
   canStartProfileFollowMutation,
+  getProfileFollowActionLabel,
   getProfileRelationshipLabel,
   initialProfileFollowState,
   profileFollowReducer,
@@ -98,6 +99,7 @@ export default function ProfileFollowButton({
   const relationshipLabel = getProfileRelationshipLabel(
     state.relationship,
   );
+  const actionLabel = getProfileFollowActionLabel(state.relationship);
 
   async function toggleFollow() {
     if (
@@ -144,7 +146,7 @@ export default function ProfileFollowButton({
       >
         {isMutating
           ? isFollowing ? "Unfollowing..." : "Following..."
-          : isFollowing ? "Following" : "Follow"}
+          : actionLabel}
       </button>
       {relationshipLabel ? (
         <span className="text-xs font-medium text-zinc-500">

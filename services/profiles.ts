@@ -1,7 +1,9 @@
 import { api } from "@/lib/api";
 import {
   buildPlayerDirectoryPath,
+  buildPlayersSectionPath,
   type PlayerDirectoryResponse,
+  type PlayersView,
 } from "@/lib/player-directory";
 import {
   buildProfileRelationshipPath,
@@ -164,6 +166,22 @@ export async function getPlayerDirectory({
   );
 }
 
+export async function getPlayersSection({
+  view,
+  currentUserId,
+  query,
+  page,
+}: {
+  view: PlayersView;
+  currentUserId: string;
+  query: string;
+  page: number;
+}): Promise<PlayerDirectoryResponse> {
+  return api.get<PlayerDirectoryResponse>(
+    buildPlayersSectionPath({ view, currentUserId, query, page }),
+  );
+}
+
 export async function getProfileRelationship(
   profileId: string,
 ): Promise<ProfileRelationship> {
@@ -209,9 +227,10 @@ async function getProfileNetwork(
   profileId: string,
   tab: ProfileNetworkTab,
   page: number,
+  query = "",
 ): Promise<PlayerDirectoryResponse> {
   return api.get<PlayerDirectoryResponse>(
-    buildProfileNetworkPath({ profileId, tab, page }),
+    buildProfileNetworkPath({ profileId, tab, page, query }),
   );
 }
 
@@ -630,7 +649,10 @@ export async function blockProfile(
     {},
   );
 
-  emitBrowserEvent(BLOCKED_PROFILES_CHANGED_EVENT);
+  emitBrowserEvent(BLOCKED_PROFILES_CHANGED_EVENT, {
+    profileId,
+    blocked: true,
+  });
 
   return result;
 }
@@ -645,7 +667,10 @@ export async function unblockProfile(
     `/profiles/${encodeURIComponent(profileId)}/block`,
   );
 
-  emitBrowserEvent(BLOCKED_PROFILES_CHANGED_EVENT);
+  emitBrowserEvent(BLOCKED_PROFILES_CHANGED_EVENT, {
+    profileId,
+    blocked: false,
+  });
 
   return result;
 }

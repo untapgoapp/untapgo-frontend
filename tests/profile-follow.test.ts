@@ -6,6 +6,7 @@ import {
   PROFILE_FOLLOW_LOAD_ERROR,
   canShowProfileFollow,
   canStartProfileFollowMutation,
+  getProfileFollowActionLabel,
   getProfileFollowMutationRequest,
   getProfileRelationshipLabel,
   initialProfileFollowState,
@@ -110,7 +111,7 @@ test("a mutation cannot start again while one is already running", () => {
   assert.strictEqual(repeated, started);
 });
 
-test("relationship labels distinguish follows-you and mutual states", () => {
+test("relationship labels add follows-you context without duplicating Connected", () => {
   assert.equal(
     getProfileRelationshipLabel(
       relationship({ is_followed_by: true }),
@@ -125,9 +126,50 @@ test("relationship labels distinguish follows-you and mutual states", () => {
         is_mutual: true,
       }),
     ),
-    "Mutual follow",
+    null,
   );
   assert.equal(getProfileRelationshipLabel(relationship()), null);
+});
+
+test("relationship actions use Follow model wording for every state", () => {
+  assert.equal(getProfileFollowActionLabel(relationship()), "Follow");
+  assert.equal(
+    getProfileFollowActionLabel(relationship({ is_followed_by: true })),
+    "Follow back",
+  );
+  assert.equal(
+    getProfileFollowActionLabel(relationship({ is_following: true })),
+    "Following",
+  );
+  assert.equal(
+    getProfileFollowActionLabel(relationship({
+      is_following: true,
+      is_followed_by: true,
+      is_mutual: true,
+    })),
+    "Connected",
+  );
+});
+
+test("Follow back becomes Connected and Connected unfollow becomes Follow back", () => {
+  const followedBack = profileFollowReducer(
+    readyState({ is_followed_by: true }),
+    { type: "mutation_succeeded", isFollowing: true },
+  );
+  assert.deepEqual(followedBack.relationship, relationship({
+    is_following: true,
+    is_followed_by: true,
+    is_mutual: true,
+  }));
+
+  const unfollowed = profileFollowReducer(followedBack, {
+    type: "mutation_succeeded",
+    isFollowing: false,
+  });
+  assert.deepEqual(unfollowed.relationship, relationship({
+    is_followed_by: true,
+  }));
+  assert.equal(getProfileFollowActionLabel(unfollowed.relationship!), "Follow back");
 });
 
 test("API failures use friendly fixed messages", () => {

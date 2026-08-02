@@ -24,6 +24,11 @@ function player(id: string): PlayerDirectoryItem {
     avatar_url: null,
     bio: null,
     mtg_arena_username: null,
+    relationship: {
+      is_following: false,
+      is_followed_by: false,
+      is_mutual: false,
+    },
   };
 }
 

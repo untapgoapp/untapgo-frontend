@@ -2,11 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildPlayersSectionPath,
   buildPlayerDirectoryPath,
   getPlayerDirectoryEmptyCopy,
   getPlayerProfileHref,
   initialPlayerDirectoryState,
+  normalizePlayersView,
   playerDirectoryReducer,
+  shouldRemovePlayerAfterRelationship,
   type PlayerDirectoryItem,
   type PlayerDirectoryResponse,
 } from "../lib/player-directory.ts";
@@ -18,6 +21,11 @@ function player(id: string, nickname = id): PlayerDirectoryItem {
     avatar_url: null,
     bio: null,
     mtg_arena_username: null,
+    relationship: {
+      is_following: false,
+      is_followed_by: false,
+      is_mutual: false,
+    },
   };
 }
 
@@ -45,6 +53,31 @@ test("search query is trimmed, encoded, and sent with pagination", () => {
   assert.equal(url.searchParams.get("q"), "Jace & Vraska");
   assert.equal(url.searchParams.get("page"), "3");
   assert.equal(url.searchParams.get("page_size"), "20");
+});
+
+test("Players views default safely and use one query-based route", () => {
+  assert.equal(normalizePlayersView(undefined), "discover");
+  assert.equal(normalizePlayersView("unknown"), "discover");
+  assert.equal(normalizePlayersView(["following", "discover"]), "following");
+
+  assert.equal(
+    buildPlayersSectionPath({
+      view: "connections",
+      currentUserId: "viewer/id",
+      query: "  Jace  ",
+      page: 2,
+    }),
+    "/profiles/connections?page=2&page_size=20&q=Jace",
+  );
+  assert.equal(
+    buildPlayersSectionPath({
+      view: "followers",
+      currentUserId: "viewer/id",
+      query: "",
+      page: 1,
+    }),
+    "/profiles/viewer%2Fid/followers?page=1&page_size=20",
+  );
 });
 
 test("changing search resets existing results and pagination", () => {
@@ -147,10 +180,65 @@ test("duplicate player IDs are rendered only once", () => {
 });
 
 test("an empty search result uses the search-specific state", () => {
-  assert.deepEqual(getPlayerDirectoryEmptyCopy("Liliana"), {
+  assert.deepEqual(getPlayerDirectoryEmptyCopy("discover", "Liliana"), {
     title: "No players found",
     detail: "Try another nickname.",
   });
+});
+
+test("section empty states use Follow-based language", () => {
+  assert.deepEqual(getPlayerDirectoryEmptyCopy("connections", ""), {
+    title: "No connections yet.",
+    detail: "Follow players and connect when they follow you back.",
+  });
+  assert.equal(
+    getPlayerDirectoryEmptyCopy("following", "").title,
+    "You are not following anyone yet.",
+  );
+});
+
+test("section-specific relationship updates remove only rows that no longer belong", () => {
+  const followBack = {
+    is_following: false,
+    is_followed_by: true,
+    is_mutual: false,
+  };
+  assert.equal(shouldRemovePlayerAfterRelationship("connections", followBack), true);
+  assert.equal(shouldRemovePlayerAfterRelationship("following", followBack), true);
+  assert.equal(shouldRemovePlayerAfterRelationship("followers", followBack), false);
+  assert.equal(shouldRemovePlayerAfterRelationship("discover", followBack), false);
+});
+
+test("removed rows are restored at their original position after a failed mutation", () => {
+  const first = player("one");
+  const second = player("two");
+  const state = { ...initialPlayerDirectoryState, items: [first, second] };
+  const removed = playerDirectoryReducer(state, {
+    type: "player_changed",
+    playerId: first.id,
+    relationship: first.relationship,
+    remove: true,
+  });
+  const restored = playerDirectoryReducer(removed, {
+    type: "player_restored",
+    player: first,
+    index: 0,
+  });
+
+  assert.deepEqual(restored.items.map(({ id }) => id), ["one", "two"]);
+});
+
+test("a newly blocked player is removed from mounted directory state", () => {
+  const state = {
+    ...initialPlayerDirectoryState,
+    items: [player("blocked"), player("visible")],
+  };
+  const next = playerDirectoryReducer(state, {
+    type: "player_removed",
+    playerId: "blocked",
+  });
+
+  assert.deepEqual(next.items.map(({ id }) => id), ["visible"]);
 });
 
 test("API errors retain the failed page and Retry starts it again", () => {

@@ -21,18 +21,20 @@ export default function SocialContextualNavigation() {
       <nav aria-label={`${contextual.section.label.toLowerCase()} sections`} className="grid gap-0.5">
         {contextual.section.items.map((item) => {
           const active = item.key === contextual.activeKey;
+          const Icon = item.icon;
           return (
             <Link
               key={item.key}
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={[
-                "flex min-h-9 items-center rounded-control px-3 text-[13px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/15",
+                "flex min-h-9 items-center gap-2.5 rounded-control px-3 text-[13px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/15",
                 active
                   ? "bg-secondary text-secondary-foreground"
                   : "text-muted-foreground hover:bg-surface-subtle hover:text-foreground",
               ].join(" ")}
             >
+              {Icon ? <Icon aria-hidden="true" className="h-4 w-4 shrink-0" /> : null}
               {item.label}
             </Link>
           );
