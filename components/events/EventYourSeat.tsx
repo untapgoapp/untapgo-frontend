@@ -631,7 +631,7 @@ export default function EventYourSeat({
     <>
       <section
         aria-labelledby="event-your-seat-title"
-        className="py-5"
+        className="pb-6 pt-0"
       >
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -661,7 +661,7 @@ export default function EventYourSeat({
                 deckBusy
               }
               aria-label="Refresh your seat"
-              className="grid h-10 w-10 place-items-center rounded-control text-primary outline-none transition-colors hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
+              className="grid h-8 w-8 place-items-center rounded-control text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
             >
               <RefreshCw
                 className={[
@@ -675,7 +675,7 @@ export default function EventYourSeat({
           ) : null}
         </div>
 
-        <div className="mt-3 overflow-hidden rounded-row bg-surface/55 px-3 py-1">
+        <div className="mt-4 divide-y divide-border/70 border-y border-border/70">
           <SeatValueRow
             label="Role"
             value={roleLabel}
@@ -695,7 +695,7 @@ export default function EventYourSeat({
                   deckLocked ||
                   decksLoading
                 }
-                className="flex min-h-14 w-full items-center gap-3 rounded-control px-2 py-3 text-left outline-none transition-colors hover:bg-secondary/50 focus-visible:bg-secondary/70 focus-visible:ring-[3px] focus-visible:ring-ring/15 disabled:opacity-55"
+                className="flex min-h-14 w-full items-center gap-3 px-1 py-3 text-left outline-none transition-colors hover:bg-secondary/35 focus-visible:bg-secondary/50 focus-visible:ring-[3px] focus-visible:ring-ring/15 disabled:opacity-55"
               >
                 <span className="w-[88px] shrink-0 text-sm text-zinc-500">
                   Deck
@@ -747,7 +747,7 @@ export default function EventYourSeat({
                   deckLocked ||
                   decksLoading
                 }
-                className="flex min-h-14 w-full items-center gap-3 rounded-control px-2 py-3 text-left outline-none transition-colors hover:bg-secondary/50 focus-visible:bg-secondary/70 focus-visible:ring-[3px] focus-visible:ring-ring/15 disabled:opacity-55"
+                className="flex min-h-14 w-full items-center gap-3 px-1 py-3 text-left outline-none transition-colors hover:bg-secondary/35 focus-visible:bg-secondary/50 focus-visible:ring-[3px] focus-visible:ring-ring/15 disabled:opacity-55"
               >
                 <span className="w-[88px] shrink-0 text-sm text-zinc-500">
                   Visibility
@@ -1218,7 +1218,7 @@ function SeatValueRow({
   return (
     <div
       className={[
-        "flex min-h-14 items-center justify-between gap-4 py-3",
+        "flex min-h-12 items-center justify-between gap-4 px-1 py-3",
         separated ? "" : "",
       ].join(" ")}
     >

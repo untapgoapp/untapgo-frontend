@@ -690,7 +690,7 @@ export default function EventUserPanels({
   if (loading) {
     return (
       <PanelsStateLayout>
-        <div className="h-[210px] animate-pulse rounded-[1.25rem] bg-black/[0.045]" />
+        <div className="h-[210px] animate-pulse border-y border-border/70 bg-black/[0.035]" />
       </PanelsStateLayout>
     );
   }
@@ -708,7 +708,7 @@ export default function EventUserPanels({
           </p>
         </section>
 
-        <aside className="mt-4 py-4 lg:col-start-2 lg:row-start-1 lg:row-span-2 lg:mt-0 lg:py-0">
+        <aside className="mt-6 border-t border-border/70 pt-6 lg:col-start-2 lg:row-start-1 lg:row-span-4 lg:mt-0 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
           <LoginPanel />
         </aside>
       </div>
@@ -779,8 +779,8 @@ export default function EventUserPanels({
         }
       />
 
-      <aside className="mt-4 lg:col-start-2 lg:row-start-1 lg:row-span-3 lg:mt-0">
-        <div className="lg:sticky lg:top-24 lg:rounded-surface lg:bg-surface-subtle/45 lg:px-4">
+      <aside className="mt-6 border-t border-border/70 pt-6 lg:col-start-2 lg:row-start-1 lg:row-span-4 lg:mt-0 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+        <div className="lg:sticky lg:top-24">
           <EventYourSeat
             eventId={event.id}
             currentUserId={
@@ -915,7 +915,7 @@ export default function EventUserPanels({
       </aside>
 
       {isEnded ? (
-        <div className="py-6 lg:col-start-1 lg:row-start-3">
+        <div className="py-6 lg:col-start-1 lg:row-start-4">
           <EventFeedbackPanel
             key={`feedback-${event.id}-${panelsVersion}`}
             eventId={event.id}
@@ -1130,7 +1130,7 @@ function PanelsStateLayout({
 
 function LoginPanel() {
   return (
-    <section className="rounded-row bg-surface-subtle/55 px-4 py-4">
+    <section className="border-y border-border/70 py-5">
       <h2 className="text-lg font-semibold tracking-[-0.02em] text-zinc-950">
         Your seat
       </h2>

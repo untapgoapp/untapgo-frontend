@@ -539,7 +539,7 @@ export default function EventRequestsPanel({
               processingAny
             }
             aria-label="Refresh join requests"
-            className="grid h-10 w-10 place-items-center rounded-control text-primary outline-none transition-colors hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
+            className="grid h-8 w-8 place-items-center rounded-control text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
           >
             <RefreshCw
               className={[
@@ -606,7 +606,7 @@ export default function EventRequestsPanel({
         {!loading &&
         pendingRequests.length ===
           0 ? (
-          <p className="mt-3 rounded-row bg-surface/55 px-3 py-3 text-sm text-muted-foreground">
+          <p className="mt-4 border-l-2 border-border-strong pl-3 text-sm leading-6 text-muted-foreground">
             No pending requests — you&apos;re all caught up.
           </p>
         ) : null}

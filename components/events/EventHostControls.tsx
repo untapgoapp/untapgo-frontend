@@ -149,7 +149,7 @@ export default function EventHostControls({
     <section
       id="event-host-controls"
       aria-labelledby="event-host-controls-title"
-      className="py-5"
+      className="border-t border-border/70 py-6"
     >
       <div>
         <div className="flex items-center gap-2.5">
@@ -169,7 +169,7 @@ export default function EventHostControls({
       <div
         role="tablist"
         aria-label="Host controls"
-        className="mt-3 grid grid-cols-3 rounded-control bg-surface/60 p-1"
+        className="mt-4 grid grid-cols-3 border-b border-border/70"
       >
         {TABS.map(
           (tab, index) => {
@@ -211,10 +211,10 @@ export default function EventHostControls({
                   );
                 }}
                 className={[
-                  "flex min-h-10 min-w-0 items-center justify-center gap-1 rounded-control px-1.5 text-[12px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/20",
+                  "flex min-h-10 min-w-0 items-center justify-center gap-1 border-b-2 px-1.5 text-[12px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/20",
                   active
-                    ? "bg-secondary text-secondary-foreground"
-                    : "text-muted-foreground hover:bg-surface hover:text-foreground",
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:border-border-strong hover:text-foreground",
                 ].join(" ")}
               >
                 <span className="truncate">
@@ -302,7 +302,7 @@ export default function EventHostControls({
                 }
               />
             ) : (
-              <p className="rounded-row bg-surface/55 px-3 py-3 text-sm text-muted-foreground">
+              <p className="border-l-2 border-border-strong pl-3 text-sm leading-6 text-muted-foreground">
                 No verification required. Confirmed membership is not recorded as verified attendance.
               </p>
             )}
@@ -316,7 +316,7 @@ export default function EventHostControls({
             role="tabpanel"
             aria-labelledby="event-host-tab-manage"
           >
-            <div className="overflow-hidden rounded-row bg-surface/55 px-2">
+            <div className="divide-y divide-border/70 border-y border-border/70">
               {canCancelEvent ? (
                 <Link
                   href={`/events/${eventId}/edit`}
@@ -379,7 +379,7 @@ export default function EventHostControls({
               </button>
             </div>
 
-            <div className="mt-4 rounded-row bg-destructive-subtle/55 p-1">
+            <div className="mt-4 border-t border-destructive/20 pt-2">
               <button
                 type="button"
                 onClick={

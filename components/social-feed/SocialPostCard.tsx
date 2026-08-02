@@ -58,13 +58,48 @@ export default function SocialPostCard({
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [optionsOpen, setOptionsOpen] = useState(false);
   const optionsRef = useRef<HTMLDetailsElement>(null);
+  const optionsTriggerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     currentRef.current = post;
     setCurrent(post);
     setEditBody(post.body);
   }, [post]);
+
+  useEffect(() => {
+    if (!optionsOpen) return;
+
+    function closeOptions(restoreFocus = false) {
+      optionsRef.current?.removeAttribute("open");
+      setOptionsOpen(false);
+
+      if (restoreFocus) {
+        window.requestAnimationFrame(() => optionsTriggerRef.current?.focus());
+      }
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (!optionsRef.current?.contains(target)) closeOptions();
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      closeOptions(true);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown, true);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [optionsOpen]);
 
   function commit(next: SocialPost) {
     currentRef.current = next;
@@ -210,8 +245,13 @@ export default function SocialPostCard({
           </div>
 
           {(current.can_edit || current.can_delete) ? (
-            <details ref={optionsRef} className="relative shrink-0">
+            <details
+              ref={optionsRef}
+              className="relative shrink-0"
+              onToggle={(event) => setOptionsOpen(event.currentTarget.open)}
+            >
               <summary
+                ref={optionsTriggerRef}
                 aria-label="Post options"
                 className="grid h-9 w-9 cursor-pointer list-none place-items-center rounded-full text-muted-foreground transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/15 [&::-webkit-details-marker]:hidden"
               >

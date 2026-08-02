@@ -333,7 +333,7 @@ export default async function EventDetailPage({
             Back to events
           </Link>
 
-          <section className="mt-6 rounded-row bg-destructive-subtle px-4 py-4">
+          <section className="mt-6 border-y border-destructive/20 py-4">
             <p className="font-semibold text-destructive">
               Could not load event
             </p>
@@ -388,32 +388,45 @@ export default async function EventDetailPage({
         0,
     );
 
+  const formatLabel =
+    getFormatLabel(event);
+
   return (
-    <div className="event-detail-shell min-h-screen bg-background px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-5 text-foreground sm:px-5 sm:pt-7 lg:pb-12 lg:px-0">
-      <div className="w-full max-w-[1120px]">
-        <Link
-          href="/events"
-          className="inline-flex min-h-10 items-center gap-2 rounded-control px-1 text-sm font-semibold text-muted-foreground outline-none transition-colors hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/20"
+    <div className="event-detail-shell min-h-screen bg-background px-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-5 text-foreground sm:px-5 sm:pt-7 lg:pb-14 lg:px-0">
+      <div className="w-full max-w-[1180px]">
+        <nav
+          aria-label="Breadcrumb"
+          className="flex min-h-8 items-center gap-2 text-sm"
         >
-          <ArrowLeft
-            size={16}
-          />
+          <Link
+            href="/events"
+            className="font-semibold text-primary outline-none transition-colors hover:text-primary-hover focus-visible:ring-[3px] focus-visible:ring-ring/20"
+          >
+            Events
+          </Link>
 
-          Back to events
-        </Link>
+          <span
+            aria-hidden="true"
+            className="text-border-strong"
+          >
+            /
+          </span>
 
-        <div className="mt-4 grid gap-x-8 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-          <div className="min-w-0 lg:col-start-1 lg:row-start-1">
-            <header className="pb-5">
-              <div className="flex items-start justify-between gap-4">
+          <span className="truncate text-muted-foreground">
+            {formatLabel}
+          </span>
+        </nav>
+
+        <div className="mt-4 grid gap-x-10 lg:grid-cols-[minmax(0,1fr)_296px] lg:items-start">
+          <section className="min-w-0 lg:col-start-1 lg:row-start-1">
+            <header className="pb-6">
+              <div className="flex items-start justify-between gap-5">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-primary">
-                    {getFormatLabel(
-                      event,
-                    )}
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">
+                    {formatLabel}
                   </p>
 
-                  <h1 className="mt-1.5 max-w-3xl break-words text-3xl font-bold leading-tight tracking-tight text-foreground sm:text-[42px]">
+                  <h1 className="mt-2 max-w-3xl break-words text-4xl font-bold leading-none tracking-[-0.035em] text-foreground sm:text-[48px]">
                     {event.title ||
                       "Untitled event"}
                   </h1>
@@ -426,7 +439,7 @@ export default async function EventDetailPage({
                 />
               </div>
 
-              <div className="mt-4 flex flex-wrap items-center gap-x-2.5 gap-y-2 text-sm">
+              <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
                 <span
                   className={[
                     "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
@@ -447,7 +460,10 @@ export default async function EventDetailPage({
                   {maxPlayers} players
                 </span>
 
-                <span className="h-1 w-1 rounded-full bg-border-strong" />
+                <span
+                  aria-hidden="true"
+                  className="h-1 w-1 rounded-full bg-border-strong"
+                />
 
                 <span className="text-muted-foreground">
                   {seatsLeft} seat
@@ -458,31 +474,32 @@ export default async function EventDetailPage({
                 </span>
               </div>
 
-              {event.power_level ||
-              proxiesLabel ? (
-                <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
-                  {event.power_level ? (
-                    <Pill>
-                      {
-                        event.power_level
-                      }
-                    </Pill>
-                  ) : null}
+              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                {event.power_level ? (
+                  <Pill>
+                    {event.power_level}
+                  </Pill>
+                ) : null}
 
-                  {proxiesLabel ? (
-                    <Pill>
-                      Proxies:{" "}
-                      {
-                        proxiesLabel
-                      }
-                    </Pill>
-                  ) : null}
-                </div>
-              ) : null}
+                {proxiesLabel ? (
+                  <Pill>
+                    Proxies:{" "}
+                    {proxiesLabel}
+                  </Pill>
+                ) : null}
+
+                <Pill>
+                  Hosted by{" "}
+                  <span className="font-semibold text-foreground">
+                    {event.host_nickname ||
+                      "Unknown host"}
+                  </span>
+                </Pill>
+              </div>
             </header>
 
             {description ? (
-              <section className="py-5">
+              <section className="border-t border-border/70 py-5">
                 <h2 className="text-base font-semibold tracking-tight text-foreground">
                   About this event
                 </h2>
@@ -495,9 +512,9 @@ export default async function EventDetailPage({
 
             <section
               aria-label="Event details"
-              className="my-4 rounded-row bg-surface-subtle/60 px-4 py-1"
+              className="border-y border-border/70"
             >
-              <div className="grid gap-x-5 sm:grid-cols-3">
+              <div className="grid sm:grid-cols-3">
                 <InfoRow
                   icon={
                     <CalendarDays
@@ -524,6 +541,7 @@ export default async function EventDetailPage({
                     event.address_text ||
                     "Location TBD"
                   }
+                  divided
                 />
 
                 <InfoRow
@@ -537,65 +555,62 @@ export default async function EventDetailPage({
                     event.host_nickname ||
                     "Unknown host"
                   }
+                  divided
                 />
               </div>
             </section>
 
             {event.host_notes ? (
-              <section className="my-5 rounded-row bg-secondary/45 px-4 py-4">
-                <h2 className="text-sm font-semibold text-secondary-foreground">
+              <section className="my-5 border-l-2 border-primary/35 pl-4">
+                <h2 className="text-sm font-semibold text-foreground">
                   Host notes
                 </h2>
 
-                <p className="mt-2 max-w-2xl whitespace-pre-wrap text-[15px] leading-7 text-muted-foreground">
-                  {
-                    event.host_notes
-                  }
+                <p className="mt-1.5 max-w-2xl whitespace-pre-wrap text-[15px] leading-7 text-muted-foreground">
+                  {event.host_notes}
                 </p>
               </section>
             ) : null}
-
-            {coordinates ? (
-              <section className="py-6">
-                <div className="mb-3 flex items-end justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2.5">
-                      <h2 className="text-xl font-semibold tracking-tight">
-                        Location
-                      </h2>
-                    </div>
-
-                    <p className="mt-1 truncate text-sm text-muted-foreground">
-                      {event.address_text ||
-                        "Event location"}
-                    </p>
-                  </div>
-
-                  {mapsUrl ? (
-                    <a
-                      href={mapsUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-control bg-secondary px-3.5 text-sm font-semibold text-secondary-foreground outline-none transition-colors hover:bg-primary/14 focus-visible:ring-[3px] focus-visible:ring-ring/20"
-                    >
-                      Open in maps
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                    </a>
-                  ) : null}
-                </div>
-
-                <EventMap
-                  events={[event]}
-                  heightClassName="h-[320px] sm:h-[360px]"
-                />
-              </section>
-            ) : null}
-          </div>
+          </section>
 
           <EventUserPanels
             eventId={event.id}
             initialEvent={event}
           />
+
+          {coordinates ? (
+            <section className="py-7 lg:col-start-1 lg:row-start-3">
+              <div className="mb-3 flex items-end justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-xl font-semibold tracking-tight">
+                    Location
+                  </h2>
+
+                  <p className="mt-1 truncate text-sm text-muted-foreground">
+                    {event.address_text ||
+                      "Event location"}
+                  </p>
+                </div>
+
+                {mapsUrl ? (
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-control px-3 text-sm font-semibold text-primary outline-none transition-colors hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/20"
+                  >
+                    Open in maps
+                    <ArrowUpRight className="h-3.5 w-3.5" />
+                  </a>
+                ) : null}
+              </div>
+
+              <EventMap
+                events={[event]}
+                heightClassName="h-[250px] sm:h-[290px]"
+              />
+            </section>
+          ) : null}
         </div>
       </div>
     </div>
@@ -607,14 +622,23 @@ function InfoRow({
   label,
   primary,
   secondary,
+  divided = false,
 }: {
   icon: ReactNode;
   label: string;
   primary: string;
   secondary?: string | null;
+  divided?: boolean;
 }) {
   return (
-    <div className="grid min-h-[70px] grid-cols-[28px_minmax(0,1fr)] items-center gap-2.5 py-3">
+    <div
+      className={[
+        "grid min-h-[88px] grid-cols-[30px_minmax(0,1fr)] items-center gap-3 py-4",
+        divided
+          ? "border-t border-border/70 sm:border-l sm:border-t-0 sm:pl-5"
+          : "",
+      ].join(" ")}
+    >
       <div className="text-primary">
         {icon}
       </div>
@@ -624,7 +648,7 @@ function InfoRow({
           {label}
         </p>
 
-        <p className="mt-0.5 break-words text-sm font-semibold text-foreground">
+        <p className="mt-1 break-words text-sm font-semibold leading-5 text-foreground">
           {primary}
         </p>
 
@@ -644,7 +668,7 @@ function Pill({
   children: ReactNode;
 }) {
   return (
-    <span className="text-sm text-muted-foreground first-letter:uppercase">
+    <span className="first-letter:uppercase">
       {children}
     </span>
   );

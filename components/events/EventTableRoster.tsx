@@ -675,7 +675,7 @@ export default function EventTableRoster({
     <>
       <section
         aria-labelledby="event-table-title"
-        className="py-6 lg:col-start-1 lg:row-start-2 lg:mt-1"
+        className="py-7 lg:col-start-1 lg:row-start-2"
       >
         <div className="flex items-end justify-between gap-4">
           <div>
@@ -705,7 +705,7 @@ export default function EventTableRoster({
             }}
             disabled={loading}
             aria-label="Refresh table roster"
-            className="grid h-10 w-10 place-items-center rounded-control text-primary outline-none transition-colors hover:bg-secondary focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
+            className="grid h-8 w-8 place-items-center rounded-control text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
           >
             <RefreshCw
               className={[
@@ -737,12 +737,12 @@ export default function EventTableRoster({
         ) : null}
 
         {loading ? (
-          <div className="mt-4 grid gap-1 sm:grid-cols-2">
+          <div className="mt-4 divide-y divide-border/70 border-y border-border/70">
             {[0, 1, 2].map(
               (item) => (
                 <div
                   key={item}
-                  className="h-28 animate-pulse rounded-row bg-surface-subtle"
+                  className="h-24 animate-pulse bg-surface-subtle/60"
                 />
               ),
             )}
@@ -751,14 +751,14 @@ export default function EventTableRoster({
 
         {!loading &&
         rows.length === 0 ? (
-          <p className="mt-4 rounded-row bg-surface-subtle/60 px-4 py-3 text-sm text-muted-foreground">
+          <p className="mt-4 border-y border-border/70 py-5 text-sm text-muted-foreground">
             No players at the table yet.
           </p>
         ) : null}
 
         {!loading &&
         rows.length > 0 ? (
-          <div className="mt-4 grid gap-1 sm:grid-cols-2">
+          <div className="mt-4 divide-y divide-border/70 border-y border-border/70">
             {rows.map((row) => (
               <PlayerCard
                 key={row.userId}
@@ -932,9 +932,9 @@ function PlayerCard({
   return (
     <article
       className={[
-        "relative grid min-h-[112px] grid-cols-[44px_minmax(0,1fr)] content-center gap-x-3 rounded-row px-3 py-2.5 transition-colors",
+        "relative grid min-h-[104px] grid-cols-[44px_minmax(0,1fr)] content-center gap-x-3 px-2 py-3 transition-colors",
         row.isHost
-          ? "bg-secondary/50 hover:bg-secondary/70"
+          ? "bg-secondary/25 hover:bg-secondary/40"
           : "bg-transparent hover:bg-surface-selected/45 focus-within:bg-surface-selected/45",
       ].join(" ")}
     >
@@ -1000,7 +1000,7 @@ function PlayerCard({
         ) : null}
       </div>
 
-      <div className="col-span-2 mt-2 rounded-control bg-surface-subtle/60 px-2.5 py-2">
+      <div className="col-span-2 mt-2 border-t border-border/60 px-1 pt-2">
         {!canViewDecks ? (
           <p className="text-xs leading-5 text-zinc-400">
             Deck visible after confirming a seat
