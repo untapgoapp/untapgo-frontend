@@ -8,6 +8,7 @@ import ProfileDeckSection from "@/components/profile/social/ProfileDeckSection";
 import ProfileBinderLinks from "@/components/profile/ProfileBinderLinks";
 import ProfileEventSections from "@/components/profile/social/ProfileEventSections";
 import ProfileLoadingState from "@/components/profile/social/ProfileLoadingState";
+import ProfilePostsSection from "@/components/profile/social/ProfilePostsSection";
 import ProfileTrustSection from "@/components/profile/social/ProfileTrustSection";
 import SocialPlayerProfile from "@/components/profile/social/SocialPlayerProfile";
 import {
@@ -155,6 +156,7 @@ export default function ProfilePage() {
         <p className="mt-4 border-y border-red-200 bg-red-50 px-3 py-3 text-sm text-red-700">Could not log out. Please try again.</p>
       ) : null}</>}
     >
+      <ProfilePostsSection profileId={profileId} isOwner />
       <ProfileDeckSection decks={decks} failed={decksFailed} isOwner />
       <ProfileEventSections
         upcoming={upcoming}

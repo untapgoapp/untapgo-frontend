@@ -67,8 +67,9 @@ test("messaging panel lists only authorized Playgroup chat destinations", () => 
 test("Home right rail keeps real context and no longer duplicates Notifications", () => {
   const home = source("../app/home/page.tsx");
   const rail = source("../components/home/HomeRightSidebar.tsx");
-  assert.match(home, /nextEvent \|\| \(pendingRequests \?\? 0\) > 0/);
+  assert.match(home, /<HomeRightSidebar/);
   assert.match(rail, /Next event/);
-  assert.match(rail, /Pending requests/);
+  assert.match(rail, /Needs your attention/);
+  assert.match(rail, /pendingRequests !== null && pendingRequests > 0/);
   assert.doesNotMatch(rail, /Unread notifications|href="\/notifications"/);
 });

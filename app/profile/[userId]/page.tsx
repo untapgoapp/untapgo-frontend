@@ -9,6 +9,7 @@ import ProfileBinderLinks from "@/components/profile/ProfileBinderLinks";
 import ProfileDeckSection from "@/components/profile/social/ProfileDeckSection";
 import ProfileEventSections from "@/components/profile/social/ProfileEventSections";
 import ProfileLoadingState from "@/components/profile/social/ProfileLoadingState";
+import ProfilePostsSection from "@/components/profile/social/ProfilePostsSection";
 import ProfileTrustSection from "@/components/profile/social/ProfileTrustSection";
 import SocialPlayerProfile from "@/components/profile/social/SocialPlayerProfile";
 import {
@@ -124,6 +125,7 @@ export default function PublicProfilePage() {
         </div>
       )}
     >
+      <ProfilePostsSection profileId={userId} isOwner={false} />
       <ProfileDeckSection
         decks={decks}
         failed={decksFailed}

@@ -1,138 +1,195 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import {
+  CalendarDays,
+  MapPin,
+  Users,
+} from "lucide-react";
 
-import HomeActivityRow from "@/components/home/HomeActivityRow";
-import HomeEventRow from "@/components/home/HomeEventRow";
+import HomeFeedComposer from "@/components/home/HomeFeedComposer";
+import HomeFeedList from "@/components/home/HomeFeedList";
 import { Button } from "@/components/ui/button";
+import useSocialFeed from "@/hooks/useSocialFeed";
+import type { SocialFeedView } from "@/lib/social-feed";
 import type { EventItem } from "@/services/events";
-import type { NotificationItem } from "@/services/notifications";
 
 type HomeDashboardContentProps = {
   nextEvent: EventItem | null;
   upcomingEvents: EventItem[] | null;
   myEventsFailed: boolean;
-  savedEvents: EventItem[] | null;
-  savedEventsFailed: boolean;
-  notifications: NotificationItem[] | null;
-  notificationsFailed: boolean;
-  onSavedEventRemoved: (eventId: string) => void;
-  onOpenNotification: (notification: NotificationItem) => void;
+  nickname: string;
+  avatarUrl: string | null;
 };
 
-function renderSkeletons(count: number) {
-  return Array.from({ length: count }, (_, index) => (
-    <div key={index} className="px-4 py-4">
-      <div className="h-5 w-2/3 animate-pulse rounded-full bg-black/10" />
-      <div className="mt-3 h-4 w-1/3 animate-pulse rounded-full bg-black/[0.07]" />
-      <div className="mt-3 h-4 w-1/2 animate-pulse rounded-full bg-black/[0.06]" />
-    </div>
-  ));
+function formatEventDate(value?: string | null): string {
+  if (!value) return "Date TBD";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Date TBD";
+
+  return new Intl.DateTimeFormat("en", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function getFormatLabel(event: EventItem): string {
+  if (event.format) return event.format;
+  if (!event.format_slug) return "Magic";
+
+  return event.format_slug
+    .replaceAll("-", " ")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function MobileNextEvent({ event }: { event: EventItem }) {
+  return (
+    <section className="rounded-surface bg-secondary/70 p-4 xl:hidden">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-primary">
+            Next event
+          </p>
+          <h2 className="mt-1.5 truncate text-base font-bold tracking-tight">
+            {event.title || "Untitled event"}
+          </h2>
+          <p className="mt-1 text-sm font-semibold text-secondary-foreground">
+            {getFormatLabel(event)}
+          </p>
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-muted-foreground">
+          <Users className="h-3.5 w-3.5" aria-hidden="true" />
+          {event.attendees_count || 0}/{event.max_players || 0}
+        </span>
+      </div>
+
+      <div className="mt-3 grid gap-2 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-2">
+          <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+          {formatEventDate(event.starts_at)}
+        </span>
+        <span className="inline-flex min-w-0 items-center gap-2">
+          <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span className="truncate">{event.address_text || "Location TBD"}</span>
+        </span>
+      </div>
+
+      <Link
+        href={`/events/${event.id}`}
+        className="mt-4 inline-flex text-sm font-semibold text-primary hover:text-primary-hover"
+      >
+        View event
+      </Link>
+    </section>
+  );
 }
 
 export default function HomeDashboardContent({
   nextEvent,
   upcomingEvents,
   myEventsFailed,
-  savedEvents,
-  savedEventsFailed,
-  notifications,
-  notificationsFailed,
-  onSavedEventRemoved,
-  onOpenNotification,
+  nickname,
+  avatarUrl,
 }: HomeDashboardContentProps) {
-  const additionalUpcomingEvents = upcomingEvents?.slice(1, 4) ?? null;
+  const [feedView, setFeedView] = useState<SocialFeedView>("for-you");
+  const feed = useSocialFeed(feedView);
 
   return (
-    <main className="min-h-screen px-4 py-6 text-foreground sm:px-5 sm:py-8">
-      <div className="w-full max-w-[820px]">
-        <header className="flex flex-col gap-5 pb-2 sm:flex-row sm:items-end sm:justify-between">
+    <main className="min-h-screen px-4 py-5 text-foreground sm:px-5 sm:py-7 lg:px-2 xl:px-0">
+      <div className="mx-auto w-full max-w-[760px]">
+        <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-[-0.035em] sm:text-4xl">Home</h1>
+            <h1 className="text-3xl font-bold tracking-[-0.04em] sm:text-4xl">
+              Home
+            </h1>
             <p className="mt-2 max-w-xl text-[15px] leading-6 text-muted-foreground">
-              Your next tables, saved games and recent activity in one place.
+              See what players are sharing and find your next table.
             </p>
           </div>
+
           <div className="flex flex-wrap gap-2">
-            <Button asChild><Link href="/events">Find a game</Link></Button>
-            <Button asChild variant="outline"><Link href="/create">Host a game</Link></Button>
+            <Button asChild size="sm">
+              <Link href="/events">Find a game</Link>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <Link href="/create">Host a game</Link>
+            </Button>
           </div>
         </header>
 
-        <div className="mt-7 space-y-8">
-          <section aria-labelledby="home-next-game">
-            <h2 id="home-next-game" className="text-lg font-semibold tracking-tight">Next game</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Your nearest confirmed table.</p>
-            <div className="mt-3 grid gap-1 rounded-surface bg-surface/55 p-1">
-              {upcomingEvents === null ? renderSkeletons(1) : null}
-              {myEventsFailed ? (
-                <div className="rounded-row bg-surface-subtle px-4 py-4 text-sm text-muted-foreground">Your next game could not be loaded right now.</div>
-              ) : null}
-              {!myEventsFailed && upcomingEvents !== null && nextEvent ? <HomeEventRow event={nextEvent} highlighted /> : null}
-              {!myEventsFailed && upcomingEvents !== null && !nextEvent ? (
-                <div className="rounded-row px-4 py-4">
-                  <p className="font-semibold">No upcoming game yet</p>
-                  <p className="mt-1 text-sm text-muted-foreground">Find an open table and request a seat.</p>
-                  <Link href="/events" className="mt-2 inline-flex text-sm font-semibold text-primary hover:text-primary-hover">Browse events</Link>
-                </div>
-              ) : null}
-            </div>
-          </section>
-
-          {upcomingEvents === null || (additionalUpcomingEvents && additionalUpcomingEvents.length > 0) ? (
-            <section aria-labelledby="home-my-events">
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <h2 id="home-my-events" className="text-lg font-semibold tracking-tight">My upcoming events</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">Tables you host or have a confirmed seat at.</p>
-                </div>
-                <Link href="/events/mine" className="shrink-0 text-sm font-semibold text-primary hover:text-primary-hover">View all</Link>
-              </div>
-              <div className="mt-3 grid gap-1 rounded-surface bg-surface/55 p-1">
-                {upcomingEvents === null ? renderSkeletons(3) : null}
-                {additionalUpcomingEvents?.map((event) => <HomeEventRow key={event.id} event={event} />)}
-              </div>
-            </section>
+        <div className="mt-6 space-y-5">
+          {upcomingEvents === null ? (
+            <div className="h-36 animate-pulse rounded-surface bg-black/[0.05] xl:hidden" />
           ) : null}
 
-          <section aria-labelledby="home-saved-events">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <h2 id="home-saved-events" className="text-lg font-semibold tracking-tight">Saved events</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Games you bookmarked for later.</p>
-              </div>
-              <Link href="/events/saved" className="shrink-0 text-sm font-semibold text-primary hover:text-primary-hover">View saved</Link>
+          {myEventsFailed ? (
+            <div className="rounded-surface bg-surface-subtle px-4 py-4 text-sm text-muted-foreground xl:hidden">
+              Your next event could not be loaded right now.
             </div>
-            <div className="mt-3 grid gap-1 rounded-surface bg-surface/55 p-1">
-              {savedEvents === null ? renderSkeletons(3) : null}
-              {savedEventsFailed ? <div className="rounded-row bg-surface-subtle px-4 py-4 text-sm text-muted-foreground">Saved events could not be loaded.</div> : null}
-              {!savedEventsFailed && savedEvents?.slice(0, 3).map((event) => (
-                <HomeEventRow key={event.id} event={event} saved onSavedChange={(watched) => !watched && onSavedEventRemoved(event.id)} />
-              ))}
-              {!savedEventsFailed && savedEvents?.length === 0 ? (
-                <div className="rounded-row px-4 py-4 text-sm text-muted-foreground">No saved events yet. <Link href="/events" className="font-semibold text-primary">Explore events</Link></div>
-              ) : null}
-            </div>
-          </section>
+          ) : null}
 
-          <section aria-labelledby="home-notifications" className="pb-2">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <h2 id="home-notifications" className="text-lg font-semibold tracking-tight">Recent activity</h2>
-                <p className="mt-1 text-sm text-muted-foreground">What is happening around your tables.</p>
-              </div>
-              <Link href="/notifications" className="shrink-0 text-sm font-semibold text-primary hover:text-primary-hover">View all</Link>
+          {!myEventsFailed && upcomingEvents !== null && nextEvent ? (
+            <MobileNextEvent event={nextEvent} />
+          ) : null}
+
+          <HomeFeedComposer
+            nickname={nickname}
+            avatarUrl={avatarUrl}
+            onCreate={feed.create}
+          />
+
+          <section aria-label="Home feed" className="overflow-hidden rounded-surface bg-surface">
+            <div
+              role="tablist"
+              aria-label="Feed view"
+              className="flex items-center gap-6 border-b border-border/70 px-4 sm:px-5"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={feedView === "for-you"}
+                onClick={() => setFeedView("for-you")}
+                className={[
+                  "relative min-h-12 text-sm font-semibold outline-none transition-colors focus-visible:text-primary",
+                  feedView === "for-you"
+                    ? "text-foreground after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary"
+                    : "text-muted-foreground hover:text-foreground",
+                ].join(" ")}
+              >
+                For you
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={feedView === "following"}
+                onClick={() => setFeedView("following")}
+                className={[
+                  "relative min-h-12 text-sm font-semibold outline-none transition-colors focus-visible:text-primary",
+                  feedView === "following"
+                    ? "text-foreground after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary"
+                    : "text-muted-foreground hover:text-foreground",
+                ].join(" ")}
+              >
+                Following
+              </button>
             </div>
-            <div className="mt-3 grid gap-1 rounded-surface bg-surface/55 p-1">
-              {notifications === null ? renderSkeletons(3) : null}
-              {notificationsFailed ? <div className="rounded-row bg-surface-subtle px-4 py-4 text-sm text-muted-foreground">Recent activity could not be loaded.</div> : null}
-              {!notificationsFailed && notifications && notifications.length > 0 ? (
-                <div className="grid gap-1">
-                  {notifications.slice(0, 5).map((notification) => <HomeActivityRow key={notification.id} notification={notification} onActivate={onOpenNotification} />)}
-                </div>
-              ) : null}
-              {!notificationsFailed && notifications?.length === 0 ? <p className="rounded-row px-4 py-4 text-sm text-muted-foreground">No recent activity.</p> : null}
-            </div>
+
+            <HomeFeedList
+              view={feedView}
+              items={feed.items}
+              loading={feed.loading}
+              loadingMore={feed.loadingMore}
+              error={feed.error}
+              hasMore={feed.hasMore}
+              onRetry={feed.retry}
+              onLoadMore={feed.loadMore}
+              onDelete={feed.remove}
+            />
           </section>
         </div>
       </div>

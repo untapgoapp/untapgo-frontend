@@ -31,6 +31,7 @@ type SocialPlayerProfileProps = {
 };
 
 const PROFILE_NAVIGATION = [
+  ["Posts", "posts"],
   ["Decks", "decks"],
   ["Events", "events"],
   ["Trust", "trust"],
@@ -94,7 +95,7 @@ export default function SocialPlayerProfile({
   signingOut = false,
   onSignOut,
 }: SocialPlayerProfileProps) {
-  const [activeSection, setActiveSection] = useState<ProfileSectionId>("decks");
+  const [activeSection, setActiveSection] = useState<ProfileSectionId>("posts");
   const nickname = getProfileNickname(profile);
   const avatarUrl = getProfileAvatarUrl(profile);
   const arenaUsername = getProfileArenaUsername(profile);
@@ -111,7 +112,7 @@ export default function SocialPlayerProfile({
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         const marker = Math.min(180, window.innerHeight * 0.28);
-        let current: ProfileSectionId = "decks";
+        let current: ProfileSectionId = "posts";
 
         PROFILE_NAVIGATION.forEach(([, id]) => {
           const section = document.getElementById(id);

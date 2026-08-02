@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 
 import HomeDashboardContent from "@/components/home/HomeDashboardContent";
 import HomeRightSidebar from "@/components/home/HomeRightSidebar";
-import { useNotifications } from "@/components/notifications/NotificationRealtimeProvider";
 import SocialAppShell from "@/components/social-shell/SocialAppShell";
 import {
   getEventMembershipState,
@@ -18,8 +17,11 @@ import {
   type EventItem,
 } from "@/services/events";
 import {
-  getNotificationHref,
-} from "@/services/notifications";
+  getProfileAvatarUrl,
+  getProfileNickname,
+  getPublicProfile,
+  type PublicProfile,
+} from "@/services/profiles";
 
 const INACTIVE_EVENT_STATUSES = new Set([
   "started",
@@ -61,18 +63,17 @@ function getConfirmedUpcomingEvents(
 
 export default function HomePage() {
   const router = useRouter();
-  const notificationState = useNotifications();
   const [authenticated, setAuthenticated] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [myEvents, setMyEvents] = useState<EventItem[] | null>(null);
   const [savedEvents, setSavedEvents] = useState<EventItem[] | null>(null);
   const [myEventsFailed, setMyEventsFailed] = useState(false);
-  const [savedEventsFailed, setSavedEventsFailed] = useState(false);
 
   useEffect(() => {
     let active = true;
 
-    async function loadDashboard() {
+    async function loadHome() {
       const { data, error } = await supabase.auth.getUser();
 
       if (error || !data.user) {
@@ -84,6 +85,11 @@ export default function HomePage() {
       setAuthenticated(true);
       setUserId(data.user.id);
 
+      void getPublicProfile(data.user.id).then(
+        (value) => active && setProfile(value),
+        () => active && setProfile(null),
+      );
+
       void getMyEvents().then(
         (items) => active && setMyEvents(items),
         () => {
@@ -92,17 +98,14 @@ export default function HomePage() {
           setMyEvents([]);
         },
       );
+
       void getWatchlist({ force: true }).then(
         (items) => active && setSavedEvents(items),
-        () => {
-          if (!active) return;
-          setSavedEventsFailed(true);
-          setSavedEvents([]);
-        },
+        () => active && setSavedEvents([]),
       );
     }
 
-    void loadDashboard();
+    void loadHome();
     return () => {
       active = false;
     };
@@ -122,16 +125,12 @@ export default function HomePage() {
       return total + Math.max(0, Number(event.pending_requests_count ?? 0));
     }, 0);
   }, [upcomingEvents, userId]);
-  const notificationsFailed = Boolean(
-    notificationState.error && notificationState.items.length === 0,
-  );
-  const hasRightSidebar = Boolean(
-    nextEvent || (pendingRequests ?? 0) > 0,
-  );
-  const rightSidebar = authenticated && hasRightSidebar ? (
+
+  const rightSidebar = authenticated ? (
     <HomeRightSidebar
       nextEvent={nextEvent}
       pendingRequests={pendingRequests}
+      savedEventsCount={savedEvents?.length ?? null}
     />
   ) : undefined;
 
@@ -141,16 +140,8 @@ export default function HomePage() {
         nextEvent={nextEvent}
         upcomingEvents={upcomingEvents}
         myEventsFailed={myEventsFailed}
-        savedEvents={savedEvents}
-        savedEventsFailed={savedEventsFailed}
-        notifications={notificationState.loading ? null : notificationState.items.slice(0, 5)}
-        notificationsFailed={notificationsFailed}
-        onSavedEventRemoved={(eventId) => {
-          setSavedEvents((current) => current?.filter((event) => event.id !== eventId) ?? null);
-        }}
-        onOpenNotification={(notification) => {
-          router.push(getNotificationHref(notification));
-        }}
+        nickname={profile ? getProfileNickname(profile) : "Player"}
+        avatarUrl={profile ? getProfileAvatarUrl(profile) : null}
       />
     </SocialAppShell>
   );
