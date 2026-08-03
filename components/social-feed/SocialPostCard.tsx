@@ -13,6 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 
+import PostReactionsDialog from "@/components/social-feed/PostReactionsDialog";
 import SocialPostComments from "@/components/social-feed/SocialPostComments";
 import {
   Avatar,
@@ -56,6 +57,7 @@ export default function SocialPostCard({
   const [editing, setEditing] = useState(false);
   const [editBody, setEditBody] = useState(post.body);
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [likesOpen, setLikesOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [optionsOpen, setOptionsOpen] = useState(false);
@@ -333,7 +335,17 @@ export default function SocialPostCard({
 
         {(current.like_count > 0 || current.comment_count > 0) ? (
           <div className="mt-4 flex items-center justify-between gap-3 text-xs text-muted-foreground">
-            <span>{current.like_count > 0 ? formatSocialCount(current.like_count, "like", "likes") : ""}</span>
+            {current.like_count > 0 ? (
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                onClick={() => setLikesOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-control font-medium hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/15"
+              >
+                <Heart className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true" />
+                {formatSocialCount(current.like_count, "like", "likes")}
+              </button>
+            ) : <span />}
             {current.comment_count > 0 ? (
               <button type="button" onClick={() => setCommentsOpen(true)} className="hover:underline">
                 {formatSocialCount(current.comment_count, "comment", "comments")}
@@ -380,6 +392,13 @@ export default function SocialPostCard({
           onCountChange={(commentCount) => commit({ ...currentRef.current, comment_count: commentCount })}
         />
       ) : null}
+
+      <PostReactionsDialog
+        postId={current.id}
+        likeCount={current.like_count}
+        open={likesOpen}
+        onOpenChange={setLikesOpen}
+      />
     </article>
   );
 }

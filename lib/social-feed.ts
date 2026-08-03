@@ -37,6 +37,32 @@ export type SocialPostLikeState = {
   like_count: number;
 };
 
+export type SocialPostLikeUser = {
+  id: string;
+  nickname: string;
+  avatar_url: string | null;
+  location: {
+    city: string;
+    region: string | null;
+    country: string;
+    country_code: string | null;
+    display_name: string;
+  } | null;
+  relationship: {
+    is_following: boolean;
+    is_followed_by: boolean;
+    is_mutual: boolean;
+  };
+  liked_at: string;
+};
+
+export type SocialPostLikeUserPage = {
+  items: SocialPostLikeUser[];
+  page: number;
+  page_size: number;
+  has_more: boolean;
+};
+
 export type SocialPostSaveState = {
   is_saved: boolean;
 };
@@ -89,6 +115,16 @@ export function mergeSocialComments(
   const byId = new Map<string, SocialComment>();
   current.forEach((comment) => byId.set(comment.id, comment));
   incoming.forEach((comment) => byId.set(comment.id, comment));
+  return Array.from(byId.values());
+}
+
+export function mergeSocialPostLikeUsers(
+  current: SocialPostLikeUser[],
+  incoming: SocialPostLikeUser[],
+): SocialPostLikeUser[] {
+  const byId = new Map<string, SocialPostLikeUser>();
+  current.forEach((user) => byId.set(user.id, user));
+  incoming.forEach((user) => byId.set(user.id, user));
   return Array.from(byId.values());
 }
 

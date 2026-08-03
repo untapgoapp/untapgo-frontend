@@ -156,10 +156,7 @@ export default function SocialPlayerProfile({
             </div>
 
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">
-                {isOwner ? "Your player profile" : "UntapGo player"}
-              </p>
-              <h1 className="mt-1 truncate text-2xl font-bold tracking-tight sm:text-3xl">{nickname}</h1>
+              <h1 className="truncate text-2xl font-bold tracking-tight sm:text-3xl">{nickname}</h1>
               {bio ? <p className="mt-2 max-w-2xl whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{bio}</p> : null}
               {locationDisplay ? (
                 <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground">

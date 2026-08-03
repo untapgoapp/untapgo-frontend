@@ -7,6 +7,7 @@ import {
   type SocialFeedView,
   type SocialPost,
   type SocialPostLikeState,
+  type SocialPostLikeUserPage,
   type SocialPostPage,
   type SocialPostSaveState,
 } from "@/lib/social-feed";
@@ -65,6 +66,15 @@ export function likeSocialPost(postId: string): Promise<SocialPostLikeState> {
 export function unlikeSocialPost(postId: string): Promise<SocialPostLikeState> {
   return api.delete<SocialPostLikeState>(
     `/social/posts/${encodeURIComponent(postId)}/like`,
+  );
+}
+
+export function getSocialPostLikes(
+  postId: string,
+  page: number,
+): Promise<SocialPostLikeUserPage> {
+  return api.get<SocialPostLikeUserPage>(
+    `/social/posts/${encodeURIComponent(postId)}/likes?${pageParameters(page)}`,
   );
 }
 

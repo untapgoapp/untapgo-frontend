@@ -5,10 +5,12 @@ import test from "node:test";
 import {
   getSocialFeedScope,
   mergeSocialComments,
+  mergeSocialPostLikeUsers,
   mergeSocialPosts,
   replaceSocialPost,
   type SocialComment,
   type SocialPost,
+  type SocialPostLikeUser,
 } from "../lib/social-feed.ts";
 
 function post(id: string, body = id): SocialPost {
@@ -45,6 +47,21 @@ function comment(id: string): SocialComment {
   };
 }
 
+function likeUser(id: string): SocialPostLikeUser {
+  return {
+    id,
+    nickname: id,
+    avatar_url: null,
+    location: null,
+    relationship: {
+      is_following: false,
+      is_followed_by: false,
+      is_mutual: false,
+    },
+    liked_at: "2026-08-03T12:00:00+00:00",
+  };
+}
+
 test("feed views map to backend scopes", () => {
   assert.equal(getSocialFeedScope("for-you"), "for_you");
   assert.equal(getSocialFeedScope("following"), "following");
@@ -59,10 +76,17 @@ test("feed pagination deduplicates posts while preserving order", () => {
   assert.equal(result[1].body, "new");
 });
 
-test("post replacement and comment pagination keep stable identities", () => {
+test("post, comment and Like pagination keep stable identities", () => {
   assert.equal(replaceSocialPost([post("one"), post("two")], post("two", "edited"))[1].body, "edited");
   assert.deepEqual(
     mergeSocialComments([comment("one"), comment("two")], [comment("two"), comment("three")]).map((item) => item.id),
+    ["one", "two", "three"],
+  );
+  assert.deepEqual(
+    mergeSocialPostLikeUsers(
+      [likeUser("one"), likeUser("two")],
+      [likeUser("two"), likeUser("three")],
+    ).map((item) => item.id),
     ["one", "two", "three"],
   );
 });
@@ -70,6 +94,7 @@ test("post replacement and comment pagination keep stable identities", () => {
 test("social card exposes edit, Like, comments, Share and Save", () => {
   const card = readFileSync("components/social-feed/SocialPostCard.tsx", "utf8");
   const comments = readFileSync("components/social-feed/SocialPostComments.tsx", "utf8");
+  const reactions = readFileSync("components/social-feed/PostReactionsDialog.tsx", "utf8");
   const service = readFileSync("services/social.ts", "utf8");
 
   assert.match(card, /Edit post/);
@@ -82,6 +107,10 @@ test("social card exposes edit, Like, comments, Share and Save", () => {
   assert.match(service, /\/like/);
   assert.match(service, /\/save/);
   assert.match(service, /\/comments/);
+  assert.match(service, /\/likes/);
+  assert.match(reactions, /aria-modal="true"/);
+  assert.match(reactions, /Follow/);
+  assert.match(reactions, /Load more/);
 });
 
 test("saved posts and individual post routes exist", () => {
@@ -92,4 +121,15 @@ test("saved posts and individual post routes exist", () => {
   assert.match(favorites, /Saved posts/);
   assert.match(detail, /SocialPostDetail/);
   assert.match(navigation, /"\/post"/);
+});
+
+
+test("profile header omits the redundant purple player label", () => {
+  const profile = readFileSync(
+    "components/profile/social/SocialPlayerProfile.tsx",
+    "utf8",
+  );
+
+  assert.doesNotMatch(profile, /UntapGo player/);
+  assert.doesNotMatch(profile, /Your player profile/);
 });
