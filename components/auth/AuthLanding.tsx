@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { AuthMode } from "@/lib/auth";
 
 import AuthPanel from "./AuthPanel";
+import LandingManaBackground from "./LandingManaBackground";
 import ResetPasswordPanel from "./ResetPasswordPanel";
 import styles from "./AuthLanding.module.css";
 
@@ -30,11 +31,14 @@ export default function AuthLanding({
 
         <div className={styles.layout}>
           <section className={styles.brandCopy} aria-labelledby="landing-title">
-            <p className={styles.eyebrow}>Your local Magic community</p>
-            <h1 id="landing-title">Your Magic community, all in one place.</h1>
-            <p className={styles.supportingCopy}>
-              Find players, join games and keep your Magic community together.
-            </p>
+            <LandingManaBackground />
+            <div className={styles.brandCopyContent}>
+              <p className={styles.eyebrow}>Your local Magic community</p>
+              <h1 id="landing-title">Your Magic community, all in one place.</h1>
+              <p className={styles.supportingCopy}>
+                Find players, join games and keep your Magic community together.
+              </p>
+            </div>
           </section>
 
           <div className={styles.authentication} aria-label="Authentication">
