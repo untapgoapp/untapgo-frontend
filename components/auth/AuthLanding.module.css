@@ -60,16 +60,12 @@
 
 .eyebrow,
 .panelEyebrow {
-  color: var(--primary);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  display: none;
 }
 
 .brandCopy h1 {
   max-width: 670px;
-  margin-top: 16px;
+  margin-top: 0;
   font-size: clamp(3rem, 5.8vw, 4.8rem);
   font-weight: 850;
   letter-spacing: -0.06em;
@@ -99,7 +95,7 @@
 }
 
 .authPanel h2 {
-  margin-top: 8px;
+  margin-top: 0;
   font-size: clamp(1.65rem, 3vw, 2rem);
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -323,7 +319,7 @@
 
   .brandCopy h1 {
     max-width: 440px;
-    margin-top: 10px;
+    margin-top: 0;
     font-size: clamp(2.15rem, 10vw, 3rem);
     line-height: 1.02;
   }
@@ -494,8 +490,7 @@
     transform: translate3d(-50%, -50%, 0) scale(0.78) rotate(var(--mana-rotation));
   }
 
-  .manaSymbol:nth-child(5),
-  .manaSymbol:nth-child(6) {
+  .manaSymbol:nth-child(5) {
     display: none;
   }
 }

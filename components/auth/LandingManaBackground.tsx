@@ -99,20 +99,6 @@ const manaSymbols: ManaSymbol[] = [
     opacity: "0.23",
     glow: "rgba(66, 170, 103, 0.24)",
   },
-  {
-    id: "colourless",
-    src: "/mana/c.svg",
-    left: "53%",
-    top: "86%",
-    size: 92,
-    delay: "-6s",
-    duration: "12.5s",
-    driftX: "-36px",
-    driftY: "-45px",
-    rotation: "8deg",
-    opacity: "0.22",
-    glow: "rgba(118, 99, 181, 0.22)",
-  },
 ];
 
 export default function LandingManaBackground() {
