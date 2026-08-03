@@ -71,6 +71,12 @@ export type PublicProfile = {
 
   location?: PublicProfileLocation | null;
   location_visible?: boolean | null;
+
+  playing_since_year?: number | null;
+  first_set_code?: string | null;
+  first_set_name?: string | null;
+  favorite_colors?: string[] | null;
+  favorite_formats?: string[] | null;
 };
 
 export type LocationVisibility = "public" | "connections" | "private";
@@ -177,6 +183,11 @@ export type UpdateMyProfilePayload = {
   avatar_url?: string | null;
   bio?: string | null;
   mtg_arena_username?: string | null;
+  playing_since_year?: number | null;
+  first_set_code?: string | null;
+  first_set_name?: string | null;
+  favorite_colors?: string[];
+  favorite_formats?: string[];
 };
 
 export type ReportUserPayload = {
