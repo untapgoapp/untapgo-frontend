@@ -68,6 +68,40 @@ export type PublicProfile = {
   arena_username_visible?: boolean | null;
   stats_visible?: boolean | null;
   public_decks_visible?: boolean | null;
+
+  location?: PublicProfileLocation | null;
+  location_visible?: boolean | null;
+};
+
+export type LocationVisibility = "public" | "connections" | "private";
+
+export type PublicProfileLocation = {
+  city: string;
+  region: string | null;
+  country: string;
+  country_code: string | null;
+  display_name: string;
+};
+
+export type ProfileLocation = PublicProfileLocation & {
+  place_id: string | null;
+  latitude_approx: number | null;
+  longitude_approx: number | null;
+  visibility: LocationVisibility;
+  discovery_enabled: boolean;
+  coordinates_available: boolean;
+};
+
+export type ProfileLocationPayload = {
+  city: string;
+  region?: string | null;
+  country: string;
+  country_code?: string | null;
+  place_id?: string | null;
+  latitude_approx?: number | null;
+  longitude_approx?: number | null;
+  visibility: LocationVisibility;
+  discovery_enabled: boolean;
 };
 
 export type ProfilePrivacySettings = {
@@ -524,6 +558,36 @@ export async function updateMyProfile(
     mtg_arena_username:
       payload.mtg_arena_username?.trim() || null,
   });
+}
+
+export async function getMyProfileLocation(): Promise<ProfileLocation | null> {
+  return api.get<ProfileLocation | null>("/me/profile/location");
+}
+
+export async function updateMyProfileLocation(
+  payload: ProfileLocationPayload,
+): Promise<ProfileLocation> {
+  return api.patch<ProfileLocation>("/me/profile/location", {
+    city: payload.city.trim(),
+    region: payload.region?.trim() || null,
+    country: payload.country.trim(),
+    country_code: payload.country_code?.trim().toUpperCase() || null,
+    place_id: payload.place_id?.trim() || null,
+    latitude_approx: payload.latitude_approx ?? null,
+    longitude_approx: payload.longitude_approx ?? null,
+    visibility: payload.visibility,
+    discovery_enabled: payload.discovery_enabled,
+  });
+}
+
+export async function removeMyProfileLocation(): Promise<{ ok: boolean }> {
+  return api.delete<{ ok: boolean }>("/me/profile/location");
+}
+
+export function getProfileLocationDisplay(
+  profile: PublicProfile,
+): string | null {
+  return profile.location?.display_name?.trim() || null;
 }
 
 export async function getFavoriteProfiles(): Promise<

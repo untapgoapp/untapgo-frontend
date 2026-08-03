@@ -4,7 +4,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
-import { Ban, Eye, Heart, LogOut, Pencil, Settings2, ShieldCheck } from "lucide-react";
+import { Ban, Eye, Heart, LogOut, MapPin, Pencil, Settings2, ShieldCheck } from "lucide-react";
 
 import CopyArenaTag from "@/components/profile/CopyArenaTag";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   getProfileArenaUsername,
   getProfileAvatarUrl,
   getProfileId,
+  getProfileLocationDisplay,
   getProfileNickname,
   type PublicProfile,
 } from "@/services/profiles";
@@ -100,6 +101,7 @@ export default function SocialPlayerProfile({
   const avatarUrl = getProfileAvatarUrl(profile);
   const arenaUsername = getProfileArenaUsername(profile);
   const bio = profile.bio?.trim() || null;
+  const locationDisplay = getProfileLocationDisplay(profile);
   const profileId = networkProfileId || getProfileId(profile);
   const showStats = isOwner || profile.stats_visible !== false;
   const showHosted = showStats && hasCount(profile, "hosted");
@@ -159,6 +161,12 @@ export default function SocialPlayerProfile({
               </p>
               <h1 className="mt-1 truncate text-2xl font-bold tracking-tight sm:text-3xl">{nickname}</h1>
               {bio ? <p className="mt-2 max-w-2xl whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{bio}</p> : null}
+              {locationDisplay ? (
+                <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                  <MapPin size={15} aria-hidden="true" />
+                  {locationDisplay}
+                </p>
+              ) : null}
               {arenaUsername ? <div className="mt-3"><CopyArenaTag arenaTag={arenaUsername} /></div> : null}
               {showHosted || showPlayed ? (
                 <p className="mt-3 text-xs font-medium text-muted-foreground">
@@ -225,6 +233,7 @@ export default function SocialPlayerProfile({
             <AboutRow label="Nickname">{nickname}</AboutRow>
             {arenaUsername ? <AboutRow label="MTG Arena">{arenaUsername}</AboutRow> : null}
             {bio ? <AboutRow label="Bio">{bio}</AboutRow> : null}
+            {locationDisplay ? <AboutRow label="Location">{locationDisplay}</AboutRow> : null}
             {showHosted ? <AboutRow label="Events hosted">{getHostedCount(profile)}</AboutRow> : null}
             {showPlayed ? <AboutRow label="Games played">{getPlayedCount(profile)}</AboutRow> : null}
           </dl>

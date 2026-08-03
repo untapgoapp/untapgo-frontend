@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import { Gamepad2 } from "lucide-react";
+import { Gamepad2, MapPin } from "lucide-react";
 
 import { getPlayerProfileHref, type PlayerDirectoryItem } from "@/lib/player-directory";
 
@@ -23,6 +23,7 @@ export default function PlayerDirectoryRow({
   const nickname = player.nickname.trim() || "Player";
   const bio = player.bio?.trim() || null;
   const arenaUsername = player.mtg_arena_username?.trim() || null;
+  const location = player.location?.display_name?.trim() || null;
 
   return (
     <article className="flex min-h-20 min-w-0 items-center gap-2 rounded-row px-3 py-2.5 transition-colors hover:bg-secondary/45 focus-within:bg-secondary/45 sm:px-4">
@@ -33,6 +34,7 @@ export default function PlayerDirectoryRow({
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-bold text-foreground group-hover:text-secondary-foreground">{nickname}</span>
           {bio ? <span className="mt-0.5 block truncate text-xs leading-5 text-muted-foreground">{bio}</span> : null}
+          {location ? <span className="mt-0.5 inline-flex max-w-full items-center gap-1 text-xs font-medium text-muted-foreground"><MapPin size={12} className="shrink-0" aria-hidden="true" /><span className="truncate">{location}</span></span> : null}
           {arenaUsername ? <span className="mt-0.5 inline-flex max-w-full items-center gap-1 text-xs font-medium text-primary"><Gamepad2 size={12} className="shrink-0" aria-hidden="true" /><span className="truncate">{arenaUsername}</span></span> : null}
         </span>
       </Link>

@@ -11,6 +11,13 @@ export type PlayerDirectoryItem = {
   avatar_url: string | null;
   bio: string | null;
   mtg_arena_username: string | null;
+  location: {
+    city: string;
+    region: string | null;
+    country: string;
+    country_code: string | null;
+    display_name: string;
+  } | null;
   relationship: ProfileRelationship;
 };
 

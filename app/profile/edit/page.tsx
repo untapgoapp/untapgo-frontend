@@ -12,15 +12,21 @@ import {
   useRouter,
 } from "next/navigation";
 
+import ProfileLocationPicker, {
+  type ProfileLocationDraft,
+} from "@/components/location/ProfileLocationPicker";
 import {
   supabase,
 } from "@/lib/supabase/client";
 import {
   getProfileArenaUsername,
   getProfileAvatarUrl,
+  getMyProfileLocation,
   getProfileNickname,
   getPublicProfile,
+  removeMyProfileLocation,
   updateMyProfile,
+  updateMyProfileLocation,
   type PublicProfile,
 } from "@/services/profiles";
 
@@ -43,6 +49,8 @@ export default function EditProfilePage() {
   const [arenaUsername, setArenaUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [pendingAvatar, setPendingAvatar] = useState<File | null>(null);
+  const [location, setLocation] = useState<ProfileLocationDraft | null>(null);
+  const [hadLocation, setHadLocation] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -75,13 +83,32 @@ export default function EditProfilePage() {
 
         setUserId(data.user.id);
 
-        const loadedProfile = await getPublicProfile(data.user.id);
+        const [loadedProfile, loadedLocation] = await Promise.all([
+          getPublicProfile(data.user.id),
+          getMyProfileLocation(),
+        ]);
 
         setProfile(loadedProfile);
         setNickname(getProfileNickname(loadedProfile));
         setBio(loadedProfile.bio || "");
         setArenaUsername(getProfileArenaUsername(loadedProfile) || "");
         setAvatarUrl(getProfileAvatarUrl(loadedProfile));
+        setHadLocation(Boolean(loadedLocation));
+        setLocation(
+          loadedLocation
+            ? {
+                city: loadedLocation.city,
+                region: loadedLocation.region,
+                country: loadedLocation.country,
+                country_code: loadedLocation.country_code,
+                place_id: loadedLocation.place_id,
+                latitude_approx: loadedLocation.latitude_approx,
+                longitude_approx: loadedLocation.longitude_approx,
+                visibility: loadedLocation.visibility,
+                discovery_enabled: loadedLocation.discovery_enabled,
+              }
+            : null,
+        );
       } catch (loadError) {
         setError(
           loadError instanceof Error
@@ -144,6 +171,11 @@ export default function EditProfilePage() {
       return;
     }
 
+    if (location && (!location.city.trim() || !location.country.trim())) {
+      setError("City and country are required when adding a location.");
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
@@ -160,6 +192,12 @@ export default function EditProfilePage() {
         bio,
         mtg_arena_username: arenaUsername,
       });
+
+      if (location) {
+        await updateMyProfileLocation(location);
+      } else if (hadLocation) {
+        await removeMyProfileLocation();
+      }
 
       router.push("/profile");
       router.refresh();
@@ -274,6 +312,12 @@ export default function EditProfilePage() {
                 className="rounded-xl border border-zinc-300 px-4 py-3"
               />
             </label>
+
+            <ProfileLocationPicker
+              value={location}
+              onChange={setLocation}
+              disabled={saving}
+            />
           </div>
 
           {profile ? null : (
