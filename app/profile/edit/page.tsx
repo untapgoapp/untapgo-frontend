@@ -23,6 +23,10 @@ import {
 import {
   getProfileArenaUsername,
   getProfileAvatarUrl,
+  getProfileFavoriteColors,
+  getProfileFavoriteFormats,
+  getProfileFirstSetName,
+  getProfilePlayingSinceYear,
   getMyProfileLocation,
   getProfileNickname,
   getPublicProfile,
@@ -100,11 +104,17 @@ export default function EditProfilePage() {
         setBio(loadedProfile.bio || "");
         setArenaUsername(getProfileArenaUsername(loadedProfile) || "");
         setAvatarUrl(getProfileAvatarUrl(loadedProfile));
-        setPlayingSinceYear(loadedProfile.playing_since_year ? String(loadedProfile.playing_since_year) : "");
-        setFirstSetName(loadedProfile.first_set_name || "");
-        setFirstSetCode(loadedProfile.first_set_code || "");
-        setFavoriteColors((loadedProfile.favorite_colors || []).filter((value): value is ProfileColor => PROFILE_COLOR_OPTIONS.some((option) => option.value === value)));
-        setFavoriteFormats(Array.isArray(loadedProfile.favorite_formats) ? loadedProfile.favorite_formats : []);
+        const loadedYear = getProfilePlayingSinceYear(loadedProfile);
+        setPlayingSinceYear(loadedYear ? String(loadedYear) : "");
+        setFirstSetName(getProfileFirstSetName(loadedProfile) || "");
+        setFirstSetCode(loadedProfile.first_set_code || loadedProfile.firstSetCode || "");
+        setFavoriteColors(
+          getProfileFavoriteColors(loadedProfile).filter(
+            (value): value is ProfileColor =>
+              PROFILE_COLOR_OPTIONS.some((option) => option.value === value),
+          ),
+        );
+        setFavoriteFormats(getProfileFavoriteFormats(loadedProfile));
         setHadLocation(Boolean(loadedLocation));
         setLocation(
           loadedLocation
@@ -338,7 +348,7 @@ export default function EditProfilePage() {
               />
             </label>
 
-            <section className="rounded-2xl border border-zinc-200 p-4 sm:p-5">
+            <section className="mt-3 pt-3">
               <h2 className="text-lg font-bold">Magic profile</h2>
               <p className="mt-1 text-sm text-zinc-500">Tell other players a little about your Magic history.</p>
 

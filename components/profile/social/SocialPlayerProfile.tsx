@@ -5,7 +5,16 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
-import { Ban, Eye, Heart, LogOut, MapPin, Pencil, Settings2, ShieldCheck } from "lucide-react";
+import {
+  Ban,
+  Eye,
+  Heart,
+  LogOut,
+  MapPin,
+  Pencil,
+  Settings2,
+  ShieldCheck,
+} from "lucide-react";
 
 import { ManaIdentity } from "@/components/magic/mana-symbols";
 import CopyArenaTag from "@/components/profile/CopyArenaTag";
@@ -17,9 +26,13 @@ import {
   getPlayedCount,
   getProfileArenaUsername,
   getProfileAvatarUrl,
+  getProfileFavoriteColors,
+  getProfileFavoriteFormats,
+  getProfileFirstSetName,
   getProfileId,
   getProfileLocationDisplay,
   getProfileNickname,
+  getProfilePlayingSinceYear,
   type PublicProfile,
 } from "@/services/profiles";
 
@@ -45,7 +58,9 @@ type SocialPlayerProfileProps = {
 };
 
 function selectedTab(value: string | null): ProfileTabId {
-  return PROFILE_TABS.some(([, id]) => id === value) ? value as ProfileTabId : "posts";
+  return PROFILE_TABS.some(([, id]) => id === value)
+    ? (value as ProfileTabId)
+    : "posts";
 }
 
 function hasCount(profile: PublicProfile, key: "hosted" | "played"): boolean {
@@ -54,33 +69,69 @@ function hasCount(profile: PublicProfile, key: "hosted" | "played"): boolean {
     : profile.played_count != null || profile.playedCount != null;
 }
 
-function AboutRow({ label, children }: { label: string; children: ReactNode }) {
+function AboutItem({
+  label,
+  children,
+  muted = false,
+}: {
+  label: string;
+  children: ReactNode;
+  muted?: boolean;
+}) {
   return (
-    <div className="grid gap-1 border-b border-border/45 px-1 py-3 last:border-b-0 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-5">
-      <dt className="text-xs font-semibold text-quiet-foreground">{label}</dt>
-      <dd className="min-w-0 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{children}</dd>
+    <div className="min-w-0">
+      <dt className="text-xs font-semibold uppercase tracking-[0.08em] text-quiet-foreground">
+        {label}
+      </dt>
+      <dd
+        className={[
+          "mt-1.5 min-w-0 whitespace-pre-wrap text-sm leading-6",
+          muted ? "text-quiet-foreground" : "text-foreground",
+        ].join(" ")}
+      >
+        {children}
+      </dd>
     </div>
   );
 }
 
-function OwnerTools({ signingOut, onSignOut }: { signingOut: boolean; onSignOut?: () => void }) {
+function OwnerTools({
+  signingOut,
+  onSignOut,
+}: {
+  signingOut: boolean;
+  onSignOut?: () => void;
+}) {
   const links = [
     ["Favorite players", "/profile/favorites", Heart],
     ["Blocked users", "/profile/blocked", Ban],
     ["Profile privacy", "/profile/privacy", ShieldCheck],
     ["Settings", "/settings", Settings2],
   ] as const;
+
   return (
-    <div className="mt-6 border-t border-border/60 pt-5">
-      <p className="text-xs font-semibold text-quiet-foreground">Owner tools</p>
+    <div className="mt-9">
+      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-quiet-foreground">
+        Owner tools
+      </p>
       <div className="mt-3 flex flex-wrap gap-x-5 gap-y-3">
         {links.map(([label, href, Icon]) => (
-          <Link key={href} href={href} className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary">
+          <Link
+            key={href}
+            href={href}
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary"
+          >
             <Icon size={14} aria-hidden="true" /> {label}
           </Link>
         ))}
-        <button type="button" onClick={onSignOut} disabled={signingOut} className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary disabled:opacity-50">
-          <LogOut size={14} aria-hidden="true" /> {signingOut ? "Signing out..." : "Log out"}
+        <button
+          type="button"
+          onClick={onSignOut}
+          disabled={signingOut}
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary disabled:opacity-50"
+        >
+          <LogOut size={14} aria-hidden="true" />
+          {signingOut ? "Signing out..." : "Log out"}
         </button>
       </div>
     </div>
@@ -88,8 +139,14 @@ function OwnerTools({ signingOut, onSignOut }: { signingOut: boolean; onSignOut?
 }
 
 export default function SocialPlayerProfile({
-  profile, isOwner, sections, profileActions, publicProfileHref, networkProfileId,
-  signingOut = false, onSignOut,
+  profile,
+  isOwner,
+  sections,
+  profileActions,
+  publicProfileHref,
+  networkProfileId,
+  signingOut = false,
+  onSignOut,
 }: SocialPlayerProfileProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -103,9 +160,16 @@ export default function SocialPlayerProfile({
   const showStats = isOwner || profile.stats_visible !== false;
   const showHosted = showStats && hasCount(profile, "hosted");
   const showPlayed = showStats && hasCount(profile, "played");
-  const favoriteColors = Array.isArray(profile.favorite_colors) ? profile.favorite_colors : [];
-  const favoriteFormats = Array.isArray(profile.favorite_formats) ? profile.favorite_formats : [];
-  const playingSince = [profile.playing_since_year, profile.first_set_name || profile.first_set_code].filter(Boolean).join(" · ");
+  const favoriteColors = getProfileFavoriteColors(profile);
+  const favoriteFormats = getProfileFavoriteFormats(profile);
+  const playingSinceYear = getProfilePlayingSinceYear(profile);
+  const firstSetName = getProfileFirstSetName(profile);
+  const playingSince = [playingSinceYear, firstSetName]
+    .filter(Boolean)
+    .join(" · ");
+  const hasMagicProfile = Boolean(
+    playingSince || favoriteColors.length || favoriteFormats.length,
+  );
 
   function tabHref(tab: ProfileTabId): string {
     const params = new URLSearchParams(searchParams.toString());
@@ -121,66 +185,220 @@ export default function SocialPlayerProfile({
         <section className="rounded-surface bg-surface/70 p-4 sm:p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
             <div className="h-24 w-24 shrink-0 overflow-hidden rounded-full bg-secondary sm:h-28 sm:w-28">
-              {avatarUrl ? <img src={avatarUrl} alt={`${nickname} avatar`} className="h-full w-full object-cover" /> : (
-                <span className="grid h-full w-full place-items-center text-4xl font-bold text-primary">{nickname.slice(0, 1).toUpperCase()}</span>
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={`${nickname} avatar`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="grid h-full w-full place-items-center text-4xl font-bold text-primary">
+                  {nickname.slice(0, 1).toUpperCase()}
+                </span>
               )}
             </div>
+
             <div className="min-w-0 flex-1">
-              <h1 className="truncate text-2xl font-bold tracking-tight sm:text-3xl">{nickname}</h1>
-              {bio ? <p className="mt-2 max-w-2xl whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{bio}</p> : null}
-              {locationDisplay ? <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground"><MapPin size={15} aria-hidden="true" />{locationDisplay}</p> : null}
-              {arenaUsername ? <div className="mt-3"><CopyArenaTag arenaTag={arenaUsername} /></div> : null}
-              {showHosted || showPlayed ? <p className="mt-3 text-xs font-medium text-muted-foreground">
-                {showHosted ? `${getHostedCount(profile)} events hosted` : null}{showHosted && showPlayed ? " · " : null}{showPlayed ? `${getPlayedCount(profile)} games played` : null}
-              </p> : null}
-              {profileId ? <div className="mt-3 flex items-center gap-3 text-sm font-semibold">
-                <Link href={getProfileNetworkHref(profileId, "followers")} className="text-muted-foreground hover:text-primary hover:underline">Followers</Link>
-                <span aria-hidden="true" className="text-border-strong">·</span>
-                <Link href={getProfileNetworkHref(profileId, "following")} className="text-muted-foreground hover:text-primary hover:underline">Following</Link>
-              </div> : null}
+              <h1 className="truncate text-2xl font-bold tracking-tight sm:text-3xl">
+                {nickname}
+              </h1>
+              {bio ? (
+                <p className="mt-2 max-w-2xl whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
+                  {bio}
+                </p>
+              ) : null}
+              {locationDisplay ? (
+                <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                  <MapPin size={15} aria-hidden="true" />
+                  {locationDisplay}
+                </p>
+              ) : null}
+              {arenaUsername ? (
+                <div className="mt-3">
+                  <CopyArenaTag arenaTag={arenaUsername} />
+                </div>
+              ) : null}
+              {showHosted || showPlayed ? (
+                <p className="mt-3 text-xs font-medium text-muted-foreground">
+                  {showHosted
+                    ? `${getHostedCount(profile)} events hosted`
+                    : null}
+                  {showHosted && showPlayed ? " · " : null}
+                  {showPlayed
+                    ? `${getPlayedCount(profile)} games played`
+                    : null}
+                </p>
+              ) : null}
+              {profileId ? (
+                <div className="mt-3 flex items-center gap-3 text-sm font-semibold">
+                  <Link
+                    href={getProfileNetworkHref(profileId, "followers")}
+                    className="text-muted-foreground hover:text-primary hover:underline"
+                  >
+                    Followers
+                  </Link>
+                  <span aria-hidden="true" className="text-border-strong">
+                    ·
+                  </span>
+                  <Link
+                    href={getProfileNetworkHref(profileId, "following")}
+                    className="text-muted-foreground hover:text-primary hover:underline"
+                  >
+                    Following
+                  </Link>
+                </div>
+              ) : null}
             </div>
-            {isOwner ? <div className="flex shrink-0 flex-wrap gap-2 sm:flex-col sm:items-stretch">
-              <Button asChild size="sm"><Link href="/profile/edit"><Pencil size={14} aria-hidden="true" /> Edit profile</Link></Button>
-              {publicProfileHref ? <Button asChild size="sm" variant="outline"><Link href={publicProfileHref}><Eye size={14} aria-hidden="true" /> Public view</Link></Button> : null}
-            </div> : null}
+
+            {isOwner ? (
+              <div className="flex shrink-0 flex-wrap gap-2 sm:flex-col sm:items-stretch">
+                <Button asChild size="sm">
+                  <Link href="/profile/edit">
+                    <Pencil size={14} aria-hidden="true" /> Edit profile
+                  </Link>
+                </Button>
+                {publicProfileHref ? (
+                  <Button asChild size="sm" variant="outline">
+                    <Link href={publicProfileHref}>
+                      <Eye size={14} aria-hidden="true" /> Public view
+                    </Link>
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </section>
 
-        <nav aria-label="Profile sections" className="mt-4 flex gap-1 overflow-x-auto border-b border-border/55">
-          {PROFILE_TABS.map(([label, id]) => <Link key={id} href={tabHref(id)} aria-current={activeTab === id ? "page" : undefined} className={[
-            "shrink-0 border-b-2 px-3 py-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/15",
-            activeTab === id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground",
-          ].join(" ")}>{label}</Link>)}
+        <nav
+          aria-label="Profile sections"
+          className="mt-4 flex gap-1 overflow-x-auto py-1"
+        >
+          {PROFILE_TABS.map(([label, id]) => (
+            <Link
+              key={id}
+              href={tabHref(id)}
+              aria-current={activeTab === id ? "page" : undefined}
+              className={[
+                "shrink-0 rounded-lg px-3 py-2.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/15",
+                activeTab === id
+                  ? "bg-primary-soft text-primary"
+                  : "text-muted-foreground hover:bg-secondary/55 hover:text-foreground",
+              ].join(" ")}
+            >
+              {label}
+            </Link>
+          ))}
         </nav>
 
         {profileActions}
 
-        {activeTab !== "about" ? sections[activeTab] ?? null : (
-          <section aria-labelledby="profile-about-title" className="py-6">
-            <h2 id="profile-about-title" className="text-lg font-semibold tracking-tight">About</h2>
-            <div className="mt-4 grid gap-8 lg:grid-cols-2">
-              <section>
-                <h3 className="text-sm font-bold">Player information</h3>
-                <dl className="mt-2">
-                  <AboutRow label="Nickname">{nickname}</AboutRow>
-                  {bio ? <AboutRow label="Bio">{bio}</AboutRow> : null}
-                  {locationDisplay ? <AboutRow label="Location">{locationDisplay}</AboutRow> : null}
-                  {arenaUsername ? <AboutRow label="MTG Arena">{arenaUsername}</AboutRow> : null}
+        {activeTab !== "about" ? (
+          sections[activeTab] ?? null
+        ) : (
+          <section aria-labelledby="profile-about-title" className="py-7">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2
+                  id="profile-about-title"
+                  className="text-lg font-semibold tracking-tight"
+                >
+                  About
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Player details and Magic preferences.
+                </p>
+              </div>
+              {isOwner && !hasMagicProfile ? (
+                <Link
+                  href="/profile/edit"
+                  className="text-sm font-semibold text-primary hover:underline"
+                >
+                  Add Magic preferences
+                </Link>
+              ) : null}
+            </div>
+
+            <div className="mt-7 grid gap-x-12 gap-y-10 lg:grid-cols-2">
+              <section aria-labelledby="player-information-title">
+                <h3
+                  id="player-information-title"
+                  className="text-sm font-bold"
+                >
+                  Player information
+                </h3>
+                <dl className="mt-5 grid gap-6">
+                  <AboutItem label="Nickname">{nickname}</AboutItem>
+                  <AboutItem label="Bio" muted={!bio}>
+                    {bio || "Not added yet"}
+                  </AboutItem>
+                  <AboutItem label="Location" muted={!locationDisplay}>
+                    {locationDisplay || "Not added yet"}
+                  </AboutItem>
+                  <AboutItem label="MTG Arena" muted={!arenaUsername}>
+                    {arenaUsername || "Not added yet"}
+                  </AboutItem>
                 </dl>
               </section>
-              <section>
-                <h3 className="text-sm font-bold">Magic profile</h3>
-                <dl className="mt-2">
-                  {playingSince ? <AboutRow label="Playing since">{playingSince}</AboutRow> : null}
-                  {favoriteColors.length ? <AboutRow label="Favorite colors"><ManaIdentity colors={favoriteColors} size="lg" /></AboutRow> : null}
-                  {favoriteFormats.length ? <AboutRow label="Favorite formats">{favoriteFormats.map(profileFormatLabel).join(" · ")}</AboutRow> : null}
-                  {!playingSince && !favoriteColors.length && !favoriteFormats.length ? <AboutRow label="Magic profile">No Magic preferences added yet.</AboutRow> : null}
-                  {showHosted ? <AboutRow label="Events hosted">{getHostedCount(profile)}</AboutRow> : null}
-                  {showPlayed ? <AboutRow label="Games played">{getPlayedCount(profile)}</AboutRow> : null}
+
+              <section aria-labelledby="magic-profile-title">
+                <h3 id="magic-profile-title" className="text-sm font-bold">
+                  Magic profile
+                </h3>
+                <dl className="mt-5 grid gap-6">
+                  <AboutItem label="Playing since" muted={!playingSince}>
+                    {playingSince || "Not added yet"}
+                  </AboutItem>
+
+                  <AboutItem
+                    label="Favorite colors"
+                    muted={!favoriteColors.length}
+                  >
+                    {favoriteColors.length ? (
+                      <ManaIdentity colors={favoriteColors} size="lg" />
+                    ) : (
+                      "Not added yet"
+                    )}
+                  </AboutItem>
+
+                  <AboutItem
+                    label="Favorite formats"
+                    muted={!favoriteFormats.length}
+                  >
+                    {favoriteFormats.length ? (
+                      <span className="flex flex-wrap gap-2">
+                        {favoriteFormats.map((format) => (
+                          <span
+                            key={format}
+                            className="rounded-full bg-secondary/70 px-3 py-1 text-xs font-semibold text-foreground"
+                          >
+                            {profileFormatLabel(format)}
+                          </span>
+                        ))}
+                      </span>
+                    ) : (
+                      "Not added yet"
+                    )}
+                  </AboutItem>
+
+                  {(showHosted || showPlayed) && (
+                    <AboutItem label="Activity">
+                      <span className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
+                        {showHosted ? (
+                          <span>{getHostedCount(profile)} events hosted</span>
+                        ) : null}
+                        {showPlayed ? (
+                          <span>{getPlayedCount(profile)} games played</span>
+                        ) : null}
+                      </span>
+                    </AboutItem>
+                  )}
                 </dl>
               </section>
             </div>
-            {isOwner ? <OwnerTools signingOut={signingOut} onSignOut={onSignOut} /> : null}
+
+            {isOwner ? (
+              <OwnerTools signingOut={signingOut} onSignOut={onSignOut} />
+            ) : null}
           </section>
         )}
       </div>

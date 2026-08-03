@@ -72,11 +72,16 @@ export type PublicProfile = {
   location?: PublicProfileLocation | null;
   location_visible?: boolean | null;
 
-  playing_since_year?: number | null;
+  playing_since_year?: number | string | null;
+  playingSinceYear?: number | string | null;
   first_set_code?: string | null;
+  firstSetCode?: string | null;
   first_set_name?: string | null;
-  favorite_colors?: string[] | null;
-  favorite_formats?: string[] | null;
+  firstSetName?: string | null;
+  favorite_colors?: string[] | string | null;
+  favoriteColors?: string[] | string | null;
+  favorite_formats?: string[] | string | null;
+  favoriteFormats?: string[] | string | null;
 };
 
 export type LocationVisibility = "public" | "connections" | "private";
@@ -437,6 +442,83 @@ export function getProfileArenaUsername(
   );
 }
 
+function normalizeProfileList(value: string[] | string | null | undefined): string[] {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => String(item).trim())
+      .filter(Boolean);
+  }
+
+  if (typeof value !== "string") return [];
+
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((item) => String(item).trim())
+          .filter(Boolean);
+      }
+    } catch {
+      // Fall through to comma/Postgres-array parsing.
+    }
+  }
+
+  return trimmed
+    .replace(/^\{/, "")
+    .replace(/\}$/, "")
+    .split(",")
+    .map((item) => item.replace(/^"|"$/g, "").trim())
+    .filter(Boolean);
+}
+
+export function getProfilePlayingSinceYear(
+  profile: PublicProfile,
+): number | null {
+  const raw = profile.playing_since_year ?? profile.playingSinceYear;
+  if (raw == null || raw === "") return null;
+  const year = Number(raw);
+  return Number.isInteger(year) && year >= 1993 ? year : null;
+}
+
+export function getProfileFirstSetName(
+  profile: PublicProfile,
+): string | null {
+  return (
+    profile.first_set_name?.trim() ||
+    profile.firstSetName?.trim() ||
+    profile.first_set_code?.trim() ||
+    profile.firstSetCode?.trim() ||
+    null
+  );
+}
+
+export function getProfileFavoriteColors(profile: PublicProfile): string[] {
+  const allowed = new Set(["W", "U", "B", "R", "G", "C"]);
+  return Array.from(
+    new Set(
+      normalizeProfileList(
+        profile.favorite_colors ?? profile.favoriteColors,
+      )
+        .map((value) => value.toUpperCase())
+        .filter((value) => allowed.has(value)),
+    ),
+  );
+}
+
+export function getProfileFavoriteFormats(profile: PublicProfile): string[] {
+  return Array.from(
+    new Set(
+      normalizeProfileList(
+        profile.favorite_formats ?? profile.favoriteFormats,
+      ).map((value) => value.toLowerCase()),
+    ),
+  );
+}
+
 export function getHostedCount(profile: PublicProfile): number {
   const count = Number(
     profile.hosted_count ?? profile.hostedCount ?? 0,
@@ -568,6 +650,11 @@ export async function updateMyProfile(
     bio: payload.bio?.trim() || null,
     mtg_arena_username:
       payload.mtg_arena_username?.trim() || null,
+    playing_since_year: payload.playing_since_year ?? null,
+    first_set_code: payload.first_set_code?.trim().toUpperCase() || null,
+    first_set_name: payload.first_set_name?.trim() || null,
+    favorite_colors: payload.favorite_colors ?? [],
+    favorite_formats: payload.favorite_formats ?? [],
   });
 }
 
