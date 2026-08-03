@@ -124,20 +124,25 @@ export default function PublicProfilePage() {
           <ProfileActionsPanel profileId={userId} />
         </div>
       )}
-    >
-      <ProfilePostsSection profileId={userId} isOwner={false} />
-      <ProfileDeckSection
-        decks={decks}
-        failed={decksFailed}
-        isOwner={false}
-        publicDecksVisible={profile.public_decks_visible}
-      />
-      <ProfileEventSections
-        upcoming={upcoming}
-        failed={eventsFailed}
-        isOwner={false}
-      />
-      <ProfileTrustSection summary={trust} failed={trustFailed} />
-    </SocialPlayerProfile>
+      sections={{
+        posts: <ProfilePostsSection profileId={userId} isOwner={false} />,
+        decks: (
+          <ProfileDeckSection
+            decks={decks}
+            failed={decksFailed}
+            isOwner={false}
+            publicDecksVisible={profile.public_decks_visible}
+          />
+        ),
+        events: (
+          <ProfileEventSections
+            upcoming={upcoming}
+            failed={eventsFailed}
+            isOwner={false}
+          />
+        ),
+        trust: <ProfileTrustSection summary={trust} failed={trustFailed} />,
+      }}
+    />
   );
 }

@@ -155,16 +155,19 @@ export default function ProfilePage() {
       profileActions={<><ProfileBinderLinks profileId={profileId} owner />{actionError ? (
         <p className="mt-4 border-y border-red-200 bg-red-50 px-3 py-3 text-sm text-red-700">Could not log out. Please try again.</p>
       ) : null}</>}
-    >
-      <ProfilePostsSection profileId={profileId} isOwner />
-      <ProfileDeckSection decks={decks} failed={decksFailed} isOwner />
-      <ProfileEventSections
-        upcoming={upcoming}
-        recent={recent}
-        failed={eventsFailed}
-        isOwner
-      />
-      <ProfileTrustSection summary={trust} failed={trustFailed} />
-    </SocialPlayerProfile>
+      sections={{
+        posts: <ProfilePostsSection profileId={profileId} isOwner />,
+        decks: <ProfileDeckSection decks={decks} failed={decksFailed} isOwner />,
+        events: (
+          <ProfileEventSections
+            upcoming={upcoming}
+            recent={recent}
+            failed={eventsFailed}
+            isOwner
+          />
+        ),
+        trust: <ProfileTrustSection summary={trust} failed={trustFailed} />,
+      }}
+    />
   );
 }

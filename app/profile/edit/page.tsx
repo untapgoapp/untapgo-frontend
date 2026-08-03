@@ -12,9 +12,11 @@ import {
   useRouter,
 } from "next/navigation";
 
+import { ManaSymbol } from "@/components/magic/mana-symbols";
 import ProfileLocationPicker, {
   type ProfileLocationDraft,
 } from "@/components/location/ProfileLocationPicker";
+import { PROFILE_COLOR_OPTIONS, PROFILE_FORMAT_OPTIONS, type ProfileColor } from "@/lib/profile-magic";
 import {
   supabase,
 } from "@/lib/supabase/client";
@@ -51,6 +53,11 @@ export default function EditProfilePage() {
   const [pendingAvatar, setPendingAvatar] = useState<File | null>(null);
   const [location, setLocation] = useState<ProfileLocationDraft | null>(null);
   const [hadLocation, setHadLocation] = useState(false);
+  const [playingSinceYear, setPlayingSinceYear] = useState("");
+  const [firstSetName, setFirstSetName] = useState("");
+  const [firstSetCode, setFirstSetCode] = useState("");
+  const [favoriteColors, setFavoriteColors] = useState<ProfileColor[]>([]);
+  const [favoriteFormats, setFavoriteFormats] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -93,6 +100,11 @@ export default function EditProfilePage() {
         setBio(loadedProfile.bio || "");
         setArenaUsername(getProfileArenaUsername(loadedProfile) || "");
         setAvatarUrl(getProfileAvatarUrl(loadedProfile));
+        setPlayingSinceYear(loadedProfile.playing_since_year ? String(loadedProfile.playing_since_year) : "");
+        setFirstSetName(loadedProfile.first_set_name || "");
+        setFirstSetCode(loadedProfile.first_set_code || "");
+        setFavoriteColors((loadedProfile.favorite_colors || []).filter((value): value is ProfileColor => PROFILE_COLOR_OPTIONS.some((option) => option.value === value)));
+        setFavoriteFormats(Array.isArray(loadedProfile.favorite_formats) ? loadedProfile.favorite_formats : []);
         setHadLocation(Boolean(loadedLocation));
         setLocation(
           loadedLocation
@@ -161,6 +173,14 @@ export default function EditProfilePage() {
     return `${data.publicUrl}?v=${Date.now()}`;
   }
 
+  function toggleColor(color: ProfileColor) {
+    setFavoriteColors((current) => current.includes(color) ? current.filter((item) => item !== color) : [...current, color]);
+  }
+
+  function toggleFormat(format: string) {
+    setFavoriteFormats((current) => current.includes(format) ? current.filter((item) => item !== format) : [...current, format]);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -191,6 +211,11 @@ export default function EditProfilePage() {
         avatar_url: nextAvatarUrl,
         bio,
         mtg_arena_username: arenaUsername,
+        playing_since_year: playingSinceYear ? Number(playingSinceYear) : null,
+        first_set_name: firstSetName.trim() || null,
+        first_set_code: firstSetCode.trim().toUpperCase() || null,
+        favorite_colors: favoriteColors,
+        favorite_formats: favoriteFormats,
       });
 
       if (location) {
@@ -312,6 +337,50 @@ export default function EditProfilePage() {
                 className="rounded-xl border border-zinc-300 px-4 py-3"
               />
             </label>
+
+            <section className="rounded-2xl border border-zinc-200 p-4 sm:p-5">
+              <h2 className="text-lg font-bold">Magic profile</h2>
+              <p className="mt-1 text-sm text-zinc-500">Tell other players a little about your Magic history.</p>
+
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <label className="grid gap-2">
+                  <span className="text-sm font-medium">Playing since</span>
+                  <select value={playingSinceYear} onChange={(event) => setPlayingSinceYear(event.target.value)} className="rounded-xl border border-zinc-300 px-4 py-3">
+                    <option value="">Choose year</option>
+                    {Array.from({ length: new Date().getFullYear() - 1992 }, (_, index) => new Date().getFullYear() - index).map((year) => <option key={year} value={year}>{year}</option>)}
+                  </select>
+                </label>
+                <label className="grid gap-2">
+                  <span className="text-sm font-medium">First set or expansion</span>
+                  <input value={firstSetName} onChange={(event) => setFirstSetName(event.target.value)} placeholder="Innistrad" maxLength={120} className="rounded-xl border border-zinc-300 px-4 py-3" />
+                </label>
+                <label className="grid gap-2 sm:max-w-[12rem]">
+                  <span className="text-sm font-medium">Set code (optional)</span>
+                  <input value={firstSetCode} onChange={(event) => setFirstSetCode(event.target.value.toUpperCase())} placeholder="ISD" maxLength={20} className="rounded-xl border border-zinc-300 px-4 py-3 uppercase" />
+                </label>
+              </div>
+
+              <fieldset className="mt-6">
+                <legend className="text-sm font-medium">Favorite colors</legend>
+                <p className="mt-1 text-xs text-zinc-500">Choose as many as you like.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {PROFILE_COLOR_OPTIONS.map((option) => {
+                    const selected = favoriteColors.includes(option.value);
+                    return <button key={option.value} type="button" aria-pressed={selected} onClick={() => toggleColor(option.value)} className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold ${selected ? "border-[#6E5AA7] bg-[#EEE9FF] text-[#5B4694]" : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"}`}><ManaSymbol symbol={option.value} size="md" />{option.label}</button>;
+                  })}
+                </div>
+              </fieldset>
+
+              <fieldset className="mt-6">
+                <legend className="text-sm font-medium">Favorite formats</legend>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {PROFILE_FORMAT_OPTIONS.map((option) => {
+                    const selected = favoriteFormats.includes(option.value);
+                    return <button key={option.value} type="button" aria-pressed={selected} onClick={() => toggleFormat(option.value)} className={`rounded-full border px-3 py-2 text-sm font-semibold ${selected ? "border-[#6E5AA7] bg-[#EEE9FF] text-[#5B4694]" : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"}`}>{option.label}</button>;
+                  })}
+                </div>
+              </fieldset>
+            </section>
 
             <ProfileLocationPicker
               value={location}

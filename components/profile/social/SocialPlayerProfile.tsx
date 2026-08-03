@@ -3,11 +3,14 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import { useEffect, useState, type ReactNode } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import type { ReactNode } from "react";
 import { Ban, Eye, Heart, LogOut, MapPin, Pencil, Settings2, ShieldCheck } from "lucide-react";
 
+import { ManaIdentity } from "@/components/magic/mana-symbols";
 import CopyArenaTag from "@/components/profile/CopyArenaTag";
 import { Button } from "@/components/ui/button";
+import { profileFormatLabel } from "@/lib/profile-magic";
 import { getProfileNetworkHref } from "@/lib/profile-network";
 import {
   getHostedCount,
@@ -20,18 +23,7 @@ import {
   type PublicProfile,
 } from "@/services/profiles";
 
-type SocialPlayerProfileProps = {
-  profile: PublicProfile;
-  isOwner: boolean;
-  children: ReactNode;
-  profileActions?: ReactNode;
-  publicProfileHref?: string;
-  networkProfileId?: string;
-  signingOut?: boolean;
-  onSignOut?: () => void;
-};
-
-const PROFILE_NAVIGATION = [
+export const PROFILE_TABS = [
   ["Posts", "posts"],
   ["Decks", "decks"],
   ["Events", "events"],
@@ -39,7 +31,22 @@ const PROFILE_NAVIGATION = [
   ["About", "about"],
 ] as const;
 
-type ProfileSectionId = (typeof PROFILE_NAVIGATION)[number][1];
+export type ProfileTabId = (typeof PROFILE_TABS)[number][1];
+
+type SocialPlayerProfileProps = {
+  profile: PublicProfile;
+  isOwner: boolean;
+  sections: Partial<Record<Exclude<ProfileTabId, "about">, ReactNode>>;
+  profileActions?: ReactNode;
+  publicProfileHref?: string;
+  networkProfileId?: string;
+  signingOut?: boolean;
+  onSignOut?: () => void;
+};
+
+function selectedTab(value: string | null): ProfileTabId {
+  return PROFILE_TABS.some(([, id]) => id === value) ? value as ProfileTabId : "posts";
+}
 
 function hasCount(profile: PublicProfile, key: "hosted" | "played"): boolean {
   return key === "hosted"
@@ -49,7 +56,7 @@ function hasCount(profile: PublicProfile, key: "hosted" | "played"): boolean {
 
 function AboutRow({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="grid gap-1 rounded-row px-3 py-2.5 sm:grid-cols-[9rem_minmax(0,1fr)] sm:gap-4">
+    <div className="grid gap-1 border-b border-border/45 px-1 py-3 last:border-b-0 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-5">
       <dt className="text-xs font-semibold text-quiet-foreground">{label}</dt>
       <dd className="min-w-0 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{children}</dd>
     </div>
@@ -63,22 +70,16 @@ function OwnerTools({ signingOut, onSignOut }: { signingOut: boolean; onSignOut?
     ["Profile privacy", "/profile/privacy", ShieldCheck],
     ["Settings", "/settings", Settings2],
   ] as const;
-
   return (
-    <div className="mt-5 rounded-surface bg-surface-subtle p-4">
+    <div className="mt-6 border-t border-border/60 pt-5">
       <p className="text-xs font-semibold text-quiet-foreground">Owner tools</p>
-      <div className="mt-2 flex flex-wrap gap-x-5 gap-y-3">
+      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-3">
         {links.map(([label, href, Icon]) => (
           <Link key={href} href={href} className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary">
             <Icon size={14} aria-hidden="true" /> {label}
           </Link>
         ))}
-        <button
-          type="button"
-          onClick={onSignOut}
-          disabled={signingOut}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary disabled:opacity-50"
-        >
+        <button type="button" onClick={onSignOut} disabled={signingOut} className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary disabled:opacity-50">
           <LogOut size={14} aria-hidden="true" /> {signingOut ? "Signing out..." : "Log out"}
         </button>
       </div>
@@ -87,16 +88,12 @@ function OwnerTools({ signingOut, onSignOut }: { signingOut: boolean; onSignOut?
 }
 
 export default function SocialPlayerProfile({
-  profile,
-  isOwner,
-  children,
-  profileActions,
-  publicProfileHref,
-  networkProfileId,
-  signingOut = false,
-  onSignOut,
+  profile, isOwner, sections, profileActions, publicProfileHref, networkProfileId,
+  signingOut = false, onSignOut,
 }: SocialPlayerProfileProps) {
-  const [activeSection, setActiveSection] = useState<ProfileSectionId>("posts");
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeTab = selectedTab(searchParams.get("tab"));
   const nickname = getProfileNickname(profile);
   const avatarUrl = getProfileAvatarUrl(profile);
   const arenaUsername = getProfileArenaUsername(profile);
@@ -106,39 +103,17 @@ export default function SocialPlayerProfile({
   const showStats = isOwner || profile.stats_visible !== false;
   const showHosted = showStats && hasCount(profile, "hosted");
   const showPlayed = showStats && hasCount(profile, "played");
+  const favoriteColors = Array.isArray(profile.favorite_colors) ? profile.favorite_colors : [];
+  const favoriteFormats = Array.isArray(profile.favorite_formats) ? profile.favorite_formats : [];
+  const playingSince = [profile.playing_since_year, profile.first_set_name || profile.first_set_code].filter(Boolean).join(" · ");
 
-  useEffect(() => {
-    let frame = 0;
-
-    function updateActiveSection() {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        const marker = Math.min(180, window.innerHeight * 0.28);
-        let current: ProfileSectionId = "posts";
-
-        PROFILE_NAVIGATION.forEach(([, id]) => {
-          const section = document.getElementById(id);
-          if (section && section.getBoundingClientRect().top <= marker) current = id;
-        });
-
-        const pageBottom = window.scrollY + window.innerHeight;
-        if (pageBottom >= document.documentElement.scrollHeight - 2) current = "about";
-        setActiveSection((previous) => previous === current ? previous : current);
-      });
-    }
-
-    updateActiveSection();
-    window.addEventListener("scroll", updateActiveSection, { passive: true });
-    window.addEventListener("resize", updateActiveSection);
-    window.addEventListener("hashchange", updateActiveSection);
-
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", updateActiveSection);
-      window.removeEventListener("resize", updateActiveSection);
-      window.removeEventListener("hashchange", updateActiveSection);
-    };
-  }, []);
+  function tabHref(tab: ProfileTabId): string {
+    const params = new URLSearchParams(searchParams.toString());
+    if (tab === "posts") params.delete("tab");
+    else params.set("tab", tab);
+    const query = params.toString();
+    return query ? `${pathname}?${query}` : pathname;
+  }
 
   return (
     <main className="min-h-screen px-4 py-5 text-foreground sm:px-5 sm:py-7 lg:px-0 lg:py-8">
@@ -146,96 +121,68 @@ export default function SocialPlayerProfile({
         <section className="rounded-surface bg-surface/70 p-4 sm:p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
             <div className="h-24 w-24 shrink-0 overflow-hidden rounded-full bg-secondary sm:h-28 sm:w-28">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt={`${nickname} avatar`} className="h-full w-full object-cover" />
-              ) : (
-                <span className="grid h-full w-full place-items-center text-4xl font-bold text-primary">
-                  {nickname.slice(0, 1).toUpperCase()}
-                </span>
+              {avatarUrl ? <img src={avatarUrl} alt={`${nickname} avatar`} className="h-full w-full object-cover" /> : (
+                <span className="grid h-full w-full place-items-center text-4xl font-bold text-primary">{nickname.slice(0, 1).toUpperCase()}</span>
               )}
             </div>
-
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-2xl font-bold tracking-tight sm:text-3xl">{nickname}</h1>
               {bio ? <p className="mt-2 max-w-2xl whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{bio}</p> : null}
-              {locationDisplay ? (
-                <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-                  <MapPin size={15} aria-hidden="true" />
-                  {locationDisplay}
-                </p>
-              ) : null}
+              {locationDisplay ? <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground"><MapPin size={15} aria-hidden="true" />{locationDisplay}</p> : null}
               {arenaUsername ? <div className="mt-3"><CopyArenaTag arenaTag={arenaUsername} /></div> : null}
-              {showHosted || showPlayed ? (
-                <p className="mt-3 text-xs font-medium text-muted-foreground">
-                  {showHosted ? `${getHostedCount(profile)} events hosted` : null}
-                  {showHosted && showPlayed ? " · " : null}
-                  {showPlayed ? `${getPlayedCount(profile)} games played` : null}
-                </p>
-              ) : null}
-              {profileId ? (
-                <div className="mt-3 flex items-center gap-3 text-sm font-semibold">
-                  <Link
-                    href={getProfileNetworkHref(profileId, "followers")}
-                    className="text-muted-foreground hover:text-primary hover:underline"
-                  >
-                    Followers
-                  </Link>
-                  <span aria-hidden="true" className="text-border-strong">·</span>
-                  <Link
-                    href={getProfileNetworkHref(profileId, "following")}
-                    className="text-muted-foreground hover:text-primary hover:underline"
-                  >
-                    Following
-                  </Link>
-                </div>
-              ) : null}
+              {showHosted || showPlayed ? <p className="mt-3 text-xs font-medium text-muted-foreground">
+                {showHosted ? `${getHostedCount(profile)} events hosted` : null}{showHosted && showPlayed ? " · " : null}{showPlayed ? `${getPlayedCount(profile)} games played` : null}
+              </p> : null}
+              {profileId ? <div className="mt-3 flex items-center gap-3 text-sm font-semibold">
+                <Link href={getProfileNetworkHref(profileId, "followers")} className="text-muted-foreground hover:text-primary hover:underline">Followers</Link>
+                <span aria-hidden="true" className="text-border-strong">·</span>
+                <Link href={getProfileNetworkHref(profileId, "following")} className="text-muted-foreground hover:text-primary hover:underline">Following</Link>
+              </div> : null}
             </div>
-
-            {isOwner ? (
-              <div className="flex shrink-0 flex-wrap gap-2 sm:flex-col sm:items-stretch">
-                <Button asChild size="sm"><Link href="/profile/edit"><Pencil size={14} aria-hidden="true" /> Edit profile</Link></Button>
-                {publicProfileHref ? (
-                  <Button asChild size="sm" variant="outline"><Link href={publicProfileHref}><Eye size={14} aria-hidden="true" /> Public view</Link></Button>
-                ) : null}
-              </div>
-            ) : null}
+            {isOwner ? <div className="flex shrink-0 flex-wrap gap-2 sm:flex-col sm:items-stretch">
+              <Button asChild size="sm"><Link href="/profile/edit"><Pencil size={14} aria-hidden="true" /> Edit profile</Link></Button>
+              {publicProfileHref ? <Button asChild size="sm" variant="outline"><Link href={publicProfileHref}><Eye size={14} aria-hidden="true" /> Public view</Link></Button> : null}
+            </div> : null}
           </div>
         </section>
 
-        <nav aria-label="Profile sections" className="mt-4 flex gap-1 overflow-x-auto">
-          {PROFILE_NAVIGATION.map(([label, id]) => (
-            <a
-              key={id}
-              href={`#${id}`}
-              aria-current={activeSection === id ? "location" : undefined}
-              onClick={() => setActiveSection(id)}
-              className={[
-                "shrink-0 rounded-control px-3 py-2.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/15",
-                activeSection === id
-                  ? "bg-secondary text-secondary-foreground"
-                  : "text-muted-foreground hover:bg-surface-subtle hover:text-foreground",
-              ].join(" ")}
-            >
-              {label}
-            </a>
-          ))}
+        <nav aria-label="Profile sections" className="mt-4 flex gap-1 overflow-x-auto border-b border-border/55">
+          {PROFILE_TABS.map(([label, id]) => <Link key={id} href={tabHref(id)} aria-current={activeTab === id ? "page" : undefined} className={[
+            "shrink-0 border-b-2 px-3 py-3 text-sm font-semibold focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/15",
+            activeTab === id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground",
+          ].join(" ")}>{label}</Link>)}
         </nav>
 
         {profileActions}
-        {children}
 
-        <section id="about" aria-labelledby="profile-about-title" className="scroll-mt-6 py-6">
-          <h2 id="profile-about-title" className="text-lg font-semibold tracking-tight">About</h2>
-          <dl className="mt-3 grid gap-1 rounded-surface bg-surface/55 p-1">
-            <AboutRow label="Nickname">{nickname}</AboutRow>
-            {arenaUsername ? <AboutRow label="MTG Arena">{arenaUsername}</AboutRow> : null}
-            {bio ? <AboutRow label="Bio">{bio}</AboutRow> : null}
-            {locationDisplay ? <AboutRow label="Location">{locationDisplay}</AboutRow> : null}
-            {showHosted ? <AboutRow label="Events hosted">{getHostedCount(profile)}</AboutRow> : null}
-            {showPlayed ? <AboutRow label="Games played">{getPlayedCount(profile)}</AboutRow> : null}
-          </dl>
-          {isOwner ? <OwnerTools signingOut={signingOut} onSignOut={onSignOut} /> : null}
-        </section>
+        {activeTab !== "about" ? sections[activeTab] ?? null : (
+          <section aria-labelledby="profile-about-title" className="py-6">
+            <h2 id="profile-about-title" className="text-lg font-semibold tracking-tight">About</h2>
+            <div className="mt-4 grid gap-8 lg:grid-cols-2">
+              <section>
+                <h3 className="text-sm font-bold">Player information</h3>
+                <dl className="mt-2">
+                  <AboutRow label="Nickname">{nickname}</AboutRow>
+                  {bio ? <AboutRow label="Bio">{bio}</AboutRow> : null}
+                  {locationDisplay ? <AboutRow label="Location">{locationDisplay}</AboutRow> : null}
+                  {arenaUsername ? <AboutRow label="MTG Arena">{arenaUsername}</AboutRow> : null}
+                </dl>
+              </section>
+              <section>
+                <h3 className="text-sm font-bold">Magic profile</h3>
+                <dl className="mt-2">
+                  {playingSince ? <AboutRow label="Playing since">{playingSince}</AboutRow> : null}
+                  {favoriteColors.length ? <AboutRow label="Favorite colors"><ManaIdentity colors={favoriteColors} size="lg" /></AboutRow> : null}
+                  {favoriteFormats.length ? <AboutRow label="Favorite formats">{favoriteFormats.map(profileFormatLabel).join(" · ")}</AboutRow> : null}
+                  {!playingSince && !favoriteColors.length && !favoriteFormats.length ? <AboutRow label="Magic profile">No Magic preferences added yet.</AboutRow> : null}
+                  {showHosted ? <AboutRow label="Events hosted">{getHostedCount(profile)}</AboutRow> : null}
+                  {showPlayed ? <AboutRow label="Games played">{getPlayedCount(profile)}</AboutRow> : null}
+                </dl>
+              </section>
+            </div>
+            {isOwner ? <OwnerTools signingOut={signingOut} onSignOut={onSignOut} /> : null}
+          </section>
+        )}
       </div>
     </main>
   );
