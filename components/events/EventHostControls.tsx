@@ -169,7 +169,7 @@ export default function EventHostControls({
       <div
         role="tablist"
         aria-label="Host controls"
-        className="mt-4 grid grid-cols-3 border-b border-border/70"
+        className="mt-4 grid grid-cols-3 gap-1 border-b border-border/70"
       >
         {TABS.map(
           (tab, index) => {
@@ -211,7 +211,7 @@ export default function EventHostControls({
                   );
                 }}
                 className={[
-                  "flex min-h-10 min-w-0 items-center justify-center gap-1 border-b-2 px-1.5 text-[12px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/20",
+                  "flex min-h-11 min-w-0 items-center justify-center gap-1 border-b-2 px-2 text-[13px] font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/20",
                   active
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:border-border-strong hover:text-foreground",

@@ -6,6 +6,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -17,7 +18,6 @@ import {
   List,
   LockKeyhole,
   MoreHorizontal,
-  RefreshCw,
 } from "lucide-react";
 
 import EventActionSheet from "@/components/events/EventActionSheet";
@@ -677,45 +677,21 @@ export default function EventTableRoster({
         aria-labelledby="event-table-title"
         className="py-7 lg:col-start-1 lg:row-start-2"
       >
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h2
-                id="event-table-title"
-                className="text-xl font-semibold tracking-tight text-foreground"
-              >
-                The table
-              </h2>
-            </div>
-
-            <p className="mt-1 text-sm text-muted-foreground">
-              {displayedCount}
-              {maxPlayers > 0
-                ? ` of ${maxPlayers}`
-                : ""}{" "}
-              confirmed
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => {
-              setMessage(null);
-              void loadTable();
-            }}
-            disabled={loading}
-            aria-label="Refresh table roster"
-            className="grid h-8 w-8 place-items-center rounded-control text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
+        <div>
+          <h2
+            id="event-table-title"
+            className="text-xl font-semibold tracking-tight text-foreground"
           >
-            <RefreshCw
-              className={[
-                "h-4 w-4",
-                loading
-                  ? "animate-spin"
-                  : "",
-              ].join(" ")}
-            />
-          </button>
+            The table
+          </h2>
+
+          <p className="mt-1 text-sm text-muted-foreground">
+            {displayedCount}
+            {maxPlayers > 0
+              ? ` of ${maxPlayers}`
+              : ""}{" "}
+            confirmed
+          </p>
         </div>
 
         {error ? (
@@ -910,15 +886,9 @@ function PlayerCard({
     deck: EventDeckBrief,
   ) => void;
 }) {
-  const association =
-    row.association;
-
-  const visibility =
-    association?.visibility ??
-    null;
-
-  const deck =
-    association?.deck ?? null;
+  const association = row.association;
+  const visibility = association?.visibility ?? null;
+  const deck = association?.deck ?? null;
 
   const hiddenFromViewer =
     visibility === "private" &&
@@ -926,169 +896,146 @@ function PlayerCard({
 
   const canOpenDecklist =
     Boolean(deck?.export_text) &&
-    (row.isMe ||
-      visibility === "full");
+    (row.isMe || visibility === "full");
+
+  let deckContent: ReactNode;
+
+  if (!canViewDecks) {
+    deckContent = (
+      <p className="text-xs leading-5 text-zinc-400">
+        Deck visible after confirming a seat
+      </p>
+    );
+  } else if (!association) {
+    deckContent = (
+      <div className="flex items-center gap-2 text-zinc-400">
+        <Layers3 className="h-4 w-4 shrink-0 text-primary/70" />
+        <span className="text-xs">No deck selected</span>
+      </div>
+    );
+  } else if (hiddenFromViewer) {
+    deckContent = (
+      <div className="flex items-center gap-2 text-zinc-500">
+        <LockKeyhole className="h-4 w-4 shrink-0" />
+        <span className="text-xs font-medium">Private deck</span>
+      </div>
+    );
+  } else if (deck) {
+    const content = (
+      <>
+        <DeckCover deck={deck} />
+
+        <span className="min-w-0 flex-1 text-left">
+          <span className="block truncate text-xs font-semibold text-zinc-800">
+            {deck.name}
+          </span>
+
+          <span className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-zinc-500">
+            <VisibilityIcon visibility={visibility ?? "name"} />
+            {getVisibilityLabel(visibility)}
+          </span>
+        </span>
+
+        {canOpenDecklist ? (
+          <List className="h-3.5 w-3.5 shrink-0 text-primary" />
+        ) : null}
+      </>
+    );
+
+    deckContent = canOpenDecklist ? (
+      <button
+        type="button"
+        onClick={() => {
+          onOpenDeck(deck);
+        }}
+        className="flex min-w-0 items-center gap-2.5 rounded-control px-1 py-1 outline-none transition-colors hover:bg-secondary/45 focus-visible:ring-[3px] focus-visible:ring-ring/20"
+      >
+        {content}
+      </button>
+    ) : (
+      <div className="flex min-w-0 items-center gap-2.5 px-1 py-1">
+        {content}
+      </div>
+    );
+  } else {
+    deckContent = (
+      <div className="flex items-center gap-2 text-zinc-400">
+        <Layers3 className="h-4 w-4 shrink-0" />
+        <span className="text-xs">Deck unavailable</span>
+      </div>
+    );
+  }
 
   return (
     <article
       className={[
-        "relative grid min-h-[104px] grid-cols-[44px_minmax(0,1fr)] content-center gap-x-3 px-2 py-3 transition-colors",
+        "relative flex min-h-[78px] flex-col gap-3 px-2 py-3 transition-colors sm:flex-row sm:items-center",
+        canRemove ? "pr-12" : "",
         row.isHost
-          ? "bg-secondary/25 hover:bg-secondary/40"
-          : "bg-transparent hover:bg-surface-selected/45 focus-within:bg-surface-selected/45",
+          ? "bg-secondary/20 hover:bg-secondary/35"
+          : "bg-transparent hover:bg-surface-selected/40 focus-within:bg-surface-selected/40",
       ].join(" ")}
     >
-      <div className="row-span-2 flex items-start">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
         <PlayerAvatar
           nickname={row.nickname}
           avatarUrl={row.avatarUrl}
           isHost={row.isHost}
         />
 
-        {canRemove ? (
-          <button
-            type="button"
-            onClick={onRemove}
-            aria-label={`Manage ${row.nickname}`}
-            className="absolute right-1 top-1 grid h-10 w-10 place-items-center rounded-control text-quiet-foreground outline-none transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/20"
+        <div className="min-w-0 flex-1">
+          <Link
+            href={`/profile/${encodeURIComponent(row.userId)}`}
+            className="block truncate text-sm font-semibold text-foreground outline-none transition-colors hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/20"
           >
-            <MoreHorizontal className="h-[18px] w-[18px]" />
-          </button>
-        ) : null}
-      </div>
+            {row.nickname}
+            {row.isMe ? (
+              <span className="font-normal text-zinc-400"> · You</span>
+            ) : null}
+          </Link>
 
-      <Link
-        href={`/profile/${encodeURIComponent(
-          row.userId,
-        )}`}
-        className="flex min-h-7 items-end truncate pr-8 text-sm font-semibold text-foreground outline-none transition-colors hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/20"
-      >
-        {row.nickname}
-        {row.isMe ? (
-          <span className="font-normal text-zinc-400">
-            {" "}
-            · You
-          </span>
-        ) : null}
-      </Link>
-
-      <div className="flex min-h-5 flex-wrap items-start gap-x-2 gap-y-1 text-[11px] font-medium text-muted-foreground">
-        <span
-          className={
-            row.isHost
-              ? "rounded-full bg-secondary px-2 py-0.5 font-semibold text-secondary-foreground"
-              : "text-muted-foreground"
-          }
-        >
-          {row.isHost ? "Host" : "Player"}
-        </span>
-
-        {row.attendanceStatus ? (
-          <span
-            className={[
-              "inline-flex items-center gap-1 before:h-1.5 before:w-1.5 before:rounded-full before:bg-current",
-              getAttendanceClasses(
-                row.attendanceStatus,
-              ),
-            ].join(" ")}
-          >
-            {getAttendanceLabel(
-              row.attendanceStatus,
-              row.verificationMethod,
-            )}
-          </span>
-        ) : null}
-      </div>
-
-      <div className="col-span-2 mt-2 border-t border-border/60 px-1 pt-2">
-        {!canViewDecks ? (
-          <p className="text-xs leading-5 text-zinc-400">
-            Deck visible after confirming a seat
-          </p>
-        ) : null}
-
-        {canViewDecks &&
-        !association ? (
-          <div className="flex items-center gap-2 text-zinc-400">
-            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-control bg-surface/70 text-primary/70">
-              <Layers3 className="h-3.5 w-3.5" />
+          <div className="mt-1 flex min-h-5 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-medium text-muted-foreground">
+            <span
+              className={
+                row.isHost
+                  ? "rounded-full bg-secondary px-2 py-0.5 font-semibold text-secondary-foreground"
+                  : "text-muted-foreground"
+              }
+            >
+              {row.isHost ? "Host" : "Player"}
             </span>
-            <p className="text-xs">
-              No deck selected
-            </p>
-          </div>
-        ) : null}
 
-        {canViewDecks &&
-        hiddenFromViewer ? (
-          <div className="flex items-center gap-2 text-zinc-500">
-            <LockKeyhole className="h-4 w-4 shrink-0" />
-            <div>
-              <p className="text-xs font-medium">
-                Private deck
-              </p>
-              <p className="mt-0.5 text-[11px] text-zinc-400">
-                Hidden by player
-              </p>
-            </div>
-          </div>
-        ) : null}
-
-        {canViewDecks &&
-        association &&
-        !hiddenFromViewer &&
-        deck ? (
-          <div className="flex min-w-0 items-center gap-2.5">
-            <DeckCover
-              deck={deck}
-            />
-
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-zinc-800">
-                {deck.name}
-              </p>
-
-              <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-zinc-500">
-                <VisibilityIcon
-                  visibility={
-                    visibility ??
-                    "name"
-                  }
-                />
-                {getVisibilityLabel(
-                  visibility,
+            {row.attendanceStatus ? (
+              <span
+                className={[
+                  "inline-flex items-center gap-1 before:h-1.5 before:w-1.5 before:rounded-full before:bg-current",
+                  getAttendanceClasses(row.attendanceStatus),
+                ].join(" ")}
+              >
+                {getAttendanceLabel(
+                  row.attendanceStatus,
+                  row.verificationMethod,
                 )}
-              </p>
-            </div>
+              </span>
+            ) : null}
           </div>
-        ) : null}
-
-        {canViewDecks &&
-        association &&
-        !hiddenFromViewer &&
-        !deck ? (
-          <div className="flex items-center gap-2 text-zinc-400">
-            <Layers3 className="h-4 w-4 shrink-0" />
-            <p className="text-xs">
-              Deck unavailable
-            </p>
-          </div>
-        ) : null}
-
-        {canOpenDecklist &&
-        deck ? (
-          <button
-            type="button"
-            onClick={() => {
-              onOpenDeck(deck);
-            }}
-            className="mt-1 flex min-h-9 w-full items-center justify-between rounded-control px-1 text-xs font-semibold text-primary outline-none transition-colors hover:bg-surface/70 focus-visible:ring-[3px] focus-visible:ring-ring/20"
-          >
-            View decklist
-            <List className="h-3.5 w-3.5" />
-          </button>
-        ) : null}
+        </div>
       </div>
+
+      <div className="min-w-0 border-t border-border/60 pt-2 sm:w-[220px] sm:border-l sm:border-t-0 sm:pl-4 sm:pt-0">
+        {deckContent}
+      </div>
+
+      {canRemove ? (
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={`Manage ${row.nickname}`}
+          className="absolute right-1 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-control text-quiet-foreground outline-none transition-colors hover:bg-surface-subtle hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/20"
+        >
+          <MoreHorizontal className="h-[18px] w-[18px]" />
+        </button>
+      ) : null}
     </article>
   );
 }

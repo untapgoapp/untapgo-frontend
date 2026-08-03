@@ -4,8 +4,10 @@ import {
   useEffect,
   useId,
   useRef,
+  useState,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 type EventActionSheetProps = {
@@ -36,14 +38,16 @@ export default function EventActionSheet({
 }: EventActionSheetProps) {
   const titleId = useId();
   const descriptionId = useId();
-  const sheetRef =
-    useRef<HTMLDivElement>(null);
-  const onCloseRef =
-    useRef(onClose);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    onCloseRef.current =
-      onClose;
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
   }, [onClose]);
 
   useEffect(() => {
@@ -52,59 +56,43 @@ export default function EventActionSheet({
     }
 
     const previouslyFocused =
-      document.activeElement instanceof
-      HTMLElement
+      document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
 
-    const previousOverflow =
-      document.body.style.overflow;
+    const previousOverflow = document.body.style.overflow;
 
-    document.body.style.overflow =
-      "hidden";
+    document.body.style.overflow = "hidden";
 
-    const focusTimer =
-      window.requestAnimationFrame(
-        () => {
-          const focusable =
-            sheetRef.current?.querySelectorAll<HTMLElement>(
-              FOCUSABLE_SELECTOR,
-            );
+    const focusTimer = window.requestAnimationFrame(() => {
+      const focusable =
+        sheetRef.current?.querySelectorAll<HTMLElement>(
+          FOCUSABLE_SELECTOR,
+        );
 
-          focusable?.[0]?.focus();
-        },
-      );
+      focusable?.[0]?.focus();
+    });
 
-    function handleKeyDown(
-      event: KeyboardEvent,
-    ) {
+    function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
         onCloseRef.current();
         return;
       }
 
-      if (
-        event.key !== "Tab" ||
-        !sheetRef.current
-      ) {
+      if (event.key !== "Tab" || !sheetRef.current) {
         return;
       }
 
-      const focusable =
-        Array.from(
-          sheetRef.current.querySelectorAll<HTMLElement>(
-            FOCUSABLE_SELECTOR,
-          ),
-        ).filter(
-          (element) =>
-            !element.hasAttribute(
-              "disabled",
-            ) &&
-            element.getAttribute(
-              "aria-hidden",
-            ) !== "true",
-        );
+      const focusable = Array.from(
+        sheetRef.current.querySelectorAll<HTMLElement>(
+          FOCUSABLE_SELECTOR,
+        ),
+      ).filter(
+        (element) =>
+          !element.hasAttribute("disabled") &&
+          element.getAttribute("aria-hidden") !== "true",
+      );
 
       if (focusable.length === 0) {
         event.preventDefault();
@@ -113,15 +101,11 @@ export default function EventActionSheet({
       }
 
       const first = focusable[0];
-      const last =
-        focusable[
-          focusable.length - 1
-        ];
+      const last = focusable[focusable.length - 1];
 
       if (
         event.shiftKey &&
-        document.activeElement ===
-          first
+        document.activeElement === first
       ) {
         event.preventDefault();
         last.focus();
@@ -134,40 +118,25 @@ export default function EventActionSheet({
       }
     }
 
-    document.addEventListener(
-      "keydown",
-      handleKeyDown,
-    );
+    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.cancelAnimationFrame(
-        focusTimer,
-      );
-
-      document.body.style.overflow =
-        previousOverflow;
-
-      document.removeEventListener(
-        "keydown",
-        handleKeyDown,
-      );
-
+      window.cancelAnimationFrame(focusTimer);
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
       previouslyFocused?.focus();
     };
   }, [open]);
 
-  if (!open) {
+  if (!mounted || !open) {
     return null;
   }
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[10050] flex items-end justify-center bg-black/35 backdrop-blur-[2px] sm:items-center sm:p-5"
+      className="fixed inset-0 z-[2147483000] isolate flex items-end justify-center bg-black/35 backdrop-blur-[2px] sm:items-center sm:p-5"
       onMouseDown={(event) => {
-        if (
-          event.target ===
-          event.currentTarget
-        ) {
+        if (event.target === event.currentTarget) {
           onClose();
         }
       }}
@@ -177,13 +146,9 @@ export default function EventActionSheet({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        aria-describedby={
-          description
-            ? descriptionId
-            : undefined
-        }
+        aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
-        className="flex max-h-[min(88dvh,760px)] w-full flex-col overflow-hidden rounded-t-surface bg-background shadow-overlay outline-none sm:max-w-lg sm:rounded-surface"
+        className="relative z-[1] flex max-h-[calc(100dvh-1rem)] w-full flex-col overflow-hidden rounded-t-surface bg-background shadow-overlay outline-none sm:max-h-[min(88dvh,760px)] sm:max-w-lg sm:rounded-surface"
         onMouseDown={(event) => {
           event.stopPropagation();
         }}
@@ -233,6 +198,7 @@ export default function EventActionSheet({
           <div className="h-[env(safe-area-inset-bottom)] bg-surface/90 sm:hidden" />
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

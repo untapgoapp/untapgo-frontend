@@ -517,40 +517,42 @@ export default function EventRequestsPanel({
   return (
     <>
       <div>
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-zinc-500">
-            <span className="font-semibold text-zinc-900">
-              {visibleCount}
-            </span>{" "}
-            pending request
-            {visibleCount === 1
-              ? ""
-              : "s"}
-          </p>
+        {loading || visibleCount > 0 || error ? (
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-zinc-500">
+              <span className="font-semibold text-zinc-900">
+                {visibleCount}
+              </span>{" "}
+              pending request
+              {visibleCount === 1
+                ? ""
+                : "s"}
+            </p>
 
-          <button
-            type="button"
-            onClick={() => {
-              setMessage(null);
-              void loadRequests();
-            }}
-            disabled={
-              loading ||
-              processingAny
-            }
-            aria-label="Refresh join requests"
-            className="grid h-8 w-8 place-items-center rounded-control text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
-          >
-            <RefreshCw
-              className={[
-                "h-4 w-4",
-                loading
-                  ? "animate-spin"
-                  : "",
-              ].join(" ")}
-            />
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => {
+                setMessage(null);
+                void loadRequests();
+              }}
+              disabled={
+                loading ||
+                processingAny
+              }
+              aria-label="Refresh join requests"
+              className="grid h-8 w-8 place-items-center rounded-control text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
+            >
+              <RefreshCw
+                className={[
+                  "h-4 w-4",
+                  loading
+                    ? "animate-spin"
+                    : "",
+                ].join(" ")}
+              />
+            </button>
+          </div>
+        ) : null}
 
         {!loading &&
         pendingRequests.length > 0 &&
@@ -606,8 +608,8 @@ export default function EventRequestsPanel({
         {!loading &&
         pendingRequests.length ===
           0 ? (
-          <p className="mt-4 border-l-2 border-border-strong pl-3 text-sm leading-6 text-muted-foreground">
-            No pending requests — you&apos;re all caught up.
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">
+            No pending requests.
           </p>
         ) : null}
 

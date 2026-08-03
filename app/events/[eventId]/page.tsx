@@ -607,7 +607,7 @@ export default async function EventDetailPage({
 
               <EventMap
                 events={[event]}
-                heightClassName="h-[250px] sm:h-[290px]"
+                heightClassName="h-[220px] sm:h-[250px]"
               />
             </section>
           ) : null}

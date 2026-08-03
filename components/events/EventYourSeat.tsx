@@ -14,7 +14,6 @@ import {
   EyeOff,
   Layers3,
   List,
-  RefreshCw,
   ScanLine,
 } from "lucide-react";
 
@@ -633,54 +632,35 @@ export default function EventYourSeat({
         aria-labelledby="event-your-seat-title"
         className="pb-6 pt-0"
       >
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h2
-                id="event-your-seat-title"
-                className="text-lg font-semibold tracking-tight text-foreground"
-              >
-                Your seat
-              </h2>
-            </div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2
+              id="event-your-seat-title"
+              className="text-lg font-semibold tracking-tight text-foreground"
+            >
+              Your seat
+            </h2>
 
             <p className="mt-1 text-sm text-muted-foreground">
-              {participationLabel}
+              {roleLabel}
             </p>
           </div>
 
-          {isPlaying ? (
-            <button
-              type="button"
-              onClick={() => {
-                setDeckMessage(null);
-                void loadDecks();
-              }}
-              disabled={
-                decksLoading ||
-                deckBusy
-              }
-              aria-label="Refresh your seat"
-              className="grid h-8 w-8 place-items-center rounded-control text-muted-foreground outline-none transition-colors hover:bg-secondary hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
-            >
-              <RefreshCw
-                className={[
-                  "h-4 w-4",
-                  decksLoading
-                    ? "animate-spin"
-                    : "",
-                ].join(" ")}
-              />
-            </button>
-          ) : null}
+          <span
+            className={[
+              "inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-semibold",
+              isPlaying
+                ? "bg-secondary text-secondary-foreground"
+                : requested
+                  ? "bg-amber-500/10 text-amber-700"
+                  : "bg-surface text-muted-foreground",
+            ].join(" ")}
+          >
+            {participationLabel}
+          </span>
         </div>
 
         <div className="mt-4 divide-y divide-border/70 border-y border-border/70">
-          <SeatValueRow
-            label="Role"
-            value={roleLabel}
-          />
-
           {isPlaying ? (
             <>
               <button
@@ -772,15 +752,6 @@ export default function EventYourSeat({
           ) : null}
 
           <SeatValueRow
-            label="Participation"
-            value={
-              participationLabel
-            }
-            separated
-            accent
-          />
-
-          <SeatValueRow
             label="Attendance"
             value={
               attendancePresentation.label
@@ -858,7 +829,7 @@ export default function EventYourSeat({
             disabled={
               actionBusy
             }
-            className="mt-2 flex min-h-10 w-full items-center justify-center rounded-control px-3 text-sm font-medium text-muted-foreground outline-none transition-colors hover:bg-surface/70 hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
+            className="mt-4 flex min-h-10 w-full items-center justify-center rounded-control border border-border/80 bg-background px-3 text-sm font-semibold text-muted-foreground outline-none transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-700 focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:opacity-50"
           >
             <span>
               {isHost
