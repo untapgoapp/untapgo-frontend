@@ -354,7 +354,7 @@ export default function SocialPlayerProfile({
                     muted={!favoriteColors.length}
                   >
                     {favoriteColors.length ? (
-                      <ManaIdentity colors={favoriteColors} size="lg" />
+                      <ManaIdentity colors={favoriteColors} size="md" />
                     ) : (
                       "Not added yet"
                     )}
