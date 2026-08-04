@@ -8,7 +8,7 @@ export type WantedStatus = "active" | "fulfilled" | "removed";
 export type InterestType = "trade" | "buy" | "either";
 export type InterestStatus = "pending" | "accepted" | "declined" | "withdrawn";
 export type InterestView = "received" | "sent";
-export type CommunityBinderSort = "nearest" | "recent" | "card_name" | "price_low" | "price_high";
+export type CommunityBinderSort = "nearest" | "recent" | "player_name" | "most_cards";
 export type BinderView = "community" | "items" | "wanted" | "matches" | "trades" | InterestView;
 
 export type BinderSettings = {
@@ -16,10 +16,19 @@ export type BinderSettings = {
   show_wanted_list: boolean;
 };
 
+export type BinderLocation = {
+  city: string;
+  region: string | null;
+  country: string;
+  country_code: string | null;
+  display_name: string;
+};
+
 export type BinderUser = {
   id: string;
   nickname: string;
   avatar_url: string | null;
+  location?: BinderLocation | null;
 };
 
 export type BinderItem = {
@@ -103,7 +112,28 @@ export type CommunityBinderItem = BinderItem & {
   proximity: BinderProximity | null;
 };
 
-export type CommunityBinderResponse = PageResponse<CommunityBinderItem> & {
+export type CommunityBinderPreviewItem = {
+  id: string;
+  card_name: string;
+  printed_name: string | null;
+  image_url: string | null;
+  language: string;
+  quantity: number;
+};
+
+export type CommunityBinderSummary = {
+  owner: BinderUser;
+  active_item_count: number;
+  total_quantity: number;
+  trade_count: number;
+  sell_count: number;
+  both_count: number;
+  preview_items: CommunityBinderPreviewItem[];
+  proximity: BinderProximity | null;
+  updated_at: string;
+};
+
+export type CommunityBinderResponse = PageResponse<CommunityBinderSummary> & {
   proximity_available: boolean;
   nearest_fallback: boolean;
   sort_applied: CommunityBinderSort;
@@ -221,7 +251,7 @@ export function buildBinderItemsPath(
 export function buildCommunityBinderPath(
   filters: CommunityBinderFilters,
   page: number,
-  pageSize = 24,
+  pageSize = 20,
 ): string {
   const parameters = new URLSearchParams();
   const values: Array<[string, string]> = [
