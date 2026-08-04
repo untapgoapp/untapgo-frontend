@@ -82,6 +82,33 @@ export default function BinderItemsView({ addRequest }: { addRequest: number }) 
     }
   }
 
+  async function remove(item: BinderItem) {
+    if (busyIds.has(item.id) || !window.confirm(`Remove ${item.card_name} from your Binder? This cannot be undone.`)) return;
+    setBusyIds((ids) => new Set(ids).add(item.id));
+    setRowErrors((errors) => ({ ...errors, [item.id]: "" }));
+    try {
+      await binderApi.removeItem(item.id);
+      resource.updateItems((items) => items.filter((value) => value.id !== item.id));
+    } catch (error) {
+      setRowErrors((errors) => ({ ...errors, [item.id]: binderErrorMessage(error, "Card could not be removed from your Binder.") }));
+    } finally {
+      setBusyIds((ids) => { const next = new Set(ids); next.delete(item.id); return next; });
+    }
+  }
+
+  async function shareItem(item: BinderItem) {
+    const href = `${window.location.origin}/binder/item/${item.id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: item.printed_name || item.card_name, url: href });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+    await navigator.clipboard.writeText(href);
+  }
+
   return (
     <section aria-labelledby="my-binder-title">
       <h2 id="my-binder-title" className="sr-only">My Binder</h2>
@@ -90,10 +117,10 @@ export default function BinderItemsView({ addRequest }: { addRequest: number }) 
         {resource.loading ? <BinderLoading /> : null}
         {resource.error ? <BinderError message={resource.error} onRetry={resource.retry} /> : null}
         {!resource.loading && !resource.error && !resource.items.length ? <BinderEmpty title="Your Binder is ready" detail="Add an exact Magic card printing to make it available for trade or sale." /> : null}
-        {resource.items.length ? <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{resource.items.map((item) => <BinderCard key={item.id} item={item} owner busy={busyIds.has(item.id)} error={rowErrors[item.id]} onEdit={() => { setAdding(false); setEditing(item); setFormError(null); }} onStatus={(status) => void mutateStatus(item, status)} onWithdraw={() => void withdraw(item)} />)}</div> : null}
+        {resource.items.length ? <div className="grid grid-cols-2 gap-x-3 gap-y-7 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">{resource.items.map((item) => <BinderCard key={item.id} item={item} owner busy={busyIds.has(item.id)} error={rowErrors[item.id]} onEdit={() => { setAdding(false); setEditing(item); setFormError(null); }} onStatus={(status) => void mutateStatus(item, status)} onWithdraw={() => void withdraw(item)} onRemove={() => void remove(item)} onShare={() => void shareItem(item)} />)}</div> : null}
         {resource.hasMore ? <LoadMore loading={resource.loadingMore} onClick={resource.loadMore} /> : null}
       </div>
-      <BinderModal open={adding || Boolean(editing)} title={editing ? "Edit Binder card" : "Add card"} description={editing ? "The exact printing stays fixed for this listing." : "Choose the exact printing before adding details."} onClose={() => { if (!saving) { setAdding(false); setEditing(null); } }}>
+      <BinderModal open={adding || Boolean(editing)} title={editing ? "Edit Binder card" : "Add card"} description={editing ? "Update the printed language or listing details." : "Choose the exact printing and printed language."} onClose={() => { if (!saving) { setAdding(false); setEditing(null); } }}>
         <BinderItemForm initial={editing ?? undefined} saving={saving} error={formError} onSave={save} onClearError={() => setFormError(null)} onCancel={() => { setAdding(false); setEditing(null); }} />
       </BinderModal>
     </section>

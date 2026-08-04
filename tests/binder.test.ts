@@ -44,7 +44,7 @@ function source(path: string) {
 test("Binder view routing defaults invalid values and supports all owner sections", () => {
   assert.equal(normalizeBinderView("unknown"), "community");
   assert.equal(normalizeBinderView(undefined), "community");
-  for (const view of ["community", "items", "wanted", "matches", "received", "sent"] as const) {
+  for (const view of ["community", "items", "wanted", "matches", "received", "sent", "trades"] as const) {
     assert.equal(normalizeBinderView(view), view);
   }
   const dashboard = source("../components/binder/BinderDashboard.tsx");
@@ -58,7 +58,9 @@ test("Binder view routing defaults invalid values and supports all owner section
   assert.match(dashboard, /view === "wanted"/);
   assert.match(dashboard, /view === "matches"/);
   assert.match(dashboard, /<InterestsView view=\{view\}/);
-  assert.match(dashboard, /view === "items" \? <Button/);
+  assert.match(dashboard, /view === "items" \? \(/);
+  assert.match(dashboard, /Share Binder/);
+  assert.match(dashboard, /<TradeThreadsView \/>/);
   assert.match(dashboard, /view === "items" \? <div className="mt-4"><BinderSettingsPanel/);
 });
 
@@ -261,7 +263,9 @@ test("editing, Escape, outside click, and keyboard selection preserve combobox b
 test("card saves use the exact selected printing and successful responses update immediately", () => {
   const form = source("../components/binder/BinderItemForm.tsx");
   const items = source("../components/binder/BinderItemsView.tsx");
-  assert.match(form, /scryfall_card_id: initial \? undefined : selectedCard\?\.id/);
+  assert.match(form, /scryfall_card_id: selectedCard\.id/);
+  assert.match(form, /decksApi\.printingLanguages/);
+  assert.match(form, /Printed language/);
   assert.match(form, /asking_price: parsedPrice\.asking_price/);
   assert.match(form, /currency: parsedPrice\.currency/);
   assert.match(form, /searchInputRef\.current\?\.focus\(\)/);
@@ -313,6 +317,7 @@ test("public Binder authenticates before protected fetches and handles privacy s
   assert.match(publicBinder, /error instanceof ApiError && error\.status === 404/);
   assert.match(publicBinder, /Binder unavailable/);
   assert.match(publicBinder, /<PublicWantedList ownerId=\{owner\.id\}/);
+  assert.match(publicBinder, /Share Binder/);
 });
 
 test("Wanted, match, and interest UI covers create, edit, remove and row transitions", () => {
@@ -327,6 +332,7 @@ test("Wanted, match, and interest UI covers create, edit, remove and row transit
   assert.match(received, />Accept</);
   assert.match(received, />Decline</);
   assert.match(received, />Withdraw</);
+  assert.match(received, /Open trade/);
 });
 
 test("profile links and mobile More navigation expose Binder directly", () => {
@@ -366,7 +372,7 @@ test("Binder notifications have safe internal hrefs and unknown types stay gener
 test("mobile Binder grids avoid fixed wide layouts", () => {
   const items = source("../components/binder/BinderItemsView.tsx");
   const publicBinder = source("../components/binder/PublicBinder.tsx");
-  assert.match(items, /grid-cols-2/);
-  assert.match(publicBinder, /grid-cols-2/);
+  assert.match(items, /grid-cols-2[\s\S]*lg:grid-cols-4/);
+  assert.match(publicBinder, /grid-cols-2[\s\S]*lg:grid-cols-4/);
   assert.doesNotMatch(items, /min-w-\[[4-9]\d{2}px\]/);
 });

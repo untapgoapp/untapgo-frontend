@@ -43,6 +43,21 @@ export type ScryfallCard = {
   supported_languages?: string[];
 };
 
+
+export type CardLanguageVariant = {
+  scryfall_card_id: string;
+  language: string;
+  language_label: string;
+  printed_name: string | null;
+  image_url: string | null;
+  finishes: Array<"nonfoil" | "foil" | "etched">;
+  card: ScryfallCard;
+};
+
+export type CardLanguageVariantResponse = {
+  items: CardLanguageVariant[];
+};
+
 export type Deck = {
   id: string;
   name: string;

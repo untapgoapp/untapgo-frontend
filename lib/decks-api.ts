@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase/client";
 import type {
   ArtworkOptionsResponse,
   CardAutocompleteResponse,
+  CardLanguageVariantResponse,
   CardSearchResponse,
   CardSymbologyResponse,
   CoverCardOptionsResponse,
@@ -414,6 +415,12 @@ export const decksApi = {
             payload,
           ),
       },
+    );
+  },
+
+  printingLanguages(cardId: string) {
+    return apiFetch<CardLanguageVariantResponse>(
+      `/cards/${encodeURIComponent(cardId)}/languages`,
     );
   },
 

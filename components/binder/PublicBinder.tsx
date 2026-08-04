@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Share2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -87,7 +87,7 @@ function AuthenticatedPublicBinder({ ownerId }: { ownerId: string }) {
       <div className="w-full max-w-[1120px]">
         <header className="pb-6">
           <Link href={`/profile/${encodeURIComponent(ownerId)}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary"><ArrowLeft size={15} aria-hidden="true" />Back to profile</Link>
-          {owner ? <div className="mt-5 flex items-center gap-4"><Avatar className="h-14 w-14"><AvatarImage src={owner.avatar_url ?? undefined} alt="" /><AvatarFallback>{owner.nickname.slice(0, 1).toUpperCase()}</AvatarFallback></Avatar><div><p className="text-sm font-semibold text-primary">{owner.nickname}</p><h1 className="text-3xl font-bold tracking-[-0.035em]">Binder</h1></div></div> : null}
+          {owner ? <div className="mt-5 flex flex-wrap items-center justify-between gap-4"><div className="flex items-center gap-4"><Avatar className="h-14 w-14"><AvatarImage src={owner.avatar_url ?? undefined} alt="" /><AvatarFallback>{owner.nickname.slice(0, 1).toUpperCase()}</AvatarFallback></Avatar><div><p className="text-sm font-semibold text-primary">{owner.nickname}</p><h1 className="text-3xl font-bold tracking-[-0.035em]">Binder</h1></div></div><Button type="button" variant="outline" size="sm" onClick={() => void sharePublicBinder(owner.id, owner.nickname)}><Share2 aria-hidden="true" />Share Binder</Button></div> : null}
         </header>
         <section aria-labelledby="available-cards-title">
           <h2 id="available-cards-title" className="text-xl font-bold">Available cards</h2>
@@ -96,7 +96,7 @@ function AuthenticatedPublicBinder({ ownerId }: { ownerId: string }) {
             {resource.loading ? <BinderLoading /> : null}
             {resource.error && !unavailable ? <BinderError message="This Binder could not be loaded." onRetry={resource.retry} /> : null}
             {!resource.loading && !resource.error && !resource.items.length ? <BinderEmpty title="No available cards" detail="No active listings match these filters." /> : null}
-            {resource.items.length ? <div className="grid grid-cols-2 gap-x-4 gap-y-9 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">{resource.items.map((item) => <BinderCard key={item.id} item={item} busy={sentIds.has(item.id)} onInterest={() => { setInterestError(null); setSelected(item); }} />)}</div> : null}
+            {resource.items.length ? <div className="grid grid-cols-2 gap-x-3 gap-y-7 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">{resource.items.map((item) => <BinderCard key={item.id} item={item} busy={sentIds.has(item.id)} onInterest={() => { setInterestError(null); setSelected(item); }} />)}</div> : null}
             {resource.hasMore ? <LoadMore loading={resource.loadingMore} onClick={resource.loadMore} /> : null}
           </div>
         </section>
@@ -105,4 +105,17 @@ function AuthenticatedPublicBinder({ ownerId }: { ownerId: string }) {
       <InterestDialog item={selected} saving={sending} error={interestError} onClose={() => setSelected(null)} onSubmit={sendInterest} />
     </main>
   );
+}
+
+async function sharePublicBinder(ownerId: string, nickname: string) {
+  const url = `${window.location.origin}/profile/${encodeURIComponent(ownerId)}?tab=binder`;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: `${nickname}'s UntapGo Binder`, url });
+      return;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+    }
+  }
+  await navigator.clipboard.writeText(url);
 }

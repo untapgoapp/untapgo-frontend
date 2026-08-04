@@ -52,7 +52,7 @@ export default function CommunityBinderView() {
         {resource.error ? <BinderError message={resource.error} onRetry={resource.retry} /> : null}
         {!resource.loading && !resource.error && !resource.items.length ? <BinderEmpty title="No community cards found" detail="Try clearing a filter or searching for another card." /> : null}
         {resource.items.length ? (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-9 sm:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-7 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {resource.items.map((item) => (
               <BinderCard
                 key={item.id}

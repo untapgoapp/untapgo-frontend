@@ -5,7 +5,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MessageCircle, UsersRound, X } from "lucide-react";
+import { Handshake, MessageCircle, UsersRound, X } from "lucide-react";
+
+import { binderApi } from "@/services/binder";
+import type { BinderTradeThread } from "@/lib/binder";
 
 import {
   getMyPlaygroups,
@@ -19,6 +22,7 @@ export default function SocialMessagingMenu({ viewerKey }: { viewerKey: string |
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<LoadState>("idle");
   const [playgroups, setPlaygroups] = useState<PlaygroupListItem[]>([]);
+  const [trades, setTrades] = useState<BinderTradeThread[]>([]);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const close = useCallback((restoreFocus = false) => {
@@ -30,6 +34,7 @@ export default function SocialMessagingMenu({ viewerKey }: { viewerKey: string |
   useEffect(() => {
     close();
     setPlaygroups([]);
+    setTrades([]);
     setState("idle");
   }, [close, viewerKey]);
 
@@ -40,16 +45,24 @@ export default function SocialMessagingMenu({ viewerKey }: { viewerKey: string |
     void Promise.allSettled([
       getMyPlaygroups("owned", 1),
       getMyPlaygroups("joined", 1),
+      binderApi.trades(1, "active"),
     ]).then((results) => {
       if (!active) return;
-      const pages = results.flatMap((result) => result.status === "fulfilled" ? [result.value] : []);
-      if (!pages.length) {
+      const [ownedResult, joinedResult, tradeResult] = results;
+      const playgroupPages: Array<{ items: PlaygroupListItem[] }> = [];
+      if (ownedResult?.status === "fulfilled") playgroupPages.push(ownedResult.value);
+      if (joinedResult?.status === "fulfilled") playgroupPages.push(joinedResult.value);
+      const tradePage: { items: BinderTradeThread[] } | null = tradeResult?.status === "fulfilled"
+        ? tradeResult.value
+        : null;
+      if (!playgroupPages.length && !tradePage) {
         setState("error");
         return;
       }
       const unique = new Map<string, PlaygroupListItem>();
-      for (const item of pages.flatMap((page) => page.items)) unique.set(item.id, item);
-      setPlaygroups([...unique.values()].slice(0, 8));
+      for (const item of playgroupPages.flatMap((page) => page.items)) unique.set(item.id, item);
+      setPlaygroups([...unique.values()].slice(0, 6));
+      setTrades((tradePage?.items ?? []).slice(0, 6));
       setState("ready");
     });
     return () => { active = false; };
@@ -98,7 +111,7 @@ export default function SocialMessagingMenu({ viewerKey }: { viewerKey: string |
           <header className="flex items-start justify-between gap-4 border-b border-border/70 px-4 py-4">
             <div>
               <h2 className="text-base font-bold tracking-tight">Messages</h2>
-              <p className="mt-1 text-xs text-muted-foreground">Available Playgroup conversations</p>
+              <p className="mt-1 text-xs text-muted-foreground">Playgroup and trade conversations</p>
             </div>
             <button
               type="button"
@@ -111,7 +124,19 @@ export default function SocialMessagingMenu({ viewerKey }: { viewerKey: string |
           </header>
 
           <div className="min-h-0 flex-1 overflow-y-auto p-2">
-            <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-quiet-foreground">Playgroups</p>
+            <p className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-quiet-foreground">Trades</p>
+            {state === "ready" && trades.length === 0 ? <p className="px-3 py-3 text-xs text-muted-foreground">Accepted Binder requests will appear here.</p> : null}
+            {state === "ready" ? trades.map((trade) => (
+              <Link key={trade.id} href={`/trades/${encodeURIComponent(trade.id)}`} onClick={() => close()} className="flex min-h-14 items-center gap-3 rounded-row px-3 py-2 outline-none hover:bg-secondary/55 focus-visible:bg-secondary">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-secondary text-primary"><Handshake aria-hidden="true" className="h-[18px] w-[18px]" /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-foreground">{trade.binder_item.printed_name || trade.binder_item.card_name}</span>
+                  <span className="mt-0.5 block truncate text-xs text-muted-foreground">{trade.other_user.nickname}{trade.last_message ? ` · ${trade.last_message.body}` : ""}</span>
+                </span>
+                {trade.unread_count > 0 ? <span className="grid min-w-5 place-items-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">{trade.unread_count}</span> : null}
+              </Link>
+            )) : null}
+            <p className="px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-quiet-foreground">Playgroups</p>
             {state === "loading" || state === "idle" ? <LoadingRows /> : null}
             {state === "error" ? (
               <p role="status" className="px-3 py-8 text-center text-sm leading-6 text-muted-foreground">Playgroup chats could not be loaded right now.</p>
@@ -138,7 +163,7 @@ export default function SocialMessagingMenu({ viewerKey }: { viewerKey: string |
           </div>
 
           <footer className="border-t border-border/70 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-3">
-            <Link href="/playgroups?view=mine" onClick={() => close()} className="flex min-h-10 items-center justify-center rounded-control text-sm font-semibold text-primary hover:bg-secondary/55">View my Playgroups</Link>
+            <div className="grid grid-cols-2 gap-2"><Link href="/binder?view=trades" onClick={() => close()} className="flex min-h-10 items-center justify-center rounded-control text-sm font-semibold text-primary hover:bg-secondary/55">View trades</Link><Link href="/playgroups?view=mine" onClick={() => close()} className="flex min-h-10 items-center justify-center rounded-control text-sm font-semibold text-primary hover:bg-secondary/55">Playgroups</Link></div>
           </footer>
         </section>
       ) : null}

@@ -3,6 +3,7 @@ import {
   buildBinderItemsPath,
   buildCommunityBinderPath,
   buildInterestsPath,
+  buildTradeThreadsPath,
   buildMatchesPath,
   buildWantedPath,
   binderItemSaveErrorFields,
@@ -14,7 +15,12 @@ import {
   type BinderItem,
   type BinderItemInput,
   type BinderMatch,
+  type BinderTradeMessage,
+  type BinderTradeMessagePage,
+  type BinderTradeStatus,
+  type BinderTradeThread,
   type CommunityBinderFilters,
+  type CommunityBinderItem,
   type CommunityBinderResponse,
   type BinderSettings,
   type InterestType,
@@ -38,6 +44,8 @@ export const binderApi = {
     api.get<CommunityBinderResponse>(buildCommunityBinderPath(filters, page)),
   publicItems: (ownerId: string, filters: BinderFilters, page: number, pageSize = 24) =>
     api.get<PublicBinderResponse>(buildBinderItemsPath(filters, page, pageSize, ownerId)),
+  publicItem: (id: string) =>
+    api.get<CommunityBinderItem>(`/binder/items/${encodeURIComponent(id)}/public`),
   createItem: (input: BinderItemInput) =>
     api.post<BinderItem>("/binder/items", normalizeItemSubmission(input)),
   updateItem: (id: string, input: BinderItemInput) =>
@@ -46,6 +54,8 @@ export const binderApi = {
     api.patch<BinderItem>(`/binder/items/${encodeURIComponent(id)}`, payload),
   withdrawItem: (id: string) =>
     api.delete<{ ok: boolean; status: "withdrawn" }>(`/binder/items/${encodeURIComponent(id)}`),
+  removeItem: (id: string) =>
+    api.delete<{ ok: boolean; removed: boolean; hard_deleted: boolean }>(`/binder/items/${encodeURIComponent(id)}/remove`),
   wanted: (page: number) => api.get<PageResponse<WantedCard>>(buildWantedPath(page)),
   publicWanted: (ownerId: string, page: number, pageSize = 24) =>
     api.get<PublicWantedResponse>(buildWantedPath(page, pageSize, ownerId)),
@@ -71,6 +81,25 @@ export const binderApi = {
     api.post<BinderInterest>(`/binder/interests/${encodeURIComponent(id)}/decline`),
   withdrawInterest: (id: string) =>
     api.delete<{ ok: boolean; status: "withdrawn" }>(`/binder/interests/${encodeURIComponent(id)}`),
+  trades: (page: number, status: BinderTradeStatus | "" = "") =>
+    api.get<PageResponse<BinderTradeThread>>(buildTradeThreadsPath(page, status)),
+  trade: (id: string) =>
+    api.get<BinderTradeThread>(`/binder/trades/${encodeURIComponent(id)}`),
+  tradeMessages: (id: string, before?: string | null) => {
+    const parameters = new URLSearchParams({ page_size: "50" });
+    if (before) parameters.set("before", before);
+    return api.get<BinderTradeMessagePage>(`/binder/trades/${encodeURIComponent(id)}/messages?${parameters}`);
+  },
+  sendTradeMessage: (id: string, body: string) =>
+    api.post<BinderTradeMessage>(`/binder/trades/${encodeURIComponent(id)}/messages`, { body }),
+  deleteTradeMessage: (id: string, messageId: string) =>
+    api.delete<void>(`/binder/trades/${encodeURIComponent(id)}/messages/${encodeURIComponent(messageId)}`),
+  markTradeRead: (id: string, messageId: string) =>
+    api.post<{ last_read_message_id: string; last_read_at: string }>(`/binder/trades/${encodeURIComponent(id)}/read`, { last_read_message_id: messageId }),
+  completeTrade: (id: string) =>
+    api.post<{ id: string; status: BinderTradeStatus }>(`/binder/trades/${encodeURIComponent(id)}/complete`),
+  cancelTrade: (id: string) =>
+    api.post<{ id: string; status: BinderTradeStatus }>(`/binder/trades/${encodeURIComponent(id)}/cancel`),
 };
 
 export function binderErrorMessage(error: unknown, fallback: string): string {
@@ -86,6 +115,9 @@ export function binderErrorMessage(error: unknown, fallback: string): string {
     INTEREST_TYPE_UNAVAILABLE: "Choose an interest type supported by this listing.",
     WANTED_EXACT_PRINTING_REQUIRED: "Choose an exact printing before requiring an exact match.",
     BINDER_NOT_FOUND: "This Binder is unavailable.",
+    BINDER_ITEM_ACTIVE_TRADE: "Complete or cancel the active trade before removing this card.",
+    BINDER_ITEM_HAS_HISTORY: "This card has trade history. Mark it unavailable instead of deleting it.",
+    BINDER_TRADE_READ_ONLY: "This trade is closed and its chat is read-only.",
   };
   return (error.code && messages[error.code]) || fallback;
 }

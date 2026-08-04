@@ -56,6 +56,9 @@ const notificationPresentations: Record<string, NotificationPresentation> = {
   binder_interest_received: { icon: Handshake, category: "social", tone: "primary", requiresAttention: true },
   binder_interest_accepted: { icon: CircleCheck, category: "social", tone: "positive", requiresAttention: false },
   binder_interest_declined: { icon: CircleX, category: "social", tone: "neutral", requiresAttention: false },
+  binder_trade_message: { icon: MessageSquare, category: "social", tone: "primary", requiresAttention: false },
+  binder_trade_completed: { icon: CircleCheck, category: "social", tone: "positive", requiresAttention: false },
+  binder_trade_cancelled: { icon: CircleX, category: "social", tone: "neutral", requiresAttention: false },
 };
 
 function cleanString(value: unknown): string {
@@ -135,7 +138,10 @@ export function getNotificationActivityCopy(notification: NotificationItem): Not
     type === "playgroup_post_commented" ||
     type === "binder_interest_received" ||
     type === "binder_interest_accepted" ||
-    type === "binder_interest_declined"
+    type === "binder_interest_declined" ||
+    type === "binder_trade_message" ||
+    type === "binder_trade_completed" ||
+    type === "binder_trade_cancelled"
   ) {
     return { primary: body || title };
   }

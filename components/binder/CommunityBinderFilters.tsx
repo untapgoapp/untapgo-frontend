@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   AVAILABILITY_LABELS,
+  CARD_LANGUAGE_LABELS,
   CONDITION_LABELS,
   FINISH_LABELS,
   type BinderAvailability,
@@ -61,7 +62,7 @@ export default function CommunityBinderFilters({ value, onChange }: {
       </select>
       <Input aria-label="Set code" value={value.set_code} onChange={(event) => patch({ set_code: event.target.value })} placeholder="Set code" maxLength={12} className="h-10 uppercase" />
       <select aria-label="Language" value={value.language} onChange={(event) => patch({ language: event.target.value })} className={selectClass}>
-        <option value="">Any language</option><option value="en">English</option><option value="de">German</option><option value="es">Spanish</option><option value="fr">French</option><option value="it">Italian</option><option value="ja">Japanese</option><option value="pt">Portuguese</option>
+        <option value="">Any language</option>{Object.entries(CARD_LANGUAGE_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
       </select>
       <Input aria-label="Minimum price" type="number" min="0.01" step="0.01" value={value.min_price} onChange={(event) => patch({ min_price: event.target.value })} placeholder="Min price" className="h-10" />
       <Input aria-label="Maximum price" type="number" min="0.01" step="0.01" value={value.max_price} onChange={(event) => patch({ max_price: event.target.value })} placeholder="Max price" className="h-10" />

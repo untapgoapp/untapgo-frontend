@@ -9,7 +9,7 @@ export type InterestType = "trade" | "buy" | "either";
 export type InterestStatus = "pending" | "accepted" | "declined" | "withdrawn";
 export type InterestView = "received" | "sent";
 export type CommunityBinderSort = "nearest" | "recent" | "card_name" | "price_low" | "price_high";
-export type BinderView = "community" | "items" | "wanted" | "matches" | InterestView;
+export type BinderView = "community" | "items" | "wanted" | "matches" | "trades" | InterestView;
 
 export type BinderSettings = {
   visibility: BinderVisibility;
@@ -27,6 +27,7 @@ export type BinderItem = {
   scryfall_card_id: string;
   oracle_id: string | null;
   card_name: string;
+  printed_name?: string | null;
   set_code: string;
   set_name: string;
   collector_number: string;
@@ -79,6 +80,7 @@ export type BinderInterest = {
   created_at: string;
   updated_at: string;
   responded_at: string | null;
+  trade_thread_id: string | null;
 };
 
 export type PageResponse<T> = {
@@ -156,7 +158,7 @@ export type WantedCardInput = {
 };
 
 export const BINDER_VIEWS: readonly BinderView[] = [
-  "community", "items", "wanted", "matches", "received", "sent",
+  "community", "items", "wanted", "matches", "received", "sent", "trades",
 ];
 
 export const CONDITION_LABELS: Record<CardCondition, string> = {
@@ -431,4 +433,71 @@ export function reasonLabel(reason: string): string {
     finish: "Finish preference",
   };
   return labels[reason] ?? reason.replaceAll("_", " ");
+}
+
+
+export type BinderTradeStatus = "active" | "completed" | "cancelled";
+
+export type BinderTradeLastMessage = {
+  id: string;
+  body: string;
+  sender_id: string;
+  created_at: string;
+};
+
+export type BinderTradeThread = {
+  id: string;
+  status: BinderTradeStatus;
+  binder_item: BinderItem;
+  other_user: BinderUser;
+  last_message: BinderTradeLastMessage | null;
+  unread_count: number;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+  cancelled_at: string | null;
+};
+
+export type BinderTradeMessage = {
+  id: string;
+  thread_id: string;
+  sender: BinderUser;
+  body: string;
+  created_at: string;
+};
+
+export type BinderTradeMessagePage = {
+  items: BinderTradeMessage[];
+  has_more: boolean;
+  next_before: string | null;
+};
+
+export const CARD_LANGUAGE_LABELS: Record<string, string> = {
+  en: "English",
+  es: "Spanish",
+  fr: "French",
+  de: "German",
+  it: "Italian",
+  pt: "Portuguese",
+  ja: "Japanese",
+  ko: "Korean",
+  ru: "Russian",
+  zhs: "Chinese (Simplified)",
+  zht: "Chinese (Traditional)",
+  he: "Hebrew",
+  la: "Latin",
+  grc: "Ancient Greek",
+  ar: "Arabic",
+  sa: "Sanskrit",
+  ph: "Phyrexian",
+};
+
+export function binderDisplayName(item: Pick<BinderItem, "card_name" | "printed_name">): string {
+  return item.printed_name?.trim() || item.card_name;
+}
+
+export function buildTradeThreadsPath(page: number, status?: BinderTradeStatus | "") {
+  const parameters = new URLSearchParams({ page: String(page), page_size: "20" });
+  if (status) parameters.set("status", status);
+  return `/binder/trades?${parameters.toString()}`;
 }

@@ -80,7 +80,7 @@ export const socialNavigationItems: readonly SocialNavigationItem[] = [
   {
     key: "binder", label: "Binder", href: "/binder", icon: Library, desktopPrimary: 5,
     mobileSecondary: 1,
-    matches: (pathname) => atRoot(pathname, "/binder") || /^\/profile\/[^/]+\/binder(?:\/|$)/.test(pathname),
+    matches: (pathname) => atRoot(pathname, "/binder") || atRoot(pathname, "/trades") || /^\/profile\/[^/]+\/binder(?:\/|$)/.test(pathname),
   },
   {
     key: "decks", label: "Decks", href: "/decks", icon: Layers3, desktopPrimary: 6,
@@ -139,6 +139,7 @@ export const contextualNavigationSections: Record<ContextualNavigationKey, Conte
       { key: "wanted", label: "Wanted List", href: "/binder?view=wanted", views: ["wanted"] },
       { key: "matches", label: "Matches", href: "/binder?view=matches", views: ["matches"] },
       { key: "requests", label: "Trade requests", href: "/binder?view=received", views: ["received", "sent"] },
+      { key: "trades", label: "Active trades", href: "/binder?view=trades", views: ["trades"] },
     ],
   },
   decks: {
@@ -164,7 +165,7 @@ export const mobileSecondaryNavigationItems = socialNavigationItems
   .sort((left, right) => left.mobileSecondary! - right.mobileSecondary!);
 
 const socialRouteRoots = [
-  "/home", "/events", "/create", "/check-in", "/decks", "/binder",
+  "/home", "/events", "/create", "/check-in", "/decks", "/binder", "/trades",
   "/notifications", "/playgroups", "/players", "/profile", "/post", "/settings",
 ];
 
@@ -208,11 +209,11 @@ export function getContextualNavigation(
     return { section, activeKey };
   }
 
-  if (atRoot(pathname, "/binder")) {
+  if (atRoot(pathname, "/binder") || atRoot(pathname, "/trades")) {
     const section = contextualNavigationSections.binder;
     const activeKey = pathname === "/binder"
       ? section.items.find((item) => item.views.includes(requestedView ?? "community"))?.key ?? "community"
-      : null;
+      : pathname.startsWith("/trades") ? "trades" : null;
     return { section, activeKey };
   }
 

@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import { Check, Undo2, X } from "lucide-react";
+import { Check, MessageCircle, Undo2, X } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +31,12 @@ export default function InterestRow({ interest, view, busy, error, onAccept, onD
         {interest.message ? <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{interest.message}</p> : <p className="mt-3 text-sm text-quiet-foreground">No message added.</p>}
         {error ? <p role="alert" className="mt-2 text-xs text-destructive">{error}</p> : null}
       </div>
+
+      {interest.trade_thread_id ? (
+        <Button asChild size="xs" variant="secondary">
+          <Link href={`/trades/${encodeURIComponent(interest.trade_thread_id)}`}><MessageCircle aria-hidden="true" />Open trade</Link>
+        </Button>
+      ) : null}
       {interest.status === "pending" ? (
         <div className="flex gap-1 sm:flex-col">
           {view === "received" ? <><Button type="button" size="xs" disabled={busy} onClick={onAccept}><Check aria-hidden="true" />Accept</Button><Button type="button" size="xs" variant="ghost" disabled={busy} onClick={onDecline}><X aria-hidden="true" />Decline</Button></> : <Button type="button" size="xs" variant="ghost" disabled={busy} onClick={onWithdraw}><Undo2 aria-hidden="true" />Withdraw</Button>}

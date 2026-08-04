@@ -1,19 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Share2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import SectionNavigation from "@/components/section-navigation/SectionNavigation";
 import { Button } from "@/components/ui/button";
 import { normalizeBinderView, type BinderView } from "@/lib/binder";
+import { useUser } from "@/hooks/useUser";
 
 import BinderItemsView from "./BinderItemsView";
 import BinderSettingsPanel from "./BinderSettingsPanel";
 import CommunityBinderView from "./CommunityBinderView";
 import InterestsView from "./InterestsView";
 import MatchesView from "./MatchesView";
+import TradeThreadsView from "./TradeThreadsView";
 import WantedListView from "./WantedListView";
 
 const pageIdentity: Record<BinderView, { title: string; subtitle: string }> = {
@@ -23,12 +25,14 @@ const pageIdentity: Record<BinderView, { title: string; subtitle: string }> = {
   matches: { title: "Matches", subtitle: "Find public listings that match your Wanted List." },
   received: { title: "Trade requests", subtitle: "Review interest in your cards and requests you sent." },
   sent: { title: "Trade requests", subtitle: "Review interest in your cards and requests you sent." },
+  trades: { title: "Active trades", subtitle: "Private conversations for accepted Binder requests." },
 };
 
 const requestTabs: Array<["received" | "sent", string]> = [["received", "Received"], ["sent", "Sent"]];
 
 export default function BinderDashboard() {
   const searchParams = useSearchParams();
+  const { user } = useUser();
   const view = normalizeBinderView(searchParams.get("view"));
   const [addRequest, setAddRequest] = useState(0);
   const identity = pageIdentity[view];
@@ -47,7 +51,12 @@ export default function BinderDashboard() {
               <h1 className="mt-1 text-3xl font-bold tracking-[-0.035em]">{identity.title}</h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{identity.subtitle}</p>
             </div>
-            {view === "items" ? <Button type="button" onClick={() => setAddRequest((value) => value + 1)}><Plus aria-hidden="true" />Add card</Button> : null}
+            {view === "items" ? (
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => void shareBinder(user?.id ?? null)}><Share2 aria-hidden="true" />Share Binder</Button>
+                <Button type="button" onClick={() => setAddRequest((value) => value + 1)}><Plus aria-hidden="true" />Add card</Button>
+              </div>
+            ) : null}
           </header>
 
           {view === "items" ? <div className="mt-4"><BinderSettingsPanel /></div> : null}
@@ -59,6 +68,7 @@ export default function BinderDashboard() {
             {view === "wanted" ? <WantedListView /> : null}
             {view === "matches" ? <MatchesView /> : null}
             {view === "received" || view === "sent" ? <InterestsView view={view} /> : null}
+            {view === "trades" ? <TradeThreadsView /> : null}
           </div>
         </div>
       </div>
@@ -74,4 +84,19 @@ function TradeRequestNav({ view }: { view: "received" | "sent" }) {
       ))}
     </nav>
   );
+}
+
+
+async function shareBinder(userId: string | null) {
+  if (!userId) return;
+  const url = `${window.location.origin}/profile/${encodeURIComponent(userId)}?tab=binder`;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "My UntapGo Binder", url });
+      return;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+    }
+  }
+  await navigator.clipboard.writeText(url);
 }

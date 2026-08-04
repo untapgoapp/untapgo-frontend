@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  CARD_LANGUAGE_LABELS,
   CONDITION_LABELS,
   FINISH_LABELS,
   type CardCondition,
@@ -20,7 +21,6 @@ import CardPrintingSelector from "./CardPrintingSelector";
 const selectClass = "h-11 w-full rounded-control border border-input bg-surface px-3 text-sm outline-none focus:border-primary/45 focus:ring-[3px] focus:ring-ring/12";
 const conditions = Object.keys(CONDITION_LABELS) as CardCondition[];
 const finishes = Object.keys(FINISH_LABELS) as CardFinish[];
-const languages = ["en", "es", "fr", "de", "it", "pt", "ja", "ko", "ru", "zhs", "zht"];
 
 export default function WantedCardForm({ initial, saving, error, onSave, onCancel }: {
   initial?: WantedCard;
@@ -73,7 +73,7 @@ export default function WantedCardForm({ initial, saving, error, onSave, onCance
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Quantity"><Input type="number" min={1} max={999} value={quantity} onChange={(event) => setQuantity(Number(event.target.value))} /></Field>
         <Field label="Minimum condition"><select value={condition} onChange={(event) => setCondition(event.target.value as CardCondition | "")} className={selectClass}><option value="">Any condition</option>{conditions.map((value) => <option key={value} value={value}>{CONDITION_LABELS[value]}</option>)}</select></Field>
-        <Field label="Preferred language"><select value={language} onChange={(event) => setLanguage(event.target.value)} className={selectClass}><option value="">Any language</option>{languages.map((value) => <option key={value} value={value}>{value.toUpperCase()}</option>)}</select></Field>
+        <Field label="Preferred language"><select value={language} onChange={(event) => setLanguage(event.target.value)} className={selectClass}><option value="">Any language</option>{Object.entries(CARD_LANGUAGE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
         <Field label="Preferred finish"><select value={finish} onChange={(event) => setFinish(event.target.value as CardFinish | "")} className={selectClass}><option value="">Any finish</option>{finishes.map((value) => <option key={value} value={value}>{FINISH_LABELS[value]}</option>)}</select></Field>
       </div>
       <Field label="Matching notes (public when your Wanted List is visible)"><textarea value={notes} maxLength={500} onChange={(event) => setNotes(event.target.value)} className={`${selectClass} min-h-24 py-3`} placeholder="Edition preferences or trade context" /></Field>
