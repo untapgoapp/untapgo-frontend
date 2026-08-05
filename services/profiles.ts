@@ -44,6 +44,9 @@ export const BLOCKED_PROFILES_CHANGED_EVENT =
 export const DISTANCE_UNIT_CHANGED_EVENT =
   "untapgo:distance-unit-changed";
 
+export const PROFILE_RELATIONSHIP_CHANGED_EVENT =
+  "untapgo:profile-relationship-changed";
+
 export type PublicProfile = {
   id?: string;
   user_id?: string;
@@ -255,10 +258,12 @@ async function mutateProfileFollow(
     ? await api.post<ProfileFollowMutationResponse>(request.path)
     : await api.delete<ProfileFollowMutationResponse>(request.path);
 
-  return {
+  const normalized = {
     ok: result.ok === true,
     is_following: result.is_following === true,
   };
+  emitBrowserEvent(PROFILE_RELATIONSHIP_CHANGED_EVENT, { profileId });
+  return normalized;
 }
 
 export async function followProfile(

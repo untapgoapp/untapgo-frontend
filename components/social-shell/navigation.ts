@@ -159,7 +159,7 @@ export const mobileSecondaryNavigationItems = socialNavigationItems
 
 const socialRouteRoots = [
   "/home", "/events", "/create", "/check-in", "/decks", "/binder", "/trades",
-  "/notifications", "/playgroups", "/players", "/profile", "/post", "/settings",
+  "/notifications", "/messages", "/playgroups", "/players", "/profile", "/post", "/settings",
 ];
 
 export function isSocialAppRoute(pathname: string): boolean {

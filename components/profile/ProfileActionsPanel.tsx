@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { type FormEvent, useEffect, useState } from "react";
 
+import DirectMessageButton from "@/components/profile/DirectMessageButton";
 import ProfileFollowButton from "@/components/profile/social/ProfileFollowButton";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase/client";
@@ -146,6 +147,10 @@ export default function ProfileActionsPanel({ profileId }: { profileId: string }
             state.blockedByMe ||
             state.blockedMe
           }
+        />
+        <DirectMessageButton
+          profileId={profileId}
+          blocked={!state.blockStatusKnown || state.blockedByMe || state.blockedMe}
         />
         <Button type="button" variant="outline" size="sm" onClick={() => void state.toggleFavorite()} disabled={state.busy !== null || state.blockedByMe || state.blockedMe}>
           {state.busy === "favorite" ? "Saving..." : state.isFavorite ? "♥ Favorited" : "♡ Favorite"}
