@@ -24,8 +24,7 @@ export default function DecksDashboard({ view }: { view: DecksView }) {
       <div className="mt-6 min-w-0 lg:mt-0">
         <header className="flex flex-wrap items-end justify-between gap-4 border-b border-border/60 pb-5">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">Decks</p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{page.title}</h1>
+            <h1 className="text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{page.title}</h1>
             <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">{page.subtitle}</p>
           </div>
           {view === "mine" ? <Button asChild><Link href={deckRoutes.create}><Plus aria-hidden="true" />Add deck</Link></Button> : null}

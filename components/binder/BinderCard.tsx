@@ -51,9 +51,9 @@ export default function BinderCard({
   ) : <div className="grid aspect-[0.714] place-items-center rounded-[0.58rem] bg-muted px-3 text-center text-xs text-muted-foreground">{displayName}</div>;
 
   return (
-    <article className="min-w-0">
+    <article className="flex h-full min-w-0 flex-col">
       {href ? <Link href={href} className="block outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20">{image}</Link> : image}
-      <div className="px-0.5 pt-2.5">
+      <div className="flex flex-1 flex-col px-0.5 pt-2.5">
         <div className="flex items-start justify-between gap-1.5">
           <div className="min-w-0">
             <h3 className="truncate text-[13px] font-bold leading-5" title={displayName}>{displayName}</h3>
@@ -76,8 +76,22 @@ export default function BinderCard({
         {price ? <p className="mt-1.5 text-xs font-semibold">{price}</p> : null}
         {item.notes ? <p className="mt-1.5 line-clamp-2 text-[11px] leading-4 text-muted-foreground">{item.notes}</p> : null}
         {footer}
-        {onInterest ? <Button type="button" size="xs" variant="secondary" className="mt-2.5 w-full" disabled={busy} onClick={onInterest}><Handshake aria-hidden="true" />I&apos;m interested</Button> : null}
         {error ? <p role="alert" className="mt-2 text-[11px] text-destructive">{error}</p> : null}
+        {onInterest ? (
+          <div className="mt-auto pt-2.5">
+            <Button
+              type="button"
+              size="xs"
+              variant="secondary"
+              className="w-full"
+              disabled={busy}
+              onClick={onInterest}
+            >
+              <Handshake aria-hidden="true" />
+              I&apos;m interested
+            </Button>
+          </div>
+        ) : null}
       </div>
     </article>
   );

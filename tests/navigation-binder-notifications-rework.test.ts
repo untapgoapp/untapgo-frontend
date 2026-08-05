@@ -6,15 +6,15 @@ function source(path: string) {
   return readFileSync(new URL(path, import.meta.url), "utf8");
 }
 
-test("public profile and Binder use a history-aware generic Back control", () => {
+test("public Binder keeps history-aware Back while the normal profile view stays clean", () => {
   const back = source("../components/navigation/HistoryBackLink.tsx");
   const profile = source("../app/profile/[userId]/page.tsx");
   const binder = source("../components/binder/PublicBinder.tsx");
 
   assert.match(back, /router\.back\(\)/);
   assert.match(back, />\s*Back\s*</);
-  assert.match(profile, /<HistoryBackLink fallbackHref="\/players"/);
   assert.match(binder, /<HistoryBackLink fallbackHref="\/binder"/);
+  assert.doesNotMatch(profile, /<HistoryBackLink fallbackHref="\/players" className="mt-4"/);
   assert.doesNotMatch(profile, /Back to events/i);
   assert.doesNotMatch(binder, /Back to Profile/i);
 });

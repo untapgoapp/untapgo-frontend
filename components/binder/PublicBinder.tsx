@@ -141,13 +141,25 @@ function AuthenticatedPublicBinder({ ownerId }: { ownerId: string }) {
           {owner ? (
             <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
               <div className="flex min-w-0 items-center gap-4">
-                <Avatar className="h-14 w-14 shrink-0">
-                  <AvatarImage src={owner.avatar_url ?? undefined} alt="" />
-                  <AvatarFallback>{owner.nickname.slice(0, 1).toUpperCase()}</AvatarFallback>
-                </Avatar>
+                <Link
+                  href={`/profile/${encodeURIComponent(owner.id)}`}
+                  aria-label={`View ${owner.nickname}'s profile`}
+                  className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20"
+                >
+                  <Avatar className="h-14 w-14">
+                    <AvatarImage src={owner.avatar_url ?? undefined} alt="" />
+                    <AvatarFallback>{owner.nickname.slice(0, 1).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                </Link>
                 <div className="min-w-0">
                   <h1 className="truncate text-3xl font-bold tracking-[-0.035em]">
-                    {owner.nickname}&apos;s Binder
+                    <Link
+                      href={`/profile/${encodeURIComponent(owner.id)}`}
+                      className="hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20"
+                    >
+                      {owner.nickname}
+                    </Link>
+                    &apos;s Binder
                   </h1>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Available cards for trade or sale.

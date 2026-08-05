@@ -118,7 +118,6 @@ export default function PublicProfilePage() {
       profileActions={(
         <div>
           <ProfileBinderLinks profileId={userId} owner={false} />
-          <HistoryBackLink fallbackHref="/players" className="mt-4" />
           <ProfileActionsPanel profileId={userId} />
         </div>
       )}

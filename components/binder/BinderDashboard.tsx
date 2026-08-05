@@ -100,10 +100,7 @@ export default function BinderDashboard() {
         <div className="mt-6 min-w-0 lg:mt-0">
           <header className="flex flex-wrap items-end justify-between gap-4 border-b border-border/60 pb-5">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">
-                Binder
-              </p>
-              <h1 className="mt-1 text-3xl font-bold tracking-[-0.035em]">
+              <h1 className="text-3xl font-bold tracking-[-0.035em]">
                 {identity.title}
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">

@@ -18,8 +18,7 @@ export default function PlayersDashboard({ view }: { view: PlayersView }) {
         <SectionNavigation section="players" activeKey={view} />
         <div className="mt-6 lg:mt-0">
           <header className="border-b border-border/60 pb-5">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-primary">Players</p>
-            <h1 className="mt-1 text-3xl font-bold tracking-[-0.035em]">{page.title}</h1>
+            <h1 className="text-3xl font-bold tracking-[-0.035em]">{page.title}</h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">{page.subtitle}</p>
           </header>
           <PlayersDirectory key={view} view={view} />
