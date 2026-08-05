@@ -32,12 +32,12 @@ export default function PublicBinderItem({ itemId }: { itemId: string }) {
     return () => { active = false; };
   }, [itemId]);
 
-  async function sendInterest(type: InterestType, message: string | null) {
+  async function sendInterest(type: InterestType, quantity: number, message: string | null) {
     if (!item || sending) return;
     setSending(true);
     setError(null);
     try {
-      await binderApi.createInterest(item.id, type, message);
+      await binderApi.createInterest(item.id, type, quantity, message);
       setDialog(false);
     } catch (caught) {
       setError(binderErrorMessage(caught, "Interest could not be sent."));

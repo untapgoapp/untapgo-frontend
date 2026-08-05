@@ -94,6 +94,7 @@ export default function PwaBootstrap() {
     let retryTimer: number | null = null;
     let syncPromise: Promise<void> | null = null;
     let unsubscribeMessage: (() => void) | undefined;
+    let workerRegistration: ServiceWorkerRegistration | null = null;
 
     function clearRetryTimer() {
       if (retryTimer !== null) {
@@ -224,6 +225,7 @@ export default function PwaBootstrap() {
       try {
         const registration =
           await registerFirebaseMessagingWorker();
+        workerRegistration = registration;
 
         if (
           process.env.NODE_ENV ===
@@ -261,10 +263,28 @@ export default function PwaBootstrap() {
 
       const { onMessage } = await import("firebase/messaging");
 
-      unsubscribeMessage = onMessage(messaging, () => {
-        // Realtime owns in-app toast delivery. Foreground push only requests a
-        // REST reconciliation, avoiding duplicate toasts for the same row.
+      unsubscribeMessage = onMessage(messaging, (payload) => {
         requestNotificationsRefresh();
+
+        // When the app is open in a background tab, Firebase delivers through
+        // onMessage instead of the service worker. Show the system notification
+        // here so push remains visible without duplicating the in-app toast in
+        // the active tab.
+        if (
+          document.visibilityState !== "visible" &&
+          Notification.permission === "granted" &&
+          workerRegistration
+        ) {
+          const title = payload.notification?.title || "UntapGo";
+          const href = payload.data?.href || "/notifications";
+          void workerRegistration.showNotification(title, {
+            body: payload.notification?.body || "You have new activity on UntapGo.",
+            icon: "/icons/icon-192.png",
+            badge: "/icons/badge-96.png",
+            tag: payload.data?.notification_id || undefined,
+            data: { href },
+          });
+        }
       });
     }
 

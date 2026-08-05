@@ -8,7 +8,6 @@ import {
   Layers3,
   Library,
   Settings,
-  ShieldBan,
   UserCheck,
   UserPlus,
   UserRoundSearch,
@@ -24,8 +23,7 @@ export type SocialNavigationKey =
   | "binder"
   | "profile"
   | "favorites"
-  | "settings"
-  | "blocked";
+  | "settings";
 
 export type SocialNavigationItem = {
   key: SocialNavigationKey;
@@ -102,12 +100,7 @@ export const socialNavigationItems: readonly SocialNavigationItem[] = [
   {
     key: "settings", label: "Settings", href: "/settings", icon: Settings,
     mobileSecondary: 5,
-    matches: (pathname) => atRoot(pathname, "/settings"),
-  },
-  {
-    key: "blocked", label: "Blocked players", href: "/profile/blocked", icon: ShieldBan,
-    mobileSecondary: 6,
-    matches: (pathname) => atRoot(pathname, "/profile/blocked"),
+    matches: (pathname) => atRoot(pathname, "/settings") || atRoot(pathname, "/profile/blocked"),
   },
 ];
 

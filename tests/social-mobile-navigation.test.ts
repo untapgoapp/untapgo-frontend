@@ -63,7 +63,6 @@ test("More contains only real secondary routes with Binder first", () => {
       ["Profile", "/profile"],
       ["Favorites", "/profile/favorites"],
       ["Settings", "/settings"],
-      ["Blocked players", "/profile/blocked"],
     ],
   );
 
@@ -73,7 +72,6 @@ test("More contains only real secondary routes with Binder first", () => {
     "../app/profile/page.tsx",
     "../app/profile/favorites/page.tsx",
     "../app/settings/page.tsx",
-    "../app/profile/blocked/page.tsx",
   ];
   for (const routeFile of routeFiles) {
     assert.equal(existsSync(new URL(routeFile, import.meta.url)), true, `${routeFile} must exist`);
@@ -89,7 +87,7 @@ test("More active state recognizes Binder, Decks, Profile and specific profile r
   assert.equal(getActiveMobileSecondaryNavigationKey("/profile"), "profile");
   assert.equal(getActiveMobileSecondaryNavigationKey("/profile/favorites"), "favorites");
   assert.equal(getActiveMobileSecondaryNavigationKey("/settings"), "settings");
-  assert.equal(getActiveMobileSecondaryNavigationKey("/profile/blocked"), "blocked");
+  assert.equal(getActiveMobileSecondaryNavigationKey("/profile/blocked"), "settings");
   assert.equal(isMobileMoreRoute("/binder"), true);
   assert.equal(isMobileMoreRoute("/home"), false);
 });
@@ -147,7 +145,9 @@ test("desktop navigation contains only primary destinations and account links li
   const profileMenu = source("../components/social-shell/SocialProfileMenu.tsx");
   assert.match(sidebar, /<SocialNavigation variant="desktop" \/>/);
   assert.doesNotMatch(sidebar, /desktop-secondary|Profile|Favorites|Settings|Blocked players/);
-  for (const label of ["Profile", "Favorites", "Settings", "Blocked players", "Log out"]) assert.match(profileMenu, new RegExp(label));
+  for (const label of ["Profile", "Favorites", "Settings", "Log out"]) assert.match(profileMenu, new RegExp(label));
+  assert.doesNotMatch(profileMenu, /Blocked players/);
+  assert.match(source("../app/settings/page.tsx"), /Blocked users/);
   assert.match(profileMenu, /supabase\.auth\.signOut\(\)/);
   assert.match(profileMenu, /router\.replace\("\/"\)/);
   assert.equal(desktopNavigationItems.some(({ href }) => href === "/notifications"), false);

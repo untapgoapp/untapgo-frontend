@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, Heart, LogOut, Settings, ShieldBan, UserRound } from "lucide-react";
+import { ChevronDown, Heart, LogOut, Settings, UserRound } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/lib/supabase/client";
@@ -49,7 +49,6 @@ export default function SocialProfileMenu({
     { href: "/profile", label: "Profile", icon: UserRound },
     { href: "/profile/favorites", label: "Favorites", icon: Heart },
     { href: "/settings", label: "Settings", icon: Settings },
-    { href: "/profile/blocked", label: "Blocked players", icon: ShieldBan },
   ];
 
   async function signOut() {

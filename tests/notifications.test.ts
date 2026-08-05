@@ -53,6 +53,7 @@ test("social and Playgroups notification types use their expected presentation",
     ["playgroup_request_approved", UserRoundCheck, "playgroup", "positive", false],
     ["playgroup_request_rejected", UserRoundX, "playgroup", "neutral", false],
     ["playgroup_post_commented", MessageSquare, "playgroup", "primary", false],
+    ["playgroup_chat_message", MessageSquare, "playgroup", "primary", false],
   ] as const;
 
   for (const [type, icon, category, tone, requiresAttention] of expected) {
@@ -72,6 +73,7 @@ test("supported social activity uses the backend-provided body", () => {
     "playgroup_request_approved",
     "playgroup_request_rejected",
     "playgroup_post_commented",
+    "playgroup_chat_message",
   ]) {
     assert.deepEqual(getNotificationActivityCopy(notification(type)), {
       primary: "Backend-provided body.",
@@ -86,6 +88,7 @@ test("each supported internal href is preserved exactly", () => {
     playgroup_request_approved: "/playgroups/group-two?view=members",
     playgroup_request_rejected: "/playgroups/group-three#members",
     playgroup_post_commented: "/playgroups/group-four?section=wall&post=post-id",
+    playgroup_chat_message: "/playgroups/group-chat?section=chat",
   };
 
   for (const [type, href] of Object.entries(paths)) {

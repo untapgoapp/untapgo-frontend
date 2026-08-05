@@ -70,9 +70,15 @@ export const binderApi = {
   matches: (page: number) => api.get<PageResponse<BinderMatch>>(buildMatchesPath(page)),
   interests: (view: InterestView, page: number) =>
     api.get<PageResponse<BinderInterest>>(buildInterestsPath(view, page)),
-  createInterest: (itemId: string, interestType: InterestType, message: string | null) =>
+  createInterest: (
+    itemId: string,
+    interestType: InterestType,
+    quantity: number,
+    message: string | null,
+  ) =>
     api.post<BinderInterest>(`/binder/items/${encodeURIComponent(itemId)}/interest`, {
       interest_type: interestType,
+      quantity: Math.max(1, Math.trunc(quantity)),
       message: message?.trim() || null,
     }),
   acceptInterest: (id: string) =>
@@ -113,6 +119,7 @@ export function binderErrorMessage(error: unknown, fallback: string): string {
     BINDER_INTEREST_ALREADY_PENDING: "You already have a pending interest request for this card.",
     BINDER_INTEREST_NOT_PENDING: "This interest request is no longer pending.",
     INTEREST_TYPE_UNAVAILABLE: "Choose an interest type supported by this listing.",
+    INTEREST_QUANTITY_UNAVAILABLE: "Choose a number of copies that is still available.",
     WANTED_EXACT_PRINTING_REQUIRED: "Choose an exact printing before requiring an exact match.",
     BINDER_NOT_FOUND: "This Binder is unavailable.",
     BINDER_ITEM_ACTIVE_TRADE: "Complete or cancel the active trade before removing this card.",

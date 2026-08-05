@@ -27,7 +27,7 @@ export default function InterestRow({ interest, view, busy, error, onAccept, onD
           <span className="truncate">{interest.other_user.nickname}</span>
         </Link>
         <h3 className="mt-2 font-bold">{interest.binder_item.card_name}</h3>
-        <div className="mt-2 flex flex-wrap gap-1.5"><Badge>{INTEREST_LABELS[interest.interest_type]}</Badge><Badge variant={interest.status === "pending" ? "secondary" : "outline"}>{interest.status}</Badge></div>
+        <div className="mt-2 flex flex-wrap gap-1.5"><Badge>{INTEREST_LABELS[interest.interest_type]}</Badge><Badge variant="outline">{interest.quantity ?? 1} {(interest.quantity ?? 1) === 1 ? "copy" : "copies"}</Badge><Badge variant={interest.status === "pending" ? "secondary" : "outline"}>{interest.status}</Badge></div>
         {interest.message ? <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{interest.message}</p> : <p className="mt-3 text-sm text-quiet-foreground">No message added.</p>}
         {error ? <p role="alert" className="mt-2 text-xs text-destructive">{error}</p> : null}
       </div>

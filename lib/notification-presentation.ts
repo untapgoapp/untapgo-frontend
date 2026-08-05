@@ -53,6 +53,7 @@ const notificationPresentations: Record<string, NotificationPresentation> = {
   playgroup_request_approved: { icon: UserRoundCheck, category: "playgroup", tone: "positive", requiresAttention: false },
   playgroup_request_rejected: { icon: UserRoundX, category: "playgroup", tone: "neutral", requiresAttention: false },
   playgroup_post_commented: { icon: MessageSquare, category: "playgroup", tone: "primary", requiresAttention: false },
+  playgroup_chat_message: { icon: MessageSquare, category: "playgroup", tone: "primary", requiresAttention: false },
   binder_interest_received: { icon: Handshake, category: "social", tone: "primary", requiresAttention: true },
   binder_interest_accepted: { icon: CircleCheck, category: "social", tone: "positive", requiresAttention: false },
   binder_interest_declined: { icon: CircleX, category: "social", tone: "neutral", requiresAttention: false },
@@ -136,6 +137,7 @@ export function getNotificationActivityCopy(notification: NotificationItem): Not
     type === "playgroup_request_approved" ||
     type === "playgroup_request_rejected" ||
     type === "playgroup_post_commented" ||
+    type === "playgroup_chat_message" ||
     type === "binder_interest_received" ||
     type === "binder_interest_accepted" ||
     type === "binder_interest_declined" ||

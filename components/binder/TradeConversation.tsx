@@ -191,6 +191,9 @@ export default function TradeConversation({ threadId }: { threadId: string }) {
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-[0.08em] text-primary">Private trade</p>
               <h1 className="truncate text-2xl font-bold">{title}</h1>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {thread.requested_quantity ?? 1} {(thread.requested_quantity ?? 1) === 1 ? "copy" : "copies"} requested
+              </p>
               <Link href={`/profile/${encodeURIComponent(thread.other_user.id)}`} className="mt-1 inline-flex items-center gap-2 text-sm font-semibold hover:text-primary">
                 <Avatar className="h-6 w-6"><AvatarImage src={thread.other_user.avatar_url ?? undefined} alt="" /><AvatarFallback>{thread.other_user.nickname.slice(0, 1).toUpperCase()}</AvatarFallback></Avatar>
                 {thread.other_user.nickname}

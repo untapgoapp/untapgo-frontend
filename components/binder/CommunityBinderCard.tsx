@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ArrowRight, Layers3, MapPin } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { CARD_LANGUAGE_LABELS, type CommunityBinderSummary } from "@/lib/binder";
 
 function updatedLabel(value: string): string {
@@ -31,8 +30,8 @@ export default function CommunityBinderCard({ binder }: { binder: CommunityBinde
   ].filter(Boolean) as string[];
 
   return (
-    <article className="group overflow-hidden rounded-[18px] border border-border/55 bg-surface transition-colors hover:border-primary/25">
-      <div className="p-4">
+    <article className="group min-w-0 py-2">
+      <div>
         <div className="flex min-w-0 items-center gap-3">
           <Avatar className="h-11 w-11 shrink-0">
             <AvatarImage src={binder.owner.avatar_url ?? undefined} alt="" />
@@ -112,12 +111,13 @@ export default function CommunityBinderCard({ binder }: { binder: CommunityBinde
           </div>
         ) : null}
 
-        <Button asChild variant="outline" size="sm" className="mt-4 w-full justify-between">
-          <Link href={href}>
-            Open Binder
-            <ArrowRight aria-hidden="true" className="h-4 w-4" />
-          </Link>
-        </Button>
+        <Link
+          href={href}
+          className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/15"
+        >
+          Open
+          <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
+        </Link>
       </div>
     </article>
   );

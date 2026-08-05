@@ -23,6 +23,14 @@ type SavePushTokenResponse = {
   device_id: string;
 };
 
+
+export type PushTestResponse = {
+  ok: boolean;
+  sent: number;
+  failed: number;
+  removed: number;
+};
+
 type PushTokenListResponse = {
   items?: Array<{
     device_id?: string | null;
@@ -315,4 +323,9 @@ export async function unregisterPushBeforeSignOut(): Promise<void> {
   }
 
   await disablePushNotifications();
+}
+
+
+export function sendTestPushNotification(): Promise<PushTestResponse> {
+  return api.post<PushTestResponse>("/me/push-token/test", {});
 }

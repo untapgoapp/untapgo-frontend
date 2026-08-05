@@ -84,6 +84,7 @@ export type BinderInterest = {
   binder_item: BinderItem;
   other_user: BinderUser;
   interest_type: InterestType;
+  quantity: number;
   message: string | null;
   status: InterestStatus;
   created_at: string;
@@ -478,6 +479,7 @@ export type BinderTradeLastMessage = {
 export type BinderTradeThread = {
   id: string;
   status: BinderTradeStatus;
+  requested_quantity: number;
   binder_item: BinderItem;
   other_user: BinderUser;
   last_message: BinderTradeLastMessage | null;

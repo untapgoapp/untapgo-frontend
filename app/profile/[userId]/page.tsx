@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
+import HistoryBackLink from "@/components/navigation/HistoryBackLink";
 import ProfileActionsPanel from "@/components/profile/ProfileActionsPanel";
 import ProfileBinderLinks from "@/components/profile/ProfileBinderLinks";
 import ProfileDeckSection from "@/components/profile/social/ProfileDeckSection";
@@ -102,7 +102,7 @@ export default function PublicProfilePage() {
     return (
       <main className="min-h-screen bg-[#F8F5EF] px-4 py-8 text-zinc-950 lg:px-0">
         <div className="w-full max-w-[1050px] border-y border-black/10 py-6">
-          <Link href="/events" className="text-sm font-semibold text-[#6E5AA7]">← Back to events</Link>
+          <HistoryBackLink fallbackHref="/players" />
           <h1 className="mt-5 text-xl font-bold">Could not load profile</h1>
           <p className="mt-2 text-sm text-zinc-500">This player profile is unavailable right now.</p>
         </div>
@@ -118,9 +118,7 @@ export default function PublicProfilePage() {
       profileActions={(
         <div>
           <ProfileBinderLinks profileId={userId} owner={false} />
-          <Link href="/events" className="mt-4 inline-flex text-sm font-semibold text-[#6E5AA7] hover:underline">
-            ← Back to events
-          </Link>
+          <HistoryBackLink fallbackHref="/players" className="mt-4" />
           <ProfileActionsPanel profileId={userId} />
         </div>
       )}

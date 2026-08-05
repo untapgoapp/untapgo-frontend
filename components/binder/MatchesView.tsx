@@ -21,12 +21,12 @@ export default function MatchesView() {
   const [error, setError] = useState<string | null>(null);
   const [sentIds, setSentIds] = useState<Set<string>>(new Set());
 
-  async function send(type: InterestType, message: string | null) {
+  async function send(type: InterestType, quantity: number, message: string | null) {
     if (!selected || saving) return;
     setSaving(true);
     setError(null);
     try {
-      await binderApi.createInterest(selected.id, type, message);
+      await binderApi.createInterest(selected.id, type, quantity, message);
       setSentIds((ids) => new Set(ids).add(selected.id));
       setSelected(null);
     } catch (caught) {

@@ -59,7 +59,7 @@ function TradeThreadRow({ thread }: { thread: BinderTradeThread }) {
           <span className="truncate text-sm font-semibold">{thread.other_user.nickname}</span>
           <Badge variant={thread.status === "active" ? "secondary" : "outline"} className="shrink-0 text-[10px]">{thread.status}</Badge>
         </div>
-        <p className="mt-1 truncate text-sm font-bold">{title}</p>
+        <p className="mt-1 truncate text-sm font-bold">{title} · {thread.requested_quantity ?? 1} {(thread.requested_quantity ?? 1) === 1 ? "copy" : "copies"}</p>
         <p className="mt-0.5 truncate text-xs text-muted-foreground">{thread.last_message?.body ?? "Open the conversation"}</p>
       </div>
       <div className="flex items-center gap-2 text-xs text-muted-foreground">

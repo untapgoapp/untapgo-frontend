@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, MapPin, Share2 } from "lucide-react";
+import { MapPin, Share2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import HistoryBackLink from "@/components/navigation/HistoryBackLink";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -87,12 +88,12 @@ function AuthenticatedPublicBinder({ ownerId }: { ownerId: string }) {
 
   const resource = useBinderPage(scope, loader, byId);
 
-  async function sendInterest(type: InterestType, message: string | null) {
+  async function sendInterest(type: InterestType, quantity: number, message: string | null) {
     if (!selected || sending) return;
     setSending(true);
     setInterestError(null);
     try {
-      await binderApi.createInterest(selected.id, type, message);
+      await binderApi.createInterest(selected.id, type, quantity, message);
       setSentIds((ids) => new Set(ids).add(selected.id));
       setSelected(null);
     } catch (error) {
@@ -125,12 +126,7 @@ function AuthenticatedPublicBinder({ ownerId }: { ownerId: string }) {
           <p className="mt-2 text-sm text-muted-foreground">
             This Binder is private or unavailable.
           </p>
-          <Button asChild variant="ghost" size="sm" className="mt-4">
-            <Link href={`/profile/${encodeURIComponent(ownerId)}`}>
-              <ArrowLeft aria-hidden="true" />
-              Back to profile
-            </Link>
-          </Button>
+          <HistoryBackLink fallbackHref="/binder" className="mt-4" />
         </div>
       </main>
     );
@@ -140,13 +136,7 @@ function AuthenticatedPublicBinder({ ownerId }: { ownerId: string }) {
     <main className="min-h-screen px-4 py-6 text-foreground sm:px-5 sm:py-8 lg:px-0">
       <div className="w-full max-w-[1120px]">
         <header className="pb-6">
-          <Link
-            href={`/profile/${encodeURIComponent(ownerId)}`}
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-primary"
-          >
-            <ArrowLeft size={15} aria-hidden="true" />
-            Back to profile
-          </Link>
+          <HistoryBackLink fallbackHref="/binder" />
 
           {owner ? (
             <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
