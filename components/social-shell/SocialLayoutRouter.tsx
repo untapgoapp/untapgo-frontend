@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
 import NotificationRealtimeProvider from "@/components/notifications/NotificationRealtimeProvider";
+import MessagingProvider from "@/components/messages/MessagingProvider";
 
 import SocialAppShell from "./SocialAppShell";
 import { isSocialAppRoute } from "./navigation";
@@ -27,7 +28,11 @@ export default function SocialLayoutRouter(props: SocialLayoutRouterProps) {
   else if (!isSocialAppRoute(pathname)) content = <LegacyChrome {...props} />;
   else content = <SocialAppShell {...props} />;
 
-  return <NotificationRealtimeProvider>{content}</NotificationRealtimeProvider>;
+  return (
+    <NotificationRealtimeProvider>
+      <MessagingProvider>{content}</MessagingProvider>
+    </NotificationRealtimeProvider>
+  );
 }
 
 function AuthGatePage({ children }: { children: ReactNode }) {

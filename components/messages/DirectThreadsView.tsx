@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import type { DirectConversation } from "@/lib/direct-messages";
 import { supabase } from "@/lib/supabase/client";
 import { directMessagesApi } from "@/services/direct-messages";
+import { useMessaging } from "@/components/messages/MessagingProvider";
 
 export default function DirectThreadsView() {
+  const messaging = useMessaging();
   const [items, setItems] = useState<DirectConversation[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -73,10 +74,17 @@ export default function DirectThreadsView() {
           {!loading && error ? <div className="p-6 text-center"><p className="text-sm text-destructive">{error}</p><Button type="button" size="sm" variant="outline" className="mt-3" onClick={() => void load()}>Retry</Button></div> : null}
           {!loading && !error && !items.length ? <p className="p-8 text-center text-sm text-muted-foreground">No direct conversations yet. Open a Connection’s profile and choose Message.</p> : null}
           {!loading && !error ? items.map((conversation) => (
-            <Link
+            <button
+              type="button"
               key={conversation.id}
-              href={`/messages/${encodeURIComponent(conversation.id)}`}
-              className="flex min-h-16 items-center gap-3 border-b border-border/50 px-4 py-3 outline-none last:border-b-0 hover:bg-secondary/45 focus-visible:bg-secondary"
+              onClick={() => messaging.openConversation({
+                kind: "direct",
+                id: conversation.id,
+                title: conversation.other_user.nickname,
+                avatarUrl: conversation.other_user.avatar_url,
+                href: `/messages/${encodeURIComponent(conversation.id)}`,
+              })}
+              className="flex w-full min-h-16 items-center gap-3 border-b border-border/50 px-4 py-3 text-left outline-none last:border-b-0 hover:bg-secondary/45 focus-visible:bg-secondary"
             >
               <Avatar className="h-11 w-11 shrink-0">
                 <AvatarImage src={conversation.other_user.avatar_url ?? undefined} alt="" />
@@ -92,7 +100,7 @@ export default function DirectThreadsView() {
                 {conversation.last_message ? <time className="text-[10px] text-quiet-foreground">{new Date(conversation.last_message.created_at).toLocaleDateString()}</time> : null}
                 {conversation.unread_count > 0 ? <span className="grid min-w-5 place-items-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">{conversation.unread_count}</span> : null}
               </span>
-            </Link>
+            </button>
           )) : null}
         </section>
         {hasMore ? <Button type="button" variant="outline" className="mt-4" disabled={loadingMore} onClick={() => void load(page + 1, true)}>{loadingMore ? "Loading…" : "Load more"}</Button> : null}

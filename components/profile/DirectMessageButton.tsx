@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { MessageCircle } from "lucide-react";
 
@@ -10,6 +9,7 @@ import {
   PROFILE_RELATIONSHIP_CHANGED_EVENT,
 } from "@/services/profiles";
 import { directMessagesApi } from "@/services/direct-messages";
+import { useMessaging } from "@/components/messages/MessagingProvider";
 
 export default function DirectMessageButton({
   profileId,
@@ -18,7 +18,7 @@ export default function DirectMessageButton({
   profileId: string;
   blocked: boolean;
 }) {
-  const router = useRouter();
+  const messaging = useMessaging();
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -66,7 +66,14 @@ export default function DirectMessageButton({
     setError(null);
     try {
       const conversation = await directMessagesApi.start(profileId);
-      router.push(`/messages/${encodeURIComponent(conversation.id)}`);
+      messaging.openConversation({
+        kind: "direct",
+        id: conversation.id,
+        title: conversation.other_user.nickname,
+        avatarUrl: conversation.other_user.avatar_url,
+        href: `/messages/${encodeURIComponent(conversation.id)}`,
+      });
+      void messaging.refresh();
     } catch {
       setError("Message could not be opened.");
     } finally {

@@ -1,7 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
-import Link from "next/link";
 import { useCallback, useState } from "react";
 import { MessageCircle } from "lucide-react";
 
@@ -12,6 +11,7 @@ import { binderDisplayName, type BinderTradeStatus, type BinderTradeThread } fro
 import { binderApi } from "@/services/binder";
 
 import { BinderEmpty, BinderError, BinderLoading, LoadMore } from "./BinderFeedback";
+import { useMessaging } from "@/components/messages/MessagingProvider";
 import useBinderPage from "./useBinderPage";
 
 const byId = (thread: BinderTradeThread) => thread.id;
@@ -48,10 +48,11 @@ export default function TradeThreadsView() {
 }
 
 function TradeThreadRow({ thread }: { thread: BinderTradeThread }) {
+  const messaging = useMessaging();
   const item = thread.binder_item;
   const title = binderDisplayName(item);
   return (
-    <Link href={`/trades/${encodeURIComponent(thread.id)}`} className="grid min-h-20 gap-3 rounded-row px-3 py-3 outline-none hover:bg-secondary/50 focus-visible:bg-secondary sm:grid-cols-[3.25rem_minmax(0,1fr)_auto] sm:items-center">
+    <button type="button" onClick={() => messaging.openConversation({ kind: "trade", id: thread.id, title, avatarUrl: thread.other_user.avatar_url ?? null, href: `/trades/${encodeURIComponent(thread.id)}` })} className="grid w-full min-h-20 gap-3 rounded-row px-3 py-3 text-left outline-none hover:bg-secondary/50 focus-visible:bg-secondary sm:grid-cols-[3.25rem_minmax(0,1fr)_auto] sm:items-center">
       {item.image_url ? <img src={item.image_url} alt="" className="h-16 w-11 rounded-[0.3rem] object-cover" /> : <div className="h-16 w-11 rounded-[0.3rem] bg-muted" />}
       <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-2">
@@ -66,6 +67,6 @@ function TradeThreadRow({ thread }: { thread: BinderTradeThread }) {
         {thread.unread_count > 0 ? <Badge>{thread.unread_count}</Badge> : null}
         <MessageCircle aria-hidden="true" className="h-4 w-4" />
       </div>
-    </Link>
+    </button>
   );
 }

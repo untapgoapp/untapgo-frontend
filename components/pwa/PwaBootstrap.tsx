@@ -8,9 +8,13 @@ import {
   getFirebaseMessagingClient,
 } from "@/lib/firebase/client";
 import { supabase } from "@/lib/supabase/client";
+import { requestNotificationsRefresh } from "@/services/notifications";
 import {
-  requestNotificationsRefresh,
-} from "@/services/notifications";
+  ACTIVE_CONVERSATION_STORAGE_KEY,
+  MESSAGING_REFRESH_REQUESTED_EVENT,
+  conversationKey,
+  type ConversationKind,
+} from "@/lib/messaging";
 import {
   clearLocalPushAfterSignOut,
   getPushBrowserState,
@@ -264,24 +268,37 @@ export default function PwaBootstrap() {
       const { onMessage } = await import("firebase/messaging");
 
       unsubscribeMessage = onMessage(messaging, (payload) => {
-        requestNotificationsRefresh();
+        const conversationType = payload.data?.conversation_type as ConversationKind | undefined;
+        const conversationId = payload.data?.conversation_id || "";
+        const isMessagePush = Boolean(
+          conversationId &&
+          (conversationType === "direct" || conversationType === "trade" || conversationType === "playgroup")
+        );
 
-        // When the app is open in a background tab, Firebase delivers through
-        // onMessage instead of the service worker. Show the system notification
-        // here so push remains visible without duplicating the in-app toast in
-        // the active tab.
+        if (isMessagePush) {
+          window.dispatchEvent(new Event(MESSAGING_REFRESH_REQUESTED_EVENT));
+        } else {
+          requestNotificationsRefresh();
+        }
+
+        const activeKey = window.localStorage.getItem(ACTIVE_CONVERSATION_STORAGE_KEY);
+        const sameOpenConversation = isMessagePush && activeKey === conversationKey(conversationType!, conversationId);
+
+        // Foreground messages update the floating chat and Messages badge.
+        // Background tabs still receive a system push.
         if (
           document.visibilityState !== "visible" &&
+          !sameOpenConversation &&
           Notification.permission === "granted" &&
           workerRegistration
         ) {
           const title = payload.notification?.title || "UntapGo";
-          const href = payload.data?.href || "/notifications";
+          const href = payload.data?.href || (isMessagePush ? "/messages" : "/notifications");
           void workerRegistration.showNotification(title, {
             body: payload.notification?.body || "You have new activity on UntapGo.",
             icon: "/icons/icon-192.png",
             badge: "/icons/badge-96.png",
-            tag: payload.data?.notification_id || undefined,
+            tag: payload.data?.notification_id || (isMessagePush ? `${conversationType}:${conversationId}` : undefined),
             data: { href },
           });
         }

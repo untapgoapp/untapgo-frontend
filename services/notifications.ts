@@ -25,6 +25,17 @@ export type NotificationListResponse = {
   items: NotificationItem[];
 };
 
+
+export const MESSAGE_NOTIFICATION_TYPES = new Set([
+  "direct_message",
+  "binder_trade_message",
+  "playgroup_chat_message",
+]);
+
+export function isBellNotification(item: NotificationItem): boolean {
+  return !MESSAGE_NOTIFICATION_TYPES.has(item.type);
+}
+
 export type NotificationActionResponse = {
   ok: boolean;
   updated: number;
@@ -58,9 +69,10 @@ export async function listNotifications({
   const result = await api.get<NotificationListResponse>(
     `/notifications?${search.toString()}`,
   );
+  const items = (Array.isArray(result.items) ? result.items : []).filter(isBellNotification);
   return {
-    unread_count: Math.max(0, Number(result.unread_count ?? 0)),
-    items: Array.isArray(result.items) ? result.items : [],
+    unread_count: items.reduce((total, item) => total + (item.is_read ? 0 : 1), 0),
+    items,
   };
 }
 

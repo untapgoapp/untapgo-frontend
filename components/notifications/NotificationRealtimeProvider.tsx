@@ -19,7 +19,6 @@ import {
 } from "./useNotificationRealtimeChannel";
 import {
   applyNotificationChange,
-  mergeNotificationPage,
   type NotificationChange,
 } from "@/lib/notification-live";
 import { supabase } from "@/lib/supabase/client";
@@ -31,6 +30,7 @@ import {
   NOTIFICATIONS_REFRESH_REQUESTED_EVENT,
   type NotificationItem,
   type NotificationListResponse,
+  isBellNotification,
 } from "@/services/notifications";
 
 type NotificationContextValue = NotificationListResponse & {
@@ -78,7 +78,7 @@ export default function NotificationRealtimeProvider({ children }: { children: R
     try {
       const latest = await listNotifications({ limit: 200 });
       for (const item of latest.items) knownIds.current.add(item.id);
-      setState((current) => mergeNotificationPage(current, latest));
+      setState(latest);
       setError(null);
     } catch {
       setError("Notifications could not be refreshed.");
@@ -88,6 +88,7 @@ export default function NotificationRealtimeProvider({ children }: { children: R
   }, [userId]);
 
   const handleChange = useCallback((change: NotificationChange) => {
+    if ((change.kind === "created" || change.kind === "updated") && !isBellNotification(change.notification)) return;
     if (change.kind === "created") {
       const isNew = !knownIds.current.has(change.notification.id);
       knownIds.current.add(change.notification.id);
