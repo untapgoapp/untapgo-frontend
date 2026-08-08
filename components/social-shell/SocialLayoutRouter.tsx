@@ -7,6 +7,7 @@ import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
 import NotificationRealtimeProvider from "@/components/notifications/NotificationRealtimeProvider";
 import MessagingProvider from "@/components/messages/MessagingProvider";
+import RealtimeRecoveryProvider from "@/components/realtime/RealtimeRecoveryProvider";
 
 import SocialAppShell from "./SocialAppShell";
 import { isSocialAppRoute } from "./navigation";
@@ -29,9 +30,11 @@ export default function SocialLayoutRouter(props: SocialLayoutRouterProps) {
   else content = <SocialAppShell {...props} />;
 
   return (
-    <NotificationRealtimeProvider>
-      <MessagingProvider>{content}</MessagingProvider>
-    </NotificationRealtimeProvider>
+    <RealtimeRecoveryProvider>
+      <NotificationRealtimeProvider>
+        <MessagingProvider>{content}</MessagingProvider>
+      </NotificationRealtimeProvider>
+    </RealtimeRecoveryProvider>
   );
 }
 

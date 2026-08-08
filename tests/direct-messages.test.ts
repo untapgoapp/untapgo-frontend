@@ -12,18 +12,24 @@ test("direct messages are limited to Connections and exposed from profiles", () 
   assert.match(panel, /DirectMessageButton/);
 });
 
-test("direct conversation uses private Realtime and read tracking", () => {
+test("direct conversation uses resilient private Realtime and read tracking", () => {
   const conversation = read("components/messages/DirectConversation.tsx");
+  const realtime = read("hooks/useResilientPrivateBroadcastChannel.ts");
   assert.match(conversation, /direct:\$\{conversationId\}:chat/);
-  assert.match(conversation, /private: true/);
+  assert.match(conversation, /useResilientPrivateBroadcastChannel/);
+  assert.match(realtime, /config: \{ private: true/);
+  assert.match(realtime, /CHANNEL_ERROR/);
+  assert.match(realtime, /TIMED_OUT/);
   assert.match(conversation, /markRead/);
   assert.match(conversation, /message_deleted/);
 });
 
-test("global message menu includes direct conversations and unread badges", () => {
+test("global messaging provider includes direct conversations, live updates, and unread badges", () => {
+  const provider = read("components/messages/MessagingProvider.tsx");
   const menu = read("components/social-shell/SocialMessagingMenu.tsx");
-  assert.match(menu, />Direct</);
-  assert.match(menu, /directMessagesApi\.conversations/);
-  assert.match(menu, /conversation_updated/);
-  assert.match(menu, /unreadCount/);
+  assert.match(provider, /directMessagesApi\.conversations/);
+  assert.match(provider, /conversation_updated/);
+  assert.match(provider, /unreadCount/);
+  assert.match(menu, /messaging\.conversations/);
+  assert.match(menu, /messaging\.unreadCount/);
 });

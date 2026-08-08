@@ -10,9 +10,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { RealtimeChannel, Session } from "@supabase/supabase-js";
+import type { Session } from "@supabase/supabase-js";
 import { usePathname } from "next/navigation";
 
+import BrowserUnreadIndicator from "@/components/messages/BrowserUnreadIndicator";
 import MessagingDock from "@/components/messages/MessagingDock";
 import type { BinderTradeThread } from "@/lib/binder";
 import type { DirectConversation } from "@/lib/direct-messages";
@@ -26,6 +27,7 @@ import {
 } from "@/lib/messaging";
 import type { PlaygroupListItem } from "@/lib/playgroups";
 import { supabase } from "@/lib/supabase/client";
+import useResilientPrivateBroadcastChannel from "@/hooks/useResilientPrivateBroadcastChannel";
 import { binderApi } from "@/services/binder";
 import { directMessagesApi } from "@/services/direct-messages";
 import {
@@ -200,33 +202,22 @@ export default function MessagingProvider({ children }: { children: ReactNode })
     if (userId) void refresh();
   }, [refresh, userId]);
 
-  useEffect(() => {
-    if (!userId || !session) return;
-    let stopped = false;
-    let channel: RealtimeChannel | null = null;
+  const conversationRealtimeEvents = useMemo(() => ({
+    conversation_updated: () => { void refresh(); },
+  }), [refresh]);
 
-    void (async () => {
-      await supabase.realtime.setAuth(session.access_token);
-      if (stopped) return;
-      channel = supabase.channel(`user:${userId}:conversations`, {
-        config: { private: true, broadcast: { ack: false, self: false } },
-      });
-      channel
-        .on("broadcast", { event: "conversation_updated" }, () => {
-          if (!stopped) void refresh();
-        })
-        .subscribe((status) => {
-          if (!stopped && status === "SUBSCRIBED") void refresh();
-        });
-    })().catch(() => {
-      if (!stopped) setError("Live message updates are unavailable.");
-    });
-
-    return () => {
-      stopped = true;
-      if (channel) void supabase.removeChannel(channel);
-    };
-  }, [refresh, session, userId]);
+  useResilientPrivateBroadcastChannel({
+    topic: userId ? `user:${userId}:conversations` : null,
+    userId,
+    enabled: Boolean(session),
+    events: conversationRealtimeEvents,
+    onSubscribed: (reason) => {
+      setError(null);
+      if (reason !== "recovery") void refresh();
+    },
+    onRecovery: () => { void refresh(); },
+    onFailure: () => setError("Live message updates are reconnecting."),
+  });
 
   useEffect(() => {
     const requestRefresh = () => { void refresh(); };
@@ -276,12 +267,17 @@ export default function MessagingProvider({ children }: { children: ReactNode })
     void refresh();
   }, [refresh]);
 
+  const unreadCount = useMemo(
+    () => conversations.reduce((total, item) => total + item.unreadCount, 0),
+    [conversations],
+  );
+
   const value = useMemo<MessagingContextValue>(() => ({
     authenticated: Boolean(session),
     loading: !authReady || loading,
     error,
     conversations,
-    unreadCount: conversations.reduce((total, item) => total + item.unreadCount, 0),
+    unreadCount,
     activeConversation,
     minimized,
     refresh,
@@ -289,11 +285,12 @@ export default function MessagingProvider({ children }: { children: ReactNode })
     closeConversation,
     minimizeConversation: () => setMinimized(true),
     restoreConversation: () => setMinimized(false),
-  }), [activeConversation, authReady, closeConversation, conversations, error, loading, minimized, openConversation, refresh, session]);
+  }), [activeConversation, authReady, closeConversation, conversations, error, loading, minimized, openConversation, refresh, session, unreadCount]);
 
   return (
     <MessagingContext.Provider value={value}>
       {children}
+      <BrowserUnreadIndicator unreadCount={unreadCount} />
       <MessagingDock />
     </MessagingContext.Provider>
   );

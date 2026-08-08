@@ -42,18 +42,20 @@ test("Binder sharing and accepted trades are first-class routes", () => {
   assert.match(navigation, /\/trades/);
 });
 
-test("trade conversations use private Realtime and lifecycle controls", () => {
+test("trade conversations use resilient private Realtime and lifecycle controls", () => {
   const conversation = source("../components/binder/TradeConversation.tsx");
+  const realtime = source("../hooks/useResilientPrivateBroadcastChannel.ts");
   const service = source("../services/binder.ts");
   const menu = source("../components/social-shell/SocialMessagingMenu.tsx");
   assert.match(conversation, /trade:\$\{threadId\}:chat/);
-  assert.match(conversation, /config: \{ private: true/);
+  assert.match(conversation, /useResilientPrivateBroadcastChannel/);
+  assert.match(realtime, /config: \{ private: true/);
   assert.match(conversation, /trade_completed/);
   assert.match(conversation, /trade_cancelled/);
   assert.match(service, /sendTradeMessage/);
   assert.match(service, /markTradeRead/);
-  assert.match(menu, /Playgroup and trade conversations/);
-  assert.match(menu, /trade\.unread_count/);
+  assert.match(menu, /Direct, trade and Playgroup conversations/);
+  assert.match(menu, /messaging\.unreadCount/);
 });
 
 test("trade notifications have social presentation", () => {

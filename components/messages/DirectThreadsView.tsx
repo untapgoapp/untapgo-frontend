@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import useResilientPrivateBroadcastChannel from "@/hooks/useResilientPrivateBroadcastChannel";
 import type { DirectConversation } from "@/lib/direct-messages";
 import { supabase } from "@/lib/supabase/client";
 import { directMessagesApi } from "@/services/direct-messages";
@@ -44,24 +45,18 @@ export default function DirectThreadsView() {
     void supabase.auth.getUser().then(({ data }) => setViewerId(data.user?.id ?? null));
   }, [load]);
 
-  useEffect(() => {
-    if (!viewerId) return;
-    let stopped = false;
-    const channel = supabase.channel(`user:${viewerId}:conversations`, {
-      config: { private: true, broadcast: { ack: false, self: false } },
-    });
-    void supabase.auth.getSession().then(async ({ data }) => {
-      if (stopped || !data.session) return;
-      await supabase.realtime.setAuth(data.session.access_token);
-      channel.on("broadcast", { event: "conversation_updated" }, () => {
-        if (!stopped) void load(1, false);
-      }).subscribe();
-    });
-    return () => {
-      stopped = true;
-      void supabase.removeChannel(channel);
-    };
-  }, [load, viewerId]);
+  const realtimeEvents = useMemo(() => ({
+    conversation_updated: () => { void load(1, false); },
+  }), [load]);
+
+  useResilientPrivateBroadcastChannel({
+    topic: viewerId ? `user:${viewerId}:conversations` : null,
+    userId: viewerId,
+    enabled: Boolean(viewerId),
+    events: realtimeEvents,
+    onSubscribed: (reason) => { if (reason !== "recovery") void load(1, false); },
+    onRecovery: () => { void load(1, false); },
+  });
 
   return (
     <main className="min-h-screen px-4 py-6 text-foreground sm:px-5 sm:py-8 lg:px-0">

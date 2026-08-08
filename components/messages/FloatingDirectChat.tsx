@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Send } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/useUser";
+import useResilientPrivateBroadcastChannel from "@/hooks/useResilientPrivateBroadcastChannel";
 import {
   isDirectMessage,
   mergeDirectMessages,
   type DirectConversation,
   type DirectMessage,
 } from "@/lib/direct-messages";
-import { supabase } from "@/lib/supabase/client";
 import { directMessagesApi } from "@/services/direct-messages";
 
 export default function FloatingDirectChat({ conversationId, onActivity }: { conversationId: string; onActivity: () => Promise<void> }) {
@@ -24,6 +24,27 @@ export default function FloatingDirectChat({ conversationId, onActivity }: { con
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const scrollToLatest = useCallback((behavior: ScrollBehavior = "auto") => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior });
+    });
+  }, []);
+
+  const reconcileMessages = useCallback(async () => {
+    try {
+      const history = await directMessagesApi.messages(conversationId);
+      setMessages((current) => mergeDirectMessages(current, history.items));
+      const latest = history.items.at(-1);
+      if (latest) {
+        await directMessagesApi.markRead(conversationId, latest.id).catch(() => undefined);
+        await onActivity().catch(() => undefined);
+      }
+      scrollToLatest("auto");
+    } catch {
+      // Keep the already rendered history. A later retry/resume reconciles it.
+    }
+  }, [conversationId, onActivity, scrollToLatest]);
+
   useEffect(() => {
     let active = true;
     void Promise.all([directMessagesApi.conversation(conversationId), directMessagesApi.messages(conversationId)])
@@ -31,38 +52,37 @@ export default function FloatingDirectChat({ conversationId, onActivity }: { con
         if (!active) return;
         setConversation(loaded);
         setMessages(history.items);
+        setError(null);
         const latest = history.items.at(-1);
         if (latest) void directMessagesApi.markRead(conversationId, latest.id).then(onActivity).catch(() => undefined);
-        requestAnimationFrame(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; });
+        scrollToLatest("auto");
       })
       .catch(() => { if (active) setError("Conversation could not be loaded."); });
     return () => { active = false; };
-  }, [conversationId, onActivity]);
+  }, [conversationId, onActivity, scrollToLatest]);
 
-  useEffect(() => {
-    let stopped = false;
-    const channel = supabase.channel(`direct:${conversationId}:chat`, { config: { private: true, broadcast: { ack: false, self: false } } });
-    void supabase.auth.getSession().then(async ({ data }) => {
-      if (stopped || !data.session) return;
-      await supabase.realtime.setAuth(data.session.access_token);
-      channel
-        .on("broadcast", { event: "message" }, ({ payload }) => {
-          if (stopped || !isDirectMessage(payload, conversationId)) return;
-          setMessages((current) => mergeDirectMessages(current, [payload]));
-          requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }));
-          void directMessagesApi.markRead(conversationId, payload.id).then(onActivity).catch(() => undefined);
-        })
-        .on("broadcast", { event: "message_deleted" }, ({ payload }) => {
-          if (!stopped && isDirectMessage(payload, conversationId)) setMessages((current) => mergeDirectMessages(current, [payload]));
-        })
-        .subscribe((status) => {
-          if (!stopped && status === "SUBSCRIBED") {
-            void directMessagesApi.messages(conversationId).then((history) => setMessages((current) => mergeDirectMessages(current, history.items)));
-          }
-        });
-    });
-    return () => { stopped = true; void supabase.removeChannel(channel); };
-  }, [conversationId, onActivity]);
+  const realtimeEvents = useMemo(() => ({
+    message: (payload: unknown) => {
+      if (!isDirectMessage(payload, conversationId)) return;
+      setMessages((current) => mergeDirectMessages(current, [payload]));
+      scrollToLatest("smooth");
+      void directMessagesApi.markRead(conversationId, payload.id).then(onActivity).catch(() => undefined);
+    },
+    message_deleted: (payload: unknown) => {
+      if (!isDirectMessage(payload, conversationId)) return;
+      setMessages((current) => mergeDirectMessages(current, [payload]));
+    },
+  }), [conversationId, onActivity, scrollToLatest]);
+
+  useResilientPrivateBroadcastChannel({
+    topic: `direct:${conversationId}:chat`,
+    userId: user?.id ?? null,
+    enabled: Boolean(user),
+    events: realtimeEvents,
+    onSubscribed: (reason) => { if (reason !== "recovery") void reconcileMessages(); },
+    onRecovery: () => { void reconcileMessages(); },
+    onFailure: () => setError("Live messages are reconnecting. You can keep using the chat."),
+  });
 
   async function send() {
     const body = value.trim();
@@ -74,7 +94,7 @@ export default function FloatingDirectChat({ conversationId, onActivity }: { con
       setMessages((current) => mergeDirectMessages(current, [message]));
       setValue("");
       await onActivity();
-      requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }));
+      scrollToLatest("smooth");
     } catch {
       setError("Message could not be sent.");
     } finally {

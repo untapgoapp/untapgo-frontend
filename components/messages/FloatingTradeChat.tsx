@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/useUser";
+import useResilientPrivateBroadcastChannel from "@/hooks/useResilientPrivateBroadcastChannel";
 import type { BinderTradeMessage, BinderTradeThread } from "@/lib/binder";
-import { supabase } from "@/lib/supabase/client";
 import { binderApi } from "@/services/binder";
 
 function merge(current: BinderTradeMessage[], incoming: BinderTradeMessage[]) {
@@ -30,51 +30,75 @@ export default function FloatingTradeChat({ threadId, onActivity }: { threadId: 
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const scrollToLatest = useCallback((behavior: ScrollBehavior = "auto") => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior });
+    });
+  }, []);
+
+  const reconcileMessages = useCallback(async () => {
+    try {
+      const history = await binderApi.tradeMessages(threadId);
+      setMessages((current) => merge(current, history.items));
+      const latest = history.items.at(-1);
+      if (latest) {
+        await binderApi.markTradeRead(threadId, latest.id).catch(() => undefined);
+        await onActivity().catch(() => undefined);
+      }
+      scrollToLatest("auto");
+    } catch {
+      // Preserve the rendered history and let the next retry/resume reconcile.
+    }
+  }, [onActivity, scrollToLatest, threadId]);
+
   useEffect(() => {
     let active = true;
     void Promise.all([binderApi.trade(threadId), binderApi.tradeMessages(threadId)]).then(([loaded, history]) => {
       if (!active) return;
       setThread(loaded);
       setMessages(history.items);
+      setError(null);
       const latest = history.items.at(-1);
       if (latest) void binderApi.markTradeRead(threadId, latest.id).then(onActivity).catch(() => undefined);
-      requestAnimationFrame(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; });
+      scrollToLatest("auto");
     }).catch(() => { if (active) setError("Trade conversation could not be loaded."); });
     return () => { active = false; };
-  }, [onActivity, threadId]);
+  }, [onActivity, scrollToLatest, threadId]);
 
-  useEffect(() => {
-    let stopped = false;
-    const channel = supabase.channel(`trade:${threadId}:chat`, { config: { private: true, broadcast: { ack: false, self: false } } });
-    void supabase.auth.getSession().then(async ({ data }) => {
-      if (stopped || !data.session) return;
-      await supabase.realtime.setAuth(data.session.access_token);
-      channel
-        .on("broadcast", { event: "message" }, ({ payload }) => {
-          if (stopped || !valid(payload, threadId)) return;
-          setMessages((current) => merge(current, [payload]));
-          requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }));
-          void binderApi.markTradeRead(threadId, payload.id).then(onActivity).catch(() => undefined);
-        })
-        .on("broadcast", { event: "message_deleted" }, ({ payload }) => {
-          if (!stopped && valid(payload, threadId)) setMessages((current) => merge(current, [payload]));
-        })
-        .subscribe((status) => {
-          if (!stopped && status === "SUBSCRIBED") void binderApi.tradeMessages(threadId).then((history) => setMessages((current) => merge(current, history.items)));
-        });
-    });
-    return () => { stopped = true; void supabase.removeChannel(channel); };
-  }, [onActivity, threadId]);
+  const realtimeEvents = useMemo(() => ({
+    message: (payload: unknown) => {
+      if (!valid(payload, threadId)) return;
+      setMessages((current) => merge(current, [payload]));
+      scrollToLatest("smooth");
+      void binderApi.markTradeRead(threadId, payload.id).then(onActivity).catch(() => undefined);
+    },
+    message_deleted: (payload: unknown) => {
+      if (!valid(payload, threadId)) return;
+      setMessages((current) => merge(current, [payload]));
+    },
+  }), [onActivity, scrollToLatest, threadId]);
+
+  useResilientPrivateBroadcastChannel({
+    topic: `trade:${threadId}:chat`,
+    userId: user?.id ?? null,
+    enabled: Boolean(user),
+    events: realtimeEvents,
+    onSubscribed: (reason) => { if (reason !== "recovery") void reconcileMessages(); },
+    onRecovery: () => { void reconcileMessages(); },
+    onFailure: () => setError("Live trade messages are reconnecting. You can keep using the chat."),
+  });
 
   async function send() {
     const body = value.trim();
     if (!body || sending || thread?.status !== "active") return;
     setSending(true);
+    setError(null);
     try {
       const message = await binderApi.sendTradeMessage(threadId, body);
       setMessages((current) => merge(current, [message]));
       setValue("");
       await onActivity();
+      scrollToLatest("smooth");
     } catch {
       setError("Trade message could not be sent.");
     } finally {

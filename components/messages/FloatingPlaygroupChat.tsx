@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Send } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/useUser";
+import useResilientPrivateBroadcastChannel from "@/hooks/useResilientPrivateBroadcastChannel";
 import { mergeChatMessages, type PlaygroupChatMessage } from "@/lib/playgroup-communications";
-import { supabase } from "@/lib/supabase/client";
 import {
   getPlaygroupChatMessages,
   getPlaygroupChatState,
@@ -31,48 +31,75 @@ export default function FloatingPlaygroupChat({ playgroupId, onActivity }: { pla
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const scrollToLatest = useCallback((behavior: ScrollBehavior = "auto") => {
+    requestAnimationFrame(() => {
+      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior });
+    });
+  }, []);
+
+  const reconcileMessages = useCallback(async () => {
+    try {
+      const history = await getPlaygroupChatMessages(playgroupId);
+      setMessages((current) => mergeChatMessages(current, history.items));
+      const latest = history.items.at(-1);
+      if (latest) {
+        await markPlaygroupChatRead(playgroupId, latest.id).catch(() => undefined);
+        await onActivity().catch(() => undefined);
+      }
+      scrollToLatest("auto");
+    } catch {
+      // Preserve current history. A later reconnect will reconcile again.
+    }
+  }, [onActivity, playgroupId, scrollToLatest]);
+
   useEffect(() => {
     let active = true;
     void Promise.all([getPlaygroup(playgroupId), getPlaygroupChatMessages(playgroupId), getPlaygroupChatState(playgroupId)]).then(([group, history]) => {
       if (!active) return;
       setWritable(group.status === "active" && (group.membership_state === "owner" || group.membership_state === "joined"));
       setMessages(history.items);
+      setError(null);
       const latest = history.items.at(-1);
       if (latest) void markPlaygroupChatRead(playgroupId, latest.id).then(onActivity).catch(() => undefined);
-      requestAnimationFrame(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; });
+      scrollToLatest("auto");
     }).catch(() => { if (active) setError("Playgroup chat could not be loaded."); });
     return () => { active = false; };
-  }, [onActivity, playgroupId]);
+  }, [onActivity, playgroupId, scrollToLatest]);
 
-  useEffect(() => {
-    let stopped = false;
-    const channel = supabase.channel(`playgroup:${playgroupId}:chat`, { config: { private: true, broadcast: { ack: false, self: false } } });
-    void supabase.auth.getSession().then(async ({ data }) => {
-      if (stopped || !data.session) return;
-      await supabase.realtime.setAuth(data.session.access_token);
-      channel.on("broadcast", { event: "message" }, ({ payload }) => {
-        if (stopped || !valid(payload, playgroupId)) return;
-        setMessages((current) => mergeChatMessages(current, [payload]));
-        requestAnimationFrame(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }));
-        void markPlaygroupChatRead(playgroupId, payload.id).then(onActivity).catch(() => undefined);
-      }).on("broadcast", { event: "message_deleted" }, ({ payload }) => {
-        if (!stopped && valid(payload, playgroupId)) setMessages((current) => mergeChatMessages(current, [payload]));
-      }).subscribe((status) => {
-        if (!stopped && status === "SUBSCRIBED") void getPlaygroupChatMessages(playgroupId).then((history) => setMessages((current) => mergeChatMessages(current, history.items)));
-      });
-    });
-    return () => { stopped = true; void supabase.removeChannel(channel); };
-  }, [onActivity, playgroupId]);
+  const realtimeEvents = useMemo(() => ({
+    message: (payload: unknown) => {
+      if (!valid(payload, playgroupId)) return;
+      setMessages((current) => mergeChatMessages(current, [payload]));
+      scrollToLatest("smooth");
+      void markPlaygroupChatRead(playgroupId, payload.id).then(onActivity).catch(() => undefined);
+    },
+    message_deleted: (payload: unknown) => {
+      if (!valid(payload, playgroupId)) return;
+      setMessages((current) => mergeChatMessages(current, [payload]));
+    },
+  }), [onActivity, playgroupId, scrollToLatest]);
+
+  useResilientPrivateBroadcastChannel({
+    topic: `playgroup:${playgroupId}:chat`,
+    userId: user?.id ?? null,
+    enabled: Boolean(user),
+    events: realtimeEvents,
+    onSubscribed: (reason) => { if (reason !== "recovery") void reconcileMessages(); },
+    onRecovery: () => { void reconcileMessages(); },
+    onFailure: () => setError("Live Playgroup messages are reconnecting. You can keep using the chat."),
+  });
 
   async function send() {
     const body = value.trim();
     if (!body || sending || !writable) return;
     setSending(true);
+    setError(null);
     try {
       const message = await sendPlaygroupChatMessage(playgroupId, body);
       setMessages((current) => mergeChatMessages(current, [message]));
       setValue("");
       await onActivity();
+      scrollToLatest("smooth");
     } catch {
       setError("Message could not be sent.");
     } finally {

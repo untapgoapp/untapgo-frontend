@@ -1,19 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Send, Trash2 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@/hooks/useUser";
+import useResilientPrivateBroadcastChannel from "@/hooks/useResilientPrivateBroadcastChannel";
 import {
   isDirectMessage,
   mergeDirectMessages,
   type DirectConversation as DirectConversationType,
   type DirectMessage,
 } from "@/lib/direct-messages";
-import { supabase } from "@/lib/supabase/client";
 import { directMessagesApi } from "@/services/direct-messages";
 
 const MAX_MESSAGE = 2000;
@@ -63,37 +63,42 @@ export default function DirectConversation({ conversationId }: { conversationId:
     };
   }, [conversationId]);
 
-  useEffect(() => {
-    let stopped = false;
-    const channel = supabase.channel(`direct:${conversationId}:chat`, {
-      config: { private: true, broadcast: { ack: false, self: false } },
-    });
-
-    void supabase.auth.getSession().then(async ({ data }) => {
-      if (stopped || !data.session) return;
-      await supabase.realtime.setAuth(data.session.access_token);
-      channel
-        .on("broadcast", { event: "message" }, ({ payload }) => {
-          if (stopped || !isDirectMessage(payload, conversationId)) return;
-          setMessages((current) => mergeDirectMessages(current, [payload]));
-          requestAnimationFrame(() => {
-            const node = scrollRef.current;
-            if (node) node.scrollTo({ top: node.scrollHeight, behavior: "smooth" });
-          });
-          void directMessagesApi.markRead(conversationId, payload.id).catch(() => undefined);
-        })
-        .on("broadcast", { event: "message_deleted" }, ({ payload }) => {
-          if (stopped || !isDirectMessage(payload, conversationId)) return;
-          setMessages((current) => mergeDirectMessages(current, [payload]));
-        })
-        .subscribe();
-    });
-
-    return () => {
-      stopped = true;
-      void supabase.removeChannel(channel);
-    };
+  const reconcileMessages = useCallback(async () => {
+    try {
+      const history = await directMessagesApi.messages(conversationId);
+      setMessages((current) => mergeDirectMessages(current, history.items));
+      const latest = history.items.at(-1);
+      if (latest) await directMessagesApi.markRead(conversationId, latest.id).catch(() => undefined);
+    } catch {
+      // Keep rendered history; the next reconnect or manual navigation retries.
+    }
   }, [conversationId]);
+
+  const realtimeEvents = useMemo(() => ({
+    message: (payload: unknown) => {
+      if (!isDirectMessage(payload, conversationId)) return;
+      setMessages((current) => mergeDirectMessages(current, [payload]));
+      requestAnimationFrame(() => {
+        const node = scrollRef.current;
+        if (node) node.scrollTo({ top: node.scrollHeight, behavior: "smooth" });
+      });
+      void directMessagesApi.markRead(conversationId, payload.id).catch(() => undefined);
+    },
+    message_deleted: (payload: unknown) => {
+      if (!isDirectMessage(payload, conversationId)) return;
+      setMessages((current) => mergeDirectMessages(current, [payload]));
+    },
+  }), [conversationId]);
+
+  useResilientPrivateBroadcastChannel({
+    topic: `direct:${conversationId}:chat`,
+    userId: user?.id ?? null,
+    enabled: Boolean(user),
+    events: realtimeEvents,
+    onSubscribed: (reason) => { if (reason !== "recovery") void reconcileMessages(); },
+    onRecovery: () => { void reconcileMessages(); },
+    onFailure: () => setError("Live messages are reconnecting. You can keep using the conversation."),
+  });
 
   async function loadOlder() {
     if (!nextBefore || loadingOlder) return;

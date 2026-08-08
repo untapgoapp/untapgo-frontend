@@ -268,9 +268,13 @@ test("REST reconciliation deduplicates and preserves already loaded notification
   assert.deepEqual(new Set(state.items.map((item) => item.id)), new Set([first.id, second.id]));
 });
 
-test("one private provider applies auth, handles four events, reconnects, and cleans up", () => {
+test("one private provider uses the shared resilient channel, handles four events, and reconnects", () => {
   const channel = readFileSync(
     new URL("../components/notifications/useNotificationRealtimeChannel.ts", import.meta.url),
+    "utf8",
+  );
+  const shared = readFileSync(
+    new URL("../hooks/useResilientPrivateBroadcastChannel.ts", import.meta.url),
     "utf8",
   );
   const provider = readFileSync(new URL("../components/notifications/NotificationRealtimeProvider.tsx", import.meta.url), "utf8");
@@ -279,19 +283,19 @@ test("one private provider applies auth, handles four events, reconnects, and cl
   const page = readFileSync(new URL("../app/notifications/page.tsx", import.meta.url), "utf8");
   const bell = readFileSync(new URL("../components/notifications/NotificationBell.tsx", import.meta.url), "utf8");
 
-  assert.ok(channel.indexOf("realtime.setAuth(accessToken)") < channel.indexOf("supabase.channel(topic"));
-  assert.equal((channel.match(/supabase\.channel\(/g) ?? []).length, 1);
-  assert.match(channel, /private: true/);
+  assert.ok(shared.indexOf("await supabase.realtime.setAuth") < shared.indexOf("supabase.channel(topic"));
+  assert.equal((shared.match(/supabase\.channel\(/g) ?? []).length, 1);
+  assert.match(shared, /private: true/);
   assert.match(channel, /NOTIFICATION_CREATED_EVENT/);
   assert.match(channel, /NOTIFICATION_UPDATED_EVENT/);
   assert.match(channel, /NOTIFICATION_DELETED_EVENT/);
   assert.match(channel, /NOTIFICATIONS_CLEARED_EVENT/);
-  assert.match(channel, /nextStatus === "SUBSCRIBED"/);
-  assert.match(channel, /CHANNEL_ERROR/);
-  assert.match(channel, /TIMED_OUT/);
-  assert.match(channel, /CLOSED/);
-  assert.match(channel, /removeExistingTopicChannel\(topic\)/);
-  assert.match(channel, /removeChannel\(channel\)/);
+  assert.match(shared, /nextStatus === "SUBSCRIBED"/);
+  assert.match(shared, /CHANNEL_ERROR/);
+  assert.match(shared, /TIMED_OUT/);
+  assert.match(shared, /CLOSED/);
+  assert.match(shared, /REALTIME_RECOVERY_REQUESTED_EVENT/);
+  assert.match(shared, /removeChannel\(current\)/);
   assert.doesNotMatch(channel, /\.from\(/);
   assert.match(provider, /onAuthStateChange/);
   assert.match(provider, /setState\(emptyState\)/);

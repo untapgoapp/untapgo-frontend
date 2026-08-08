@@ -16,6 +16,10 @@ const realtime = readFileSync(
   new URL("../components/playgroups/usePlaygroupChatRealtime.ts", import.meta.url),
   "utf8",
 );
+const sharedRealtime = readFileSync(
+  new URL("../hooks/useResilientPrivateBroadcastChannel.ts", import.meta.url),
+  "utf8",
+);
 const chat = readFileSync(
   new URL("../components/playgroups/PlaygroupChat.tsx", import.meta.url),
   "utf8",
@@ -50,39 +54,37 @@ function message(body = "Hello"): PlaygroupChatMessage {
   };
 }
 
-test("Realtime auth token is applied before the one private channel subscribes", () => {
-  const setAuth = realtime.indexOf("await supabase.realtime.setAuth(session.access_token)");
-  const removeExisting = realtime.indexOf("await removeExistingTopicChannel(topic)");
-  const channel = realtime.indexOf("channel = supabase.channel(topic");
-  const subscribe = realtime.indexOf(".subscribe((nextStatus, subscriptionError)");
+test("Realtime auth token is applied before the shared private channel subscribes", () => {
+  const setAuth = sharedRealtime.indexOf("await supabase.realtime.setAuth(data.session.access_token)");
+  const channel = sharedRealtime.indexOf("supabase.channel(topic");
+  const subscribe = sharedRealtime.indexOf("nextChannel.subscribe((nextStatus, subscriptionError)");
 
   assert.ok(setAuth >= 0);
-  assert.ok(setAuth < removeExisting);
-  assert.ok(removeExisting < channel);
+  assert.ok(setAuth < channel);
   assert.ok(channel < subscribe);
-  assert.equal((realtime.match(/supabase\.channel\(/g) ?? []).length, 1);
-  assert.match(realtime, /config: \{ private: true/);
+  assert.equal((sharedRealtime.match(/supabase\.channel\(/g) ?? []).length, 1);
+  assert.match(sharedRealtime, /config: \{ private: true/);
+  assert.match(realtime, /useResilientPrivateBroadcastChannel/);
 });
 
 test("the topic and both Broadcast event names are exact", () => {
   assert.equal(playgroupChatTopic(GROUP_ID), `playgroup:${GROUP_ID}:chat`);
-  assert.match(realtime, /event: "message"/);
-  assert.match(realtime, /event: "message_deleted"/);
+  assert.match(realtime, /message: \(payload: unknown\)/);
+  assert.match(realtime, /message_deleted: \(payload: unknown\)/);
   assert.doesNotMatch(realtime, /postgres_changes/);
 });
 
-test("the UI becomes live only after SUBSCRIBED and logs complete failures", () => {
-  const subscribed = realtime.indexOf('nextStatus === "SUBSCRIBED"');
-  const connected = realtime.indexOf('setStatus("connected")', subscribed);
+test("the UI becomes live only after SUBSCRIBED and shared failures retry", () => {
+  const subscribed = sharedRealtime.indexOf('nextStatus === "SUBSCRIBED"');
+  const connected = sharedRealtime.indexOf('setStatus("connected")', subscribed);
 
   assert.ok(subscribed >= 0 && connected > subscribed);
-  assert.match(realtime, /CHANNEL_ERROR/);
-  assert.match(realtime, /TIMED_OUT/);
-  assert.match(realtime, /CLOSED/);
-  assert.match(realtime, /subscriptionError/);
-  assert.match(realtime, /connectionState/);
-  assert.match(realtime, /sessionAvailable/);
-  assert.match(realtime, /tokenApplied/);
+  assert.match(sharedRealtime, /CHANNEL_ERROR/);
+  assert.match(sharedRealtime, /TIMED_OUT/);
+  assert.match(sharedRealtime, /CLOSED/);
+  assert.match(sharedRealtime, /subscriptionError/);
+  assert.match(sharedRealtime, /connectionState/);
+  assert.match(sharedRealtime, /scheduleRetry/);
   assert.match(status, /realtimeStatus === "connected"[\s\S]*Live conversation/);
 });
 
@@ -104,23 +106,23 @@ test("POST, Broadcast, and REST copies render once by canonical ID", () => {
   assert.match(chat, /knownIdsRef\.current\.has\(message\.id\)/);
 });
 
-test("Strict Mode setup removes an existing topic channel and cleanup removes the active channel", () => {
-  assert.match(realtime, /channelRemovalByTopic/);
-  assert.match(realtime, /supabase\.getChannels\(\)\.find/);
-  assert.match(realtime, /await supabase\.removeChannel\(channel\)/);
-  assert.match(realtime, /authListener\.subscription\.unsubscribe\(\)/);
-  assert.match(realtime, /removeCurrentChannel\(\)/);
+test("shared Realtime cleanup removes active channels and auth listeners", () => {
+  assert.match(sharedRealtime, /removeCurrentChannel/);
+  assert.match(sharedRealtime, /supabase\.removeChannel\(current\)/);
+  assert.match(sharedRealtime, /authListener\.subscription\.unsubscribe\(\)/);
+  assert.match(sharedRealtime, /REALTIME_RECOVERY_REQUESTED_EVENT/);
 });
 
 test("membership loss and auth logout unsubscribe while token refresh reapplies auth", () => {
   assert.match(chat, /enabled: membershipState === "owner" \|\| membershipState === "joined"/);
-  assert.match(realtime, /onAuthStateChange/);
-  assert.match(realtime, /TOKEN_REFRESHED/);
-  assert.match(realtime, /!session \|\| session\.user\.id !== viewerId[\s\S]*removeCurrentChannel\(\)/);
+  assert.match(sharedRealtime, /onAuthStateChange/);
+  assert.match(sharedRealtime, /TOKEN_REFRESHED/);
+  assert.match(sharedRealtime, /!nextSession \|\| nextSession\.user\.id !== userId[\s\S]*removeCurrentChannel\(\)/);
 });
 
 test("reconnect closes history gaps and a Realtime failure preserves REST history", () => {
-  assert.match(realtime, /nextStatus === "SUBSCRIBED"[\s\S]*handlers\.current\.onReconnect\(\)/);
+  assert.match(realtime, /onSubscribed: \(reason\)[\s\S]*onReconnect\(\)/);
+  assert.match(realtime, /onRecovery: onReconnect/);
   assert.match(chat, /handleReconnect[\s\S]*refreshLatest\(\)/);
   assert.doesNotMatch(history, /catch[\s\S]{0,200}setItems\(\[\]\)/);
 });
