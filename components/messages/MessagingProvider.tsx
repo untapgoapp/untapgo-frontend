@@ -206,7 +206,7 @@ export default function MessagingProvider({ children }: { children: ReactNode })
     conversation_updated: () => { void refresh(); },
   }), [refresh]);
 
-  useResilientPrivateBroadcastChannel({
+  const messagingRealtimeStatus = useResilientPrivateBroadcastChannel({
     topic: userId ? `user:${userId}:conversations` : null,
     userId,
     enabled: Boolean(session),
@@ -218,6 +218,26 @@ export default function MessagingProvider({ children }: { children: ReactNode })
     onRecovery: () => { void refresh(); },
     onFailure: () => setError("Live message updates are reconnecting."),
   });
+
+  useEffect(() => {
+    if (!userId || messagingRealtimeStatus === "connected") return;
+
+    const safetyRefresh = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+
+    // Safety net only while the inbox channel is genuinely unavailable. This
+    // keeps unread counts moving on clients that temporarily miss Broadcast,
+    // without turning normal messaging into permanent polling.
+    safetyRefresh();
+    const timer = window.setInterval(safetyRefresh, 5_000);
+    document.addEventListener("visibilitychange", safetyRefresh);
+
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", safetyRefresh);
+    };
+  }, [messagingRealtimeStatus, refresh, userId]);
 
   useEffect(() => {
     const requestRefresh = () => { void refresh(); };

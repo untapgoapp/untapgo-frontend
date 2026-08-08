@@ -147,8 +147,14 @@ export default function useResilientPrivateBroadcastChannel({
             return;
           }
           if (terminalStatuses.has(nextStatus)) {
-            void removeCurrentChannel();
-            scheduleRetry(nextStatus, subscriptionError);
+            // Do not remove/recreate a channel just because Realtime reports a
+            // transient terminal status. realtime-js already owns socket
+            // reconnect + channel rejoin. Calling removeChannel() here emits
+            // phx_leave and can race the built-in recovery loop, especially in
+            // Firefox and mobile browsers.
+            setStatus("unavailable");
+            debug(topic, nextStatus, subscriptionError);
+            callbacksRef.current.onFailure?.(nextStatus, subscriptionError);
           }
         });
       } catch (error) {

@@ -19,7 +19,7 @@ export default function RealtimeRecoveryProvider({ children }: { children: React
   useEffect(() => {
     let disposed = false;
 
-    const recover = async (reason: RealtimeRecoveryReason) => {
+    const recover = async (reason: RealtimeRecoveryReason, reconnectSocket = false) => {
       const now = Date.now();
       if (now - lastRecoveryRef.current < RESUME_DEBOUNCE_MS) return;
       lastRecoveryRef.current = now;
@@ -32,10 +32,11 @@ export default function RealtimeRecoveryProvider({ children }: { children: React
         }
         if (disposed) return;
 
-        // connect() is safe to call when the client is already connected. On a
-        // dead/suspended socket it kicks the shared Realtime client back into
-        // its normal reconnect/rejoin flow.
-        supabase.realtime.connect();
+        // realtime-js already reconnects automatically. Only force a socket
+        // connect when the heartbeat explicitly reports `disconnected`. Calling
+        // connect() for timeout/error/visibility events can create unnecessary
+        // reconnect churn while healthy channels are trying to rejoin.
+        if (reconnectSocket) supabase.realtime.connect();
       } catch {
         // Individual channel hooks still perform their own auth/retry cycle.
         // The recovery event below also triggers REST reconciliation so a
@@ -69,8 +70,9 @@ export default function RealtimeRecoveryProvider({ children }: { children: React
       void recover("online");
     };
 
-    const onHeartbeatFailure = () => {
-      void recover("heartbeat");
+    const onHeartbeatFailure = (event: Event) => {
+      const status = (event as CustomEvent<{ status?: string }>).detail?.status;
+      void recover("heartbeat", status === "disconnected");
     };
 
     document.addEventListener("visibilitychange", onVisibilityChange);
