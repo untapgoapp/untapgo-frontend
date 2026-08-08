@@ -177,8 +177,12 @@ export default function useResilientPrivateBroadcastChannel({
 
     const onGlobalRecovery = () => {
       if (disposed) return;
+      // Reconcile application state, but do not tear down a healthy channel.
+      // Supabase Realtime already reconnects/rejoins its socket. Rebuilding every
+      // channel on visibility/heartbeat recovery caused unnecessary churn across
+      // Firefox and mobile browsers.
       callbacksRef.current.onRecovery?.();
-      void connect("recovery");
+      if (!channel) void connect("recovery");
     };
 
     const { data: authListener } = supabase.auth.onAuthStateChange(onAuthChange);

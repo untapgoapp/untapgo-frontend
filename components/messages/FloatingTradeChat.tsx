@@ -9,6 +9,8 @@ import useResilientPrivateBroadcastChannel from "@/hooks/useResilientPrivateBroa
 import type { BinderTradeMessage, BinderTradeThread } from "@/lib/binder";
 import { binderApi } from "@/services/binder";
 
+const SAFETY_SYNC_MS = 3_000;
+
 function merge(current: BinderTradeMessage[], incoming: BinderTradeMessage[]) {
   const map = new Map(current.map((item) => [item.id, item]));
   for (const item of incoming) map.set(item.id, item);
@@ -28,28 +30,31 @@ export default function FloatingTradeChat({ threadId, onActivity }: { threadId: 
   const [value, setValue] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showLiveWarning, setShowLiveWarning] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const renderedCountRef = useRef(0);
+  const latestKnownIdRef = useRef<string | null>(null);
 
   const scrollToLatest = useCallback((behavior: ScrollBehavior = "auto") => {
-    requestAnimationFrame(() => {
-      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior });
-    });
+    const node = scrollRef.current;
+    if (node) node.scrollTo({ top: node.scrollHeight, behavior });
   }, []);
 
   const reconcileMessages = useCallback(async () => {
     try {
       const history = await binderApi.tradeMessages(threadId);
+      const latest = history.items.at(-1) ?? null;
+      const previousLatestId = latestKnownIdRef.current;
       setMessages((current) => merge(current, history.items));
-      const latest = history.items.at(-1);
-      if (latest) {
+      if (latest) latestKnownIdRef.current = latest.id;
+      if (latest && latest.id !== previousLatestId) {
         await binderApi.markTradeRead(threadId, latest.id).catch(() => undefined);
         await onActivity().catch(() => undefined);
       }
-      scrollToLatest("auto");
     } catch {
-      // Preserve the rendered history and let the next retry/resume reconcile.
+      // Keep rendered history. Realtime or the next safety sync will retry.
     }
-  }, [onActivity, scrollToLatest, threadId]);
+  }, [onActivity, threadId]);
 
   useEffect(() => {
     let active = true;
@@ -59,34 +64,64 @@ export default function FloatingTradeChat({ threadId, onActivity }: { threadId: 
       setMessages(history.items);
       setError(null);
       const latest = history.items.at(-1);
+      latestKnownIdRef.current = latest?.id ?? null;
       if (latest) void binderApi.markTradeRead(threadId, latest.id).then(onActivity).catch(() => undefined);
-      scrollToLatest("auto");
     }).catch(() => { if (active) setError("Trade conversation could not be loaded."); });
     return () => { active = false; };
-  }, [onActivity, scrollToLatest, threadId]);
+  }, [onActivity, threadId]);
+
+  useEffect(() => {
+    if (!messages.length) return;
+    const behavior: ScrollBehavior = renderedCountRef.current === 0 ? "auto" : "smooth";
+    renderedCountRef.current = messages.length;
+    scrollToLatest(behavior);
+  }, [messages.length, scrollToLatest]);
 
   const realtimeEvents = useMemo(() => ({
     message: (payload: unknown) => {
       if (!valid(payload, threadId)) return;
+      latestKnownIdRef.current = payload.id;
       setMessages((current) => merge(current, [payload]));
-      scrollToLatest("smooth");
       void binderApi.markTradeRead(threadId, payload.id).then(onActivity).catch(() => undefined);
     },
     message_deleted: (payload: unknown) => {
       if (!valid(payload, threadId)) return;
       setMessages((current) => merge(current, [payload]));
     },
-  }), [onActivity, scrollToLatest, threadId]);
+  }), [onActivity, threadId]);
 
-  useResilientPrivateBroadcastChannel({
+  const realtimeStatus = useResilientPrivateBroadcastChannel({
     topic: `trade:${threadId}:chat`,
     userId: user?.id ?? null,
     enabled: Boolean(user),
     events: realtimeEvents,
-    onSubscribed: (reason) => { if (reason !== "recovery") void reconcileMessages(); },
+    onSubscribed: () => { void reconcileMessages(); },
     onRecovery: () => { void reconcileMessages(); },
-    onFailure: () => setError("Live trade messages are reconnecting. You can keep using the chat."),
   });
+
+  useEffect(() => {
+    if (realtimeStatus === "connected" || realtimeStatus === "idle") {
+      setShowLiveWarning(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setShowLiveWarning(true), 5_000);
+    return () => window.clearTimeout(timer);
+  }, [realtimeStatus]);
+
+  useEffect(() => {
+    if (!user) return;
+    const syncIfVisible = () => {
+      if (document.visibilityState === "visible") void reconcileMessages();
+    };
+    const timer = window.setInterval(syncIfVisible, SAFETY_SYNC_MS);
+    document.addEventListener("visibilitychange", syncIfVisible);
+    window.addEventListener("focus", syncIfVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", syncIfVisible);
+      window.removeEventListener("focus", syncIfVisible);
+    };
+  }, [reconcileMessages, user]);
 
   async function send() {
     const body = value.trim();
@@ -95,10 +130,10 @@ export default function FloatingTradeChat({ threadId, onActivity }: { threadId: 
     setError(null);
     try {
       const message = await binderApi.sendTradeMessage(threadId, body);
+      latestKnownIdRef.current = message.id;
       setMessages((current) => merge(current, [message]));
       setValue("");
       await onActivity();
-      scrollToLatest("smooth");
     } catch {
       setError("Trade message could not be sent.");
     } finally {
@@ -115,6 +150,7 @@ export default function FloatingTradeChat({ threadId, onActivity }: { threadId: 
           return <div key={message.id} className={`mb-2 flex ${own ? "justify-end" : "justify-start"}`}><div className={`max-w-[78%] rounded-[18px] px-3 py-2 text-sm ${own ? "bg-primary text-primary-foreground" : "bg-secondary/75"}`}><p className="whitespace-pre-wrap break-words">{message.body}</p><time className={`mt-1 block text-[9px] ${own ? "text-primary-foreground/70" : "text-muted-foreground"}`}>{new Date(message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time></div></div>;
         })}
       </div>
+      {showLiveWarning ? <p className="px-3 py-1 text-xs text-muted-foreground">Reconnecting live messages…</p> : null}
       {error ? <p className="px-3 py-1 text-xs text-destructive">{error}</p> : null}
       {thread?.status === "active" ? <form onSubmit={(event) => { event.preventDefault(); void send(); }} className="flex items-end gap-2 border-t border-border/65 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"><textarea value={value} onChange={(event) => setValue(event.target.value)} rows={1} maxLength={2000} placeholder="Write a trade message…" className="max-h-28 min-h-10 min-w-0 flex-1 resize-none rounded-[18px] border border-border-strong bg-surface px-3 py-2 text-sm outline-none" /><Button type="submit" size="icon" disabled={!value.trim() || sending} aria-label="Send message"><Send className="h-4 w-4" /></Button></form> : <p className="border-t border-border/65 p-3 text-xs text-muted-foreground">This trade is closed. The conversation is read-only.</p>}
     </div>

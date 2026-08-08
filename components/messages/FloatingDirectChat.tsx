@@ -15,6 +15,8 @@ import {
 } from "@/lib/direct-messages";
 import { directMessagesApi } from "@/services/direct-messages";
 
+const SAFETY_SYNC_MS = 3_000;
+
 export default function FloatingDirectChat({ conversationId, onActivity }: { conversationId: string; onActivity: () => Promise<void> }) {
   const { user } = useUser();
   const [conversation, setConversation] = useState<DirectConversation | null>(null);
@@ -22,28 +24,31 @@ export default function FloatingDirectChat({ conversationId, onActivity }: { con
   const [value, setValue] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showLiveWarning, setShowLiveWarning] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const renderedCountRef = useRef(0);
+  const latestKnownIdRef = useRef<string | null>(null);
 
   const scrollToLatest = useCallback((behavior: ScrollBehavior = "auto") => {
-    requestAnimationFrame(() => {
-      scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior });
-    });
+    const node = scrollRef.current;
+    if (node) node.scrollTo({ top: node.scrollHeight, behavior });
   }, []);
 
   const reconcileMessages = useCallback(async () => {
     try {
       const history = await directMessagesApi.messages(conversationId);
+      const latest = history.items.at(-1) ?? null;
+      const previousLatestId = latestKnownIdRef.current;
       setMessages((current) => mergeDirectMessages(current, history.items));
-      const latest = history.items.at(-1);
-      if (latest) {
+      if (latest) latestKnownIdRef.current = latest.id;
+      if (latest && latest.id !== previousLatestId) {
         await directMessagesApi.markRead(conversationId, latest.id).catch(() => undefined);
         await onActivity().catch(() => undefined);
       }
-      scrollToLatest("auto");
     } catch {
-      // Keep the already rendered history. A later retry/resume reconciles it.
+      // Keep rendered history. Realtime or the next safety sync will retry.
     }
-  }, [conversationId, onActivity, scrollToLatest]);
+  }, [conversationId, onActivity]);
 
   useEffect(() => {
     let active = true;
@@ -54,35 +59,65 @@ export default function FloatingDirectChat({ conversationId, onActivity }: { con
         setMessages(history.items);
         setError(null);
         const latest = history.items.at(-1);
+        latestKnownIdRef.current = latest?.id ?? null;
         if (latest) void directMessagesApi.markRead(conversationId, latest.id).then(onActivity).catch(() => undefined);
-        scrollToLatest("auto");
       })
       .catch(() => { if (active) setError("Conversation could not be loaded."); });
     return () => { active = false; };
-  }, [conversationId, onActivity, scrollToLatest]);
+  }, [conversationId, onActivity]);
+
+  useEffect(() => {
+    if (!messages.length) return;
+    const behavior: ScrollBehavior = renderedCountRef.current === 0 ? "auto" : "smooth";
+    renderedCountRef.current = messages.length;
+    scrollToLatest(behavior);
+  }, [messages.length, scrollToLatest]);
 
   const realtimeEvents = useMemo(() => ({
     message: (payload: unknown) => {
       if (!isDirectMessage(payload, conversationId)) return;
+      latestKnownIdRef.current = payload.id;
       setMessages((current) => mergeDirectMessages(current, [payload]));
-      scrollToLatest("smooth");
       void directMessagesApi.markRead(conversationId, payload.id).then(onActivity).catch(() => undefined);
     },
     message_deleted: (payload: unknown) => {
       if (!isDirectMessage(payload, conversationId)) return;
       setMessages((current) => mergeDirectMessages(current, [payload]));
     },
-  }), [conversationId, onActivity, scrollToLatest]);
+  }), [conversationId, onActivity]);
 
-  useResilientPrivateBroadcastChannel({
+  const realtimeStatus = useResilientPrivateBroadcastChannel({
     topic: `direct:${conversationId}:chat`,
     userId: user?.id ?? null,
     enabled: Boolean(user),
     events: realtimeEvents,
-    onSubscribed: (reason) => { if (reason !== "recovery") void reconcileMessages(); },
+    onSubscribed: () => { void reconcileMessages(); },
     onRecovery: () => { void reconcileMessages(); },
-    onFailure: () => setError("Live messages are reconnecting. You can keep using the chat."),
   });
+
+  useEffect(() => {
+    if (realtimeStatus === "connected" || realtimeStatus === "idle") {
+      setShowLiveWarning(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setShowLiveWarning(true), 5_000);
+    return () => window.clearTimeout(timer);
+  }, [realtimeStatus]);
+
+  useEffect(() => {
+    if (!user) return;
+    const syncIfVisible = () => {
+      if (document.visibilityState === "visible") void reconcileMessages();
+    };
+    const timer = window.setInterval(syncIfVisible, SAFETY_SYNC_MS);
+    document.addEventListener("visibilitychange", syncIfVisible);
+    window.addEventListener("focus", syncIfVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", syncIfVisible);
+      window.removeEventListener("focus", syncIfVisible);
+    };
+  }, [reconcileMessages, user]);
 
   async function send() {
     const body = value.trim();
@@ -91,10 +126,10 @@ export default function FloatingDirectChat({ conversationId, onActivity }: { con
     setError(null);
     try {
       const message = await directMessagesApi.send(conversationId, body);
+      latestKnownIdRef.current = message.id;
       setMessages((current) => mergeDirectMessages(current, [message]));
       setValue("");
       await onActivity();
-      scrollToLatest("smooth");
     } catch {
       setError("Message could not be sent.");
     } finally {
@@ -124,6 +159,7 @@ export default function FloatingDirectChat({ conversationId, onActivity }: { con
           );
         })}
       </div>
+      {showLiveWarning ? <p className="px-3 py-1 text-xs text-muted-foreground">Reconnecting live messages…</p> : null}
       {error ? <p role="alert" className="px-3 py-1 text-xs text-destructive">{error}</p> : null}
       {conversation?.can_message ? (
         <form onSubmit={(event) => { event.preventDefault(); void send(); }} className="flex items-end gap-2 border-t border-border/65 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
